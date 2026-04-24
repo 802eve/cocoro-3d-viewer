@@ -1057,8 +1057,9 @@ function _loadConfigFromUrl(cfgParam, isDemo){
     if (Array.isArray(cfg.prints)) {
       for (const p of cfg.prints) {
         if (p.driveId && !p.imageDataUrl) {
-          // Drive の CORS 対応公開URLの第一候補（長辺3200pxで取得）
-          p.imageDataUrl = `https://lh3.googleusercontent.com/d/${encodeURIComponent(p.driveId)}=s3200`;
+          // Drive の CORS 対応公開URLの第一候補（高解像度で取得）
+          // 2026-04-24: =s4096 に上げて画質向上。元画像が3200pxなら原寸、より大きければ拡大なし
+          p.imageDataUrl = `https://lh3.googleusercontent.com/d/${encodeURIComponent(p.driveId)}=s4096`;
         }
       }
     }
