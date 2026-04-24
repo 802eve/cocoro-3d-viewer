@@ -147,17 +147,34 @@
   </a>
 <script>
 function _3d_goBack(){
-  // 新しいタブ（opener あり） → 自タブを閉じる
+  // 2026-04-25: ブラウザが window.close() をブロックするケース（クロスオリジン/直接URL等）
+  //             にも確実に元ページへ戻るため、段階的フォールバックを実装。
+  // 1) opener タブが生きているなら、opener にフォーカスしてから自タブを閉じる
+  //    (→ 新タブで開いた普通のケース。ユーザー視点では opener タブに戻る)
   if(window.opener && !window.opener.closed){
-    try { window.close(); return; } catch(e){}
-  }
-  // 履歴あり → 戻る
-  if(history.length > 1){
-    history.back();
+    try { window.opener.focus(); } catch(e){}
+    try { window.close(); } catch(e){}
+    // close がブロックされたときのフォールバック（150ms後にまだここにいたら実行）
+    setTimeout(()=> _3d_goBackFallback(), 150);
     return;
   }
-  // それ以外 → 自タブを閉じる試行
+  // 2) opener なし → ブラウザ履歴を1段戻す
+  if(history.length > 1){
+    try { history.back(); return; } catch(e){}
+  }
+  // 3) 最終: referrer に遷移 or ウィンドウを閉じる
+  _3d_goBackFallback();
+}
+function _3d_goBackFallback(){
+  try {
+    if(document.referrer){
+      // 元ページの URL に直接戻る（現タブを置換）
+      location.href = document.referrer;
+      return;
+    }
+  } catch(e){}
   try { window.close(); } catch(e){}
+  // それでも閉じられない場合は、ユーザーに手動で閉じてもらう
 }
 </script>
   <button class="pill" id="btnRotate">
@@ -302,8 +319,11 @@ const MODELS = {
       back_center:  { label: '背中（中央）',   x: 383.6772,  y: 1375.3957, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34 },
       left_chest:   { label: '左胸',           x: 1760.9421, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
       right_chest:  { label: '右胸',           x: 1526.2481, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
-      left_sleeve:  { label: '左袖',           x: 1653.3896, y: 561.3783,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
-      right_sleeve: { label: '右袖',           x: 400.4349,  y: 570.384,   width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      // 2026-04-24 夜: ロンT袖いっぱいのプリント位置を約2cm下げる（両袖）。
+      //   height=604.9842 が 34cm に相当 → 1cm ≈ 17.79px。 2cm ≒ +35.58px の中心下げ。
+      //   ユーザー感覚で「肩寄りすぎ」→ 二の腕～前腕中心寄りへ調整。
+      left_sleeve:  { label: '左袖',           x: 1653.3896, y: 596.9383,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      right_sleeve: { label: '右袖',           x: 400.4349,  y: 605.9440,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
       back_upper:   { label: '襟下（背中）',   x: 383.6772,  y: 1211.6097, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'top',    max_cm: 15 },
       front_hem:    { label: '前裾',           x: 1644.3839, y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
       back_hem:     { label: '後ろ裾',         x: 383.6772,  y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
@@ -355,7 +375,11 @@ const SMALL_AREA_SIZE_SCALES = {
   },
 };
 
-const SMALL_AREAS = ['left_chest', 'right_chest', 'left_sleeve', 'right_sleeve'];
+// 2026-04-24 夜: 襟下（背中）も15cm角印刷 → 小エリアと同じく scale=1.0 が妥当。
+//   従来は SMALL_AREAS に含まれず SIZE_SCALES（34cm基準の0.45）が適用され、
+//   実プリント幅が 7cm 程度に縮小されていた。SMALL_AREAS に追加して是正。
+//   同時に texture 上の占有面積が増えて画質も自動的に向上する。
+const SMALL_AREAS = ['left_chest', 'right_chest', 'left_sleeve', 'right_sleeve', 'back_upper'];
 
 function getSizesForArea(areaKey, method) {
   const table = SMALL_AREAS.includes(areaKey) ? SMALL_AREA_SIZE_SCALES : SIZE_SCALES;
@@ -490,7 +514,10 @@ controls.enablePan = false;
 controls.minDistance = 0.8;
 controls.maxDistance = 6;
 controls.target.set(0, 1, 0);
-controls.autoRotateSpeed = 1.5;
+// 2026-04-24 夜: 社内フォーム側の体感速度に統一（1.5 → 2.5）。
+//   デザインスタジオ/社内プラットフォーム/フォーム各所すべて同じ viewer.html を使用するため
+//   ここを変えれば全画面一斉に揃う。
+controls.autoRotateSpeed = 2.5;
 
 function updateRotateBtn() { btnRotate.classList.toggle('show', !controls.autoRotate); }
 controls.addEventListener('start', () => {
@@ -564,13 +591,16 @@ function initTextureCompose() {
   // 2026-04-23: GLBのテクスチャ解像度が低い場合でもプリントを鮮明に描くため、
   //             キャンバスサイズを最低 REFERENCE_TEX_SIZE (2048) 以上に拡張する。
   //             UVは正規化されているのでサイズを変えてもマッピングは崩れない。
-  // 2026-04-24: さらに高解像度化 — プリント部分のキャンバスは 3072px に拡張
-  //   PRINT_AREAS は 2048 reference なので、3072 → sx=1.5 倍で位置は自動スケール。
-  //   袖などの小エリアが 205→307px になり、ダウンサンプル後の鮮鋭度が改善される。
+  // 2026-04-24 夜: さらに高解像度化 — プリント部分のキャンバスは 4096px に拡張
+  //   PRINT_AREAS は 2048 reference なので、4096 → sx=2.0 倍で位置は自動スケール。
+  //   袖などの小エリアが 205→410px、前面センターが 465→930px になり、文字の鮮鋭度が
+  //   さらにUP（とくに MIYAMOTO / HOMARE のようなアーチテキスト）。
+  //   REFERENCE_TEX_SIZE は 2048 維持なので、位置ズレは発生しない（前回の失敗とは別アプローチ）。
+  //   4096 は WebGL 必須サポート最低限（大抵のGPUで安全）。
   const origW = origTexImage.width || origTexImage.naturalWidth;
   const origH = origTexImage.height || origTexImage.naturalHeight;
   const ar = origW / origH;
-  const TARGET_CANVAS_MIN = 3072;  // 2048 → 3072 に拡張（50%UP）
+  const TARGET_CANVAS_MIN = 4096;  // 3072 → 4096 に拡張（33%UP、実効2倍）
   const w = Math.max(origW, TARGET_CANVAS_MIN);
   const h = Math.max(origH, Math.round(w / ar));
 
@@ -852,13 +882,23 @@ function onLoaded(gltf) {
   model.position.sub(center);
   model.position.y += size.y / 2;
 
+  // 2026-04-24 夜: カメラ距離をビューポートアスペクトに応じてフィット計算。
+  //   従来は maxDim * 2.4 の固定倍率で余白が大きすぎ、モデル小さく見えてた。
+  //   ここでは camera.fov（縦FOV）と実描画アスペクトから水平FOVを算出し、
+  //   モデルの縦/横（size.y, size.x）のうち画面内でより多くを占める方に合わせる。
+  //   1.12倍のマージンで両端に少し余白を残す。
   const maxDim = Math.max(size.x, size.y, size.z);
-  const dist = maxDim * 2.4;
+  const vFov = camera.fov * Math.PI / 180;
+  const aspect = (renderer.domElement.width / Math.max(1, renderer.domElement.height)) || (innerWidth / innerHeight);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+  const distY = (size.y / 2) / Math.tan(vFov / 2);
+  const distX = (size.x / 2) / Math.tan(hFov / 2);
+  const dist = Math.max(distX, distY) * 1.12;  // 両端に12%マージン
   camera.position.set(0, size.y * 0.55, dist);
   controls.target.set(0, size.y * 0.5, 0);
   initialCamPos.copy(camera.position);
   initialTarget.copy(controls.target);
-  controls.minDistance = maxDim * 0.8;
+  controls.minDistance = maxDim * 0.6;
   controls.maxDistance = maxDim * 6;
 
   model.traverse((obj) => {
