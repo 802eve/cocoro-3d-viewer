@@ -1023,44 +1023,31 @@ function loadInputConfig() {
 //  社内プラットフォームGAS の getOrderViewerConfig エンドポイントを叩く。
 //  デプロイURLは CLAUDE.md 記載の platform GAS を使用。
 const _GAS_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
-// 2026-04-24: CORS回避のため fetch → JSONP方式に変更
-//   GASの /exec は script.google.com → script.googleusercontent.com に 302 リダイレクトするが、
-//   中間の 302 レスポンスに Access-Control-Allow-Origin ヘッダが付かないため、
-//   クロスオリジン fetch は "Failed to fetch" で失敗する。
-//   <script>タグは同源ポリシーが緩いので、GAS側に callback= を渡して JSONP で受け取る。
+// 2026-04-24: 2段フォールバック方式
+//   ① fetch（シンプル・標準） → 失敗したら
+//   ② JSONP（<script> タグ） → 失敗したら
+//   ③ タイムアウトでエラー表示
+//   GASの /exec は 302 リダイレクトするが、fetch / <script> どちらも環境依存で失敗することが
+//   あるため、両方試す戦略。
 function _loadConfigFromOrder(orderId, isDemo){
-  // 読み込み中インジケータ
   const ind = document.createElement('div');
   ind.id = '_orderLoadInd';
   ind.textContent = `注文 ${orderId} の3D設定を取得中...`;
   ind.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:16px 24px;background:rgba(0,0,0,.8);color:#fff;border-radius:8px;font:14px sans-serif;z-index:99999';
   document.body.appendChild(ind);
 
-  // JSONP コールバック関数名（ユニーク）
-  const cbName = '_cocoro3d_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
-  let script = null;
-  const timeoutId = setTimeout(() => {
-    cleanup();
-    alert('3D設定の取得がタイムアウトしました（30秒）。ネット接続・GASデプロイを確認してください。');
-  }, 30000);
-  const cleanup = () => {
-    try { document.getElementById('_orderLoadInd')?.remove(); } catch(_){}
-    try { delete window[cbName]; } catch(_){}
-    try { if(script) script.remove(); } catch(_){}
-    clearTimeout(timeoutId);
-  };
+  const _removeInd = () => { try { document.getElementById('_orderLoadInd')?.remove(); } catch(_){} };
 
-  window[cbName] = async function(data){
+  const _applyData = async (data, source) => {
     try {
       if(!data || data.ok !== true){
-        cleanup();
-        alert(`注文データが取得できませんでした: ${(data && data.error) || 'unknown'}`);
+        _removeInd();
+        alert(`注文データが取得できませんでした (${source}): ${(data && data.error) || 'unknown'}`);
         return;
       }
       const cfg = data.config;
       if(!cfg || !Array.isArray(cfg.prints) || cfg.prints.length === 0){
-        cleanup();
-        // 2026-04-24: 除外理由を表示（GAS側 _debug フィールド）
+        _removeInd();
         let msg = 'この注文には3D表示できるプリントデータがありません\n';
         if(data._debug){
           msg += `\n▼診断情報:\n商品内プリント数: ${data._debug.totalPrintsInItem}\n反映可能: ${data._debug.included}\n除外: ${data._debug.skipped.length}件\n`;
@@ -1072,27 +1059,81 @@ function _loadConfigFromOrder(orderId, isDemo){
         alert(msg);
         return;
       }
-      // GAS側で modelKey が付いていたらURLに反映（初回GLB読込後の切替用）
       if(cfg.model && typeof setModel === 'function'){
         try { setModel(cfg.model); } catch(e){}
       }
       await applyExternalConfig(cfg);
-      cleanup();
+      _removeInd();
       if(isDemo) showDemoPanel();
     } catch(e){
-      cleanup();
-      console.error('loadConfigFromOrder(JSONP) failed', e);
+      _removeInd();
+      console.error('[loadConfigFromOrder] apply failed ('+source+')', e);
       alert(`3D設定の適用に失敗しました: ${e.message || e}`);
     }
   };
 
-  // <script> タグで GAS を叩く（JSONP）
+  // ① fetch を試す（シンプル・プリフライト無しのGET）
+  const fetchUrl = `${_GAS_PLATFORM_URL}?action=getOrderViewerConfig&orderId=${encodeURIComponent(orderId)}`;
+  console.log('[loadConfig] trying fetch:', fetchUrl);
+  fetch(fetchUrl, { method: 'GET', redirect: 'follow' })
+    .then(res => {
+      console.log('[loadConfig] fetch response', res.status, res.headers.get('content-type'));
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(txt => {
+      let data;
+      try { data = JSON.parse(txt); }
+      catch(parseErr){
+        console.warn('[loadConfig] fetch: parse failed, content preview:', txt.substring(0, 300));
+        throw parseErr;
+      }
+      return _applyData(data, 'fetch');
+    })
+    .catch(fetchErr => {
+      console.warn('[loadConfig] fetch failed, falling back to JSONP:', fetchErr.message || fetchErr);
+      // ② JSONP フォールバック
+      _loadViaJsonp(orderId, _applyData);
+    });
+}
+
+function _loadViaJsonp(orderId, applyFn){
+  const cbName = '_cocoro3d_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+  let script = null;
+  const timeoutId = setTimeout(() => {
+    cleanup();
+    alert('3D設定の取得がタイムアウトしました（20秒）\n\n' +
+          '■ 対処法:\n' +
+          '1. ページを Ctrl+Shift+R でリロード\n' +
+          '2. 別のブラウザ（Edge等）で試す\n' +
+          '3. 広告ブロッカーを一時無効化\n' +
+          '4. モバイル回線など別ネットワークで試す');
+  }, 20000);
+  const cleanup = () => {
+    try { document.getElementById('_orderLoadInd')?.remove(); } catch(_){}
+    try { delete window[cbName]; } catch(_){}
+    try { if(script) script.remove(); } catch(_){}
+    clearTimeout(timeoutId);
+  };
+  window[cbName] = async function(data){
+    clearTimeout(timeoutId);
+    try { if(script) script.remove(); } catch(_){}
+    try { delete window[cbName]; } catch(_){}
+    await applyFn(data, 'jsonp');
+  };
   script = document.createElement('script');
   script.src = `${_GAS_PLATFORM_URL}?action=getOrderViewerConfig&orderId=${encodeURIComponent(orderId)}&callback=${cbName}`;
-  script.onerror = () => {
+  console.log('[loadConfig] trying JSONP:', script.src);
+  script.onerror = (e) => {
     cleanup();
-    console.error('JSONP script load error');
-    alert('3D設定の取得に失敗しました（スクリプト読み込みエラー）\nGASが新バージョンでデプロイ済みか確認してください。');
+    console.error('[loadConfig] JSONP script load error', e);
+    alert('3D設定の取得に失敗しました\n\n' +
+          '■ 考えられる原因:\n' +
+          '1. ブラウザのセキュリティ設定（Chrome の MIME 厳格化）\n' +
+          '2. 広告ブロッカー拡張機能の干渉\n' +
+          '3. ネットワーク接続の問題\n' +
+          '4. GAS の新バージョン未デプロイ\n\n' +
+          '■ 対処法: Ctrl+Shift+R でリロードするか別のブラウザでお試しください。');
   };
   document.head.appendChild(script);
 }
