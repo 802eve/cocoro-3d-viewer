@@ -302,8 +302,8 @@ const MODELS = {
       back_center:  { label: '背中（中央）',   x: 383.6772,  y: 1375.3957, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34 },
       left_chest:   { label: '左胸',           x: 1760.9421, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
       right_chest:  { label: '右胸',           x: 1526.2481, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
-      left_sleeve:  { label: '左袖',           x: 1653.3896, y: 596.9383,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
-      right_sleeve: { label: '右袖',           x: 400.4349,  y: 605.9440,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      left_sleeve:  { label: '左袖',           x: 1653.3896, y: 561.3783,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      right_sleeve: { label: '右袖',           x: 400.4349,  y: 570.384,   width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
       back_upper:   { label: '襟下（背中）',   x: 383.6772,  y: 1211.6097, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'top',    max_cm: 15 },
       front_hem:    { label: '前裾',           x: 1644.3839, y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
       back_hem:     { label: '後ろ裾',         x: 383.6772,  y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
@@ -355,8 +355,8 @@ const SMALL_AREA_SIZE_SCALES = {
   },
 };
 
-const SMALL_AREAS = ['left_chest', 'right_chest', 'left_sleeve', 'right_sleeve', 'back_upper'];
-  
+const SMALL_AREAS = ['left_chest', 'right_chest', 'left_sleeve', 'right_sleeve'];
+
 function getSizesForArea(areaKey, method) {
   const table = SMALL_AREAS.includes(areaKey) ? SMALL_AREA_SIZE_SCALES : SIZE_SCALES;
   return table[method] || {};
@@ -490,7 +490,7 @@ controls.enablePan = false;
 controls.minDistance = 0.8;
 controls.maxDistance = 6;
 controls.target.set(0, 1, 0);
-controls.autoRotateSpeed = 2.5;
+controls.autoRotateSpeed = 1.5;
 
 function updateRotateBtn() { btnRotate.classList.toggle('show', !controls.autoRotate); }
 controls.addEventListener('start', () => {
@@ -570,7 +570,7 @@ function initTextureCompose() {
   const origW = origTexImage.width || origTexImage.naturalWidth;
   const origH = origTexImage.height || origTexImage.naturalHeight;
   const ar = origW / origH;
-  const TARGET_CANVAS_MIN = 4096;  // 2048 → 3072 に拡張（50%UP）
+  const TARGET_CANVAS_MIN = 3072;  // 2048 → 3072 に拡張（50%UP）
   const w = Math.max(origW, TARGET_CANVAS_MIN);
   const h = Math.max(origH, Math.round(w / ar));
 
@@ -853,17 +853,12 @@ function onLoaded(gltf) {
   model.position.y += size.y / 2;
 
   const maxDim = Math.max(size.x, size.y, size.z);
-  const vFov = camera.fov * Math.PI / 180;
-  const aspect = (renderer.domElement.width / Math.max(1, renderer.domElement.height)) || (innerWidth / innerHeight);
-  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
-  const distY = (size.y / 2) / Math.tan(vFov / 2);
-  const distX = (size.x / 2) / Math.tan(hFov / 2);
-  const dist = Math.max(distX, distY) * 1.12;
+  const dist = maxDim * 2.4;
   camera.position.set(0, size.y * 0.55, dist);
   controls.target.set(0, size.y * 0.5, 0);
   initialCamPos.copy(camera.position);
   initialTarget.copy(controls.target);
-  controls.minDistance = maxDim * 0.6;
+  controls.minDistance = maxDim * 0.8;
   controls.maxDistance = maxDim * 6;
 
   model.traverse((obj) => {
