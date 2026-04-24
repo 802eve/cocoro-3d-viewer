@@ -1,0 +1,274 @@
+{
+  "model": {
+    "name": "t-shirt-low-poly",
+    "texture": "diffuse.png",
+    "coordinateSystem": "texture_pixel",
+    "notes": [
+      "座標は diffuse.png 上のピクセル基準",
+      "画像は各エリアの安全範囲内に配置する",
+      "fit は比率維持で contain",
+      "alignX / alignY に従って配置する"
+    ]
+  },
+  "printAreas": {
+    "前面（胸中央）": {
+      "key": "front_center",
+      "x": 622,
+      "y": 1377,
+      "width": 550,
+      "height": 550,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "center",
+      "max_cm": 34,
+      "allowedSizes": {
+        "転写": {
+          "小（10cm角内）": 0.30,
+          "中小（15cm角内）": 0.45,
+          "中（20cm角内）": 0.60,
+          "A4サイズ内": 0.75,
+          "B4サイズ内": 0.90,
+          "A3サイズ内": 1.00
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 0.45,
+          "標準（34cm内）": 1.00,
+          "大判（34cm以上）": 1.15
+        }
+      }
+    },
+    "背中（中央）": {
+      "key": "back_center",
+      "x": 1552,
+      "y": 1256,
+      "width": 550,
+      "height": 550,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "center",
+      "max_cm": 34,
+      "allowedSizes": {
+        "転写": {
+          "小（10cm角内）": 0.30,
+          "中小（15cm角内）": 0.45,
+          "中（20cm角内）": 0.60,
+          "A4サイズ内": 0.75,
+          "B4サイズ内": 0.90,
+          "A3サイズ内": 1.00
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 0.45,
+          "標準（34cm内）": 1.00,
+          "大判（34cm以上）": 1.15
+        }
+      }
+    },
+    "左胸": {
+      "key": "left_chest",
+      "x": 762,
+      "y": 1234,
+      "width": 194,
+      "height": 194,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "center",
+      "max_cm": 15,
+      "allowedSizes": {
+        "転写": {
+          "極小（5cm角内）": 0.33,
+          "小（10cm角内）": 0.66,
+          "中小（15cm角内）": 1.00
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 1.00
+        }
+      }
+    },
+    "右胸": {
+      "key": "right_chest",
+      "x": 483,
+      "y": 1234,
+      "width": 194,
+      "height": 194,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "center",
+      "max_cm": 15,
+      "allowedSizes": {
+        "転写": {
+          "極小（5cm角内）": 0.33,
+          "小（10cm角内）": 0.66,
+          "中小（15cm角内）": 1.00
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 1.00
+        }
+      }
+    },
+    "左袖": {
+      "key": "left_sleeve",
+      "x": 994,
+      "y": 598,
+      "width": 194,
+      "height": 194,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "bottom",
+      "max_cm": 15,
+      "allowedSizes": {
+        "転写": {
+          "極小（5cm角内）": 0.33,
+          "小（10cm角内）": 0.66,
+          "中小（15cm角内）": 1.00
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 1.00
+        }
+      }
+    },
+    "右袖": {
+      "key": "right_sleeve",
+      "x": 1616,
+      "y": 598,
+      "width": 194,
+      "height": 194,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "bottom",
+      "max_cm": 15,
+      "allowedSizes": {
+        "転写": {
+          "極小（5cm角内）": 0.33,
+          "小（10cm角内）": 0.66,
+          "中小（15cm角内）": 1.00
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 1.00
+        }
+      }
+    },
+    "襟下（背中）": {
+      "key": "back_upper",
+      "x": 1552,
+      "y": 1189,
+      "width": 550,
+      "height": 550,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "top",
+      "max_cm": 34,
+      "notes": [
+        "小さいネーム専用ではなく背中上部エリアとして扱う",
+        "首下から入る大判プリントにも対応",
+        "小ロゴも対応"
+      ],
+      "allowedSizes": {
+        "転写": {
+          "小（10cm角内）": 0.25,
+          "中小（15cm角内）": 0.40,
+          "中（20cm角内）": 0.55,
+          "A4サイズ内": 0.70,
+          "B4サイズ内": 0.85,
+          "A3サイズ内": 1.00
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 0.40,
+          "標準（34cm内）": 1.00,
+          "大判（34cm以上）": 1.10
+        }
+      }
+    },
+    "前裾": {
+      "key": "front_hem_lower",
+      "x": 622,
+      "y": 1630,
+      "width": 550,
+      "height": 550,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "bottom",
+      "max_cm": 34,
+      "notes": [
+        "下寄りエリアとして使う",
+        "将来的には横長安全範囲に調整しても良い"
+      ],
+      "allowedSizes": {
+        "転写": {
+          "極小（5cm角内）": 0.20,
+          "小（10cm角内）": 0.35,
+          "中小（15cm角内）": 0.50,
+          "中（20cm角内）": 0.65,
+          "A4サイズ内": 0.80
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 0.50,
+          "標準（34cm内）": 0.90
+        }
+      }
+    },
+    "後ろ裾": {
+      "key": "back_hem_lower",
+      "x": 1552,
+      "y": 1630,
+      "width": 550,
+      "height": 550,
+      "fit": "contain",
+      "alignX": "center",
+      "alignY": "bottom",
+      "max_cm": 34,
+      "notes": [
+        "下寄りエリアとして使う",
+        "将来的には横長安全範囲に調整しても良い"
+      ],
+      "allowedSizes": {
+        "転写": {
+          "極小（5cm角内）": 0.20,
+          "小（10cm角内）": 0.35,
+          "中小（15cm角内）": 0.50,
+          "中（20cm角内）": 0.65,
+          "A4サイズ内": 0.80
+        },
+        "シルクスクリーン": {
+          "ワンポイント（15cm角内）": 0.50,
+          "標準（34cm内）": 0.90
+        }
+      }
+    },
+    "その他": {
+      "key": "other",
+      "manualReview": true,
+      "notes": [
+        "自動配置しない",
+        "管理画面または個別対応で座標指定"
+      ]
+    }
+  },
+  "uiMapping": {
+    "前面（胸中央）": "front_center",
+    "背中（中央）": "back_center",
+    "左胸": "left_chest",
+    "右胸": "right_chest",
+    "左袖": "left_sleeve",
+    "右袖": "right_sleeve",
+    "襟下（背中）": "back_upper",
+    "前裾": "front_hem_lower",
+    "後ろ裾": "back_hem_lower",
+    "その他": "other"
+  },
+  "placementRules": {
+    "defaultFit": "contain",
+    "preserveAspectRatio": true,
+    "transparentPngPreferred": true,
+    "whenImageIsSmaller": "keep selected size scale and align inside area",
+    "whenImageIsLarger": "scale down to fit area",
+    "recommendedWorkflow": [
+      "印刷箇所を選択",
+      "印刷方法を選択",
+      "選択された印刷箇所に対応するサイズ候補だけ表示",
+      "サイズ選択に応じて scale を適用",
+      "指定エリア内に alignX / alignY で配置",
+      "生成した画像を diffuse テクスチャに合成",
+      "3Dプレビューに反映"
+    ]
+  }
+}

@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tシャツ3Dビューア（プロダクション版）</title>
+<style>
+  :root {
+    --bg: #e8e8e8;
+    --text: #222;
+    --accent: #e30613;
+    --border: #e5e5e5;
+    --panel-bg: rgba(255,255,255,0.96);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); font-family: -apple-system, "Segoe UI", "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", sans-serif; color:var(--text); }
+  #app { position:fixed; inset:0; }
+
+  #progress { position:fixed; top:0; left:0; right:0; height:3px; background:transparent; z-index:50; }
+  #progress::after { content:''; display:block; height:100%; width:0%; background:var(--accent); transition: width .2s ease; }
+  #progress.loading::after { width: var(--p, 30%); }
+  #progress.done::after { width:100%; opacity:0; transition: opacity .4s ease .1s; }
+
+  #topbar {
+    position:fixed; top:0; left:0; right:0; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between; z-index:20; pointer-events:none;
+  }
+  #topbar > * { pointer-events:auto; }
+  #back { display:inline-flex; align-items:center; gap:6px; color:var(--text); text-decoration:none; font-size:13px; padding:6px 8px; border-radius:4px; }
+  #back:hover { background:rgba(0,0,0,.04); text-decoration:underline; }
+  #back svg { width:14px; height:14px; }
+
+  .pill {
+    display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#fff;
+    border:1px solid var(--border); border-radius:999px; font-size:12px; font-weight:500;
+    cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06); color:var(--text); transition: all .15s ease;
+  }
+  .pill:hover { background:#fafafa; transform: translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.1); }
+  .pill svg { width:14px; height:14px; }
+
+  #btnRotate { opacity: 0; transform: translateY(-8px) scale(.96); pointer-events:none; transition: opacity .25s ease, transform .25s ease; }
+  #btnRotate.show { opacity: 1; transform: translateY(0) scale(1); pointer-events:auto; }
+
+  #fsBtn {
+    position:fixed; right:16px; bottom:16px; width:36px; height:36px; border-radius:50%; border:none;
+    background:#fff; border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.08); z-index:20;
+  }
+  #fsBtn:hover { background:#f6f6f6; }
+  #fsBtn svg { width:18px; height:18px; }
+
+  #shootBtn {
+    position:fixed; right:60px; bottom:16px; width:36px; height:36px; border-radius:50%; border:none;
+    background:#fff; border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.08); z-index:20;
+  }
+  #shootBtn:hover { background:#f6f6f6; }
+  #shootBtn svg { width:18px; height:18px; }
+
+  #shareBtn {
+    position:fixed; right:104px; bottom:16px; height:36px; padding:0 16px; border-radius:18px; border:none;
+    background:#fff; border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; gap:6px; justify-content:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.08); z-index:20; font-size:12px; font-weight:500; color:var(--text);
+    transition: all .15s ease;
+  }
+  #shareBtn:hover { background:#f6f6f6; transform: translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.12); }
+  #shareBtn svg { width:14px; height:14px; }
+  #shareBtn.copied { background:#4caf50; color:#fff; border-color:#4caf50; }
+
+  /* ====== デモパネル（フォームから来た時は非表示） ====== */
+  #demoPanel {
+    position:fixed; right:16px; top:60px; width:300px; max-height:calc(100vh - 80px);
+    background:var(--panel-bg); border:1px solid var(--border); border-radius:10px;
+    padding:14px; font-size:12px; box-shadow:0 4px 14px rgba(0,0,0,.08); z-index:25;
+    overflow-y:auto; backdrop-filter: blur(8px);
+  }
+  #demoPanel.hidden { display:none; }
+  #demoPanel h3 { margin:0 0 10px; font-size:13px; display:flex; align-items:center; gap:6px; }
+  #demoPanel h3 .badge { font-size:10px; background:#ff9800; color:#fff; padding:2px 8px; border-radius:10px; font-weight:600; }
+  #demoPanel h4 { margin:14px 0 6px; font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.5px; }
+  #demoPanel label { display:block; margin:6px 0; font-size:11px; color:#444; }
+  #demoPanel select, #demoPanel input[type=color], #demoPanel input[type=text] {
+    width:100%; padding:5px 8px; border:1px solid var(--border); border-radius:4px; font-size:11px; margin-top:2px;
+  }
+  #demoPanel button {
+    width:100%; padding:7px; border:none; border-radius:4px; cursor:pointer; font-size:11px;
+    background:#2196F3; color:white; margin-top:6px; font-weight:500;
+  }
+  #demoPanel button:hover { background:#1976D2; }
+  #demoPanel button.secondary { background:#757575; }
+  #demoPanel button.danger { background:#f44336; }
+  #demoPanel button.success { background:#4caf50; }
+  .print-row {
+    background:#f5f5f5; padding:8px; border-radius:4px; margin:6px 0;
+    border-left:3px solid #2196F3;
+  }
+  .print-row .ph { font-weight:600; font-size:11px; color:#333; margin-bottom:4px; }
+  .print-row .pi { font-size:10px; color:#666; line-height:1.4; }
+  .print-row .actions { display:flex; gap:4px; margin-top:6px; }
+  .print-row .actions button { flex:1; padding:3px; font-size:10px; margin:0; }
+  .file-input-wrap { position:relative; }
+  .file-input-wrap input[type=file] { width:100%; font-size:10px; }
+  .preset-colors { display:grid; grid-template-columns: repeat(6, 1fr); gap:4px; margin-top:6px; }
+  .preset-colors div { aspect-ratio:1; border-radius:50%; cursor:pointer; border:2px solid #fff; box-shadow: 0 0 0 1px #ccc; }
+
+  #colorPanel {
+    position:fixed; left:16px; bottom:16px; background:#fff; border:1px solid var(--border); padding:10px 12px;
+    border-radius:10px; display:flex; align-items:center; gap:10px; font-size:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); z-index:20;
+  }
+  #colorPanel.hidden { display:none; }
+  #colorPanel label { display:flex; align-items:center; gap:8px; cursor:pointer; }
+  #colorPanel input[type=color] { width:28px; height:28px; border:none; padding:0; background:none; cursor:pointer; }
+  #colorPanel button {
+    border:1px solid var(--border); background:#fff; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer;
+  }
+  #colorPanel button:hover { background:#f6f6f6; }
+
+  #error {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; color:#c22;
+    border:1px solid #f4c7c7; padding:16px 22px; border-radius:10px; max-width:520px;
+    box-shadow:0 6px 30px rgba(0,0,0,.1); display:none; z-index:50;
+  }
+  #error h3 { margin:0 0 8px; font-size:14px; }
+  #error p { margin:4px 0; font-size:12px; color:#555; }
+
+  #hint {
+    position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+    background:rgba(0,0,0,.72); color:#fff; padding:6px 14px; border-radius:999px; font-size:11px;
+    opacity:0; transition:opacity .4s ease; pointer-events:none; z-index:15;
+  }
+  #hint.show { opacity:1; }
+
+  /* embed=1 モード（iframe埋め込み用） */
+  body.embed #colorPanel, body.embed #fsBtn, body.embed #shootBtn, body.embed #shareBtn { display:none; }
+  body.embed #back { display:none; } /* 戻るリンクは非表示 */
+  body.embed #topbar { padding:8px 12px; justify-content:flex-end; pointer-events:none; }
+  body.embed #topbar #btnRotate { pointer-events:auto; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<div id="topbar">
+  <a id="back" href="#" onclick="_3d_goBack(); return false;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    戻る
+  </a>
+<script>
+function _3d_goBack(){
+  // 新しいタブ（opener あり） → 自タブを閉じる
+  if(window.opener && !window.opener.closed){
+    try { window.close(); return; } catch(e){}
+  }
+  // 履歴あり → 戻る
+  if(history.length > 1){
+    history.back();
+    return;
+  }
+  // それ以外 → 自タブを閉じる試行
+  try { window.close(); } catch(e){}
+}
+</script>
+  <button class="pill" id="btnRotate">
+    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+    回転再開
+  </button>
+</div>
+
+<div id="app"></div>
+
+<div id="colorPanel">
+  <label>シャツ色 <input type="color" id="shirtColor" value="#ffffff"></label>
+  <button id="resetView">視点リセット</button>
+</div>
+
+<button id="shareBtn" title="このデザインのURLをコピー">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+  <span id="shareLabel">シェア</span>
+</button>
+
+<button id="shootBtn" title="画像を保存">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+</button>
+
+<button id="fsBtn" title="フルスクリーン">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+</button>
+
+<div id="hint">ドラッグで回転 / ホイールでズーム</div>
+
+<!-- ====== デモパネル（テスト用 / フォームから来た時は非表示） ====== -->
+<div id="demoPanel" class="hidden">
+  <h3>🛠 デモパネル <span class="badge">DEMO</span></h3>
+  <div style="font-size:10px; color:#888; margin-bottom:8px;">
+    フォーム連携のテスト用。<br>?config=... で来た場合は非表示
+  </div>
+
+  <h4>ボディカラー</h4>
+  <input type="color" id="demoBodyColor" value="#ffffff">
+  <div class="preset-colors" id="demoPresets">
+    <div style="background:#ffffff" data-c="#ffffff"></div>
+    <div style="background:#000000" data-c="#000000"></div>
+    <div style="background:#808080" data-c="#808080"></div>
+    <div style="background:#1a237e" data-c="#1a237e"></div>
+    <div style="background:#b71c1c" data-c="#b71c1c"></div>
+    <div style="background:#fbc02d" data-c="#fbc02d"></div>
+    <div style="background:#1b5e20" data-c="#1b5e20"></div>
+    <div style="background:#4a148c" data-c="#4a148c"></div>
+    <div style="background:#3e2723" data-c="#3e2723"></div>
+    <div style="background:#e91e63" data-c="#e91e63"></div>
+    <div style="background:#ff9800" data-c="#ff9800"></div>
+    <div style="background:#00bcd4" data-c="#00bcd4"></div>
+  </div>
+
+  <h4>プリント追加</h4>
+  <label>印刷箇所
+    <select id="demoArea"></select>
+  </label>
+  <label>印刷方法
+    <select id="demoMethod"></select>
+  </label>
+  <label>サイズ
+    <select id="demoSize"></select>
+  </label>
+  <label>画像（PNG/SVG）
+    <div class="file-input-wrap">
+      <input type="file" id="demoFile" accept="image/png,image/jpeg,image/svg+xml">
+    </div>
+  </label>
+  <button class="success" id="demoAddPrint">＋ プリント追加</button>
+
+  <h4>配置済み（<span id="demoCount">0</span>）</h4>
+  <div id="demoPrintList"></div>
+  <button class="danger" id="demoClearAll">全クリア</button>
+
+  <h4>連携テスト</h4>
+  <button class="secondary" id="demoExportConfig">📋 設定をJSONコピー</button>
+  <button class="secondary" id="demoOpenWithConfig">🚀 URL付きで再オープン</button>
+</div>
+
+<div id="error">
+  <h3>読み込み失敗</h3>
+  <p id="errorDetail"></p>
+</div>
+
+<!-- 既存仕組み: Base64でGLB埋め込み -->
+<script src="./glb-data.js"></script>
+<!-- 互換用（v1のフォールバック） -->
+<script src="./design-data.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// ============================================================
+// モデル別印刷箇所定義（URLパラメータ ?model=tshirt|long_sleeve で切替）
+// 2048x2048 基準座標。実テクスチャに応じて自動スケール
+// 2026-04-23: 一度 4096 に上げたが、PRINT_AREAS の座標が 2048 基準で測定されているため
+//             スケール計算が崩れて位置ズレが発生。2048 に戻した。
+//             画質向上は別の方法（プリントCanvas 独立高解像度化など）で対応予定。
+// ============================================================
+const REFERENCE_TEX_SIZE = 2048;
+
+const MODELS = {
+  tshirt: {
+    label: 'Tシャツ',
+    glbVar: 'TSHIRT_GLB_DATA',
+    glbScript: './glb-data.js',
+    fallbackGlb: './T-Shirts/t-shirt-low-poly_V1/source/T-shirt_Web_v1.glb',
+    diffusePath: './T-Shirts/t-shirt-low-poly_V1/textures/Tshirt_Diffuse_v1.png',
+    printAreas: {
+      front_center: { label: '前面（胸中央）', x: 553.4256,  y: 914.854,   width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'center', max_cm: 34 },
+      back_center:  { label: '背中（中央）',   x: 1492.0207, y: 885.002,   width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'center', max_cm: 34 },
+      left_chest:   { label: '左胸',           x: 696.2858,  y: 834.6115,  width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'center', max_cm: 15 },
+      right_chest:  { label: '右胸',           x: 408.6318,  y: 834.6115,  width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'center', max_cm: 15 },
+      left_sleeve:  { label: '左袖',           x: 1492.0207, y: 1820.6011, width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'bottom', max_cm: 15 },
+      right_sleeve: { label: '右袖',           x: 545.888,   y: 1820.6011, width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'bottom', max_cm: 15 },
+      back_upper:   { label: '襟下（背中）',   x: 1485.2629, y: 699.201,   width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      front_hem:    { label: '前裾',           x: 553.4256,  y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰（alignY=bottom で枠下端=裾シーム付近）
+      back_hem:     { label: '後ろ裾',         x: 1492.0207, y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 y=2.3258バグ修正、front_hem と同位置
+    },
+  },
+  long_sleeve: {
+    label: 'ロングTシャツ',
+    glbVar: 'LONGSLEEVE_GLB_DATA',
+    glbScript: './glb-data-longsleeve.js',
+    fallbackGlb: './Long Sleeve T- Shirt/long-sleeve-t-shirt/source/Long-Sleeve-T-shirt_Web_v3.glb',
+    diffusePath: './Long Sleeve T- Shirt/long-sleeve-t-shirt/textures/LongSleeveTshirt_Diffuse_v3.png',
+    printAreas: {
+      front_center: { label: '前面（胸中央）', x: 1644.3839, y: 1365.4272, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34 },
+      back_center:  { label: '背中（中央）',   x: 383.6772,  y: 1375.3957, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34 },
+      left_chest:   { label: '左胸',           x: 1760.9421, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
+      right_chest:  { label: '右胸',           x: 1526.2481, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
+      left_sleeve:  { label: '左袖',           x: 1653.3896, y: 561.3783,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      right_sleeve: { label: '右袖',           x: 400.4349,  y: 570.384,   width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      back_upper:   { label: '襟下（背中）',   x: 383.6772,  y: 1211.6097, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      front_hem:    { label: '前裾',           x: 1644.3839, y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
+      back_hem:     { label: '後ろ裾',         x: 383.6772,  y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
+    },
+  },
+};
+
+// URLパラメータ ?model=tshirt|long_sleeve （デフォルト=tshirt）
+const _modelKey = (new URLSearchParams(location.search).get('model')) || 'tshirt';
+const ACTIVE_MODEL = MODELS[_modelKey] || MODELS.tshirt;
+const PRINT_AREAS = ACTIVE_MODEL.printAreas;
+
+// 印刷方法ごとのサイズ → 配置時のscale倍率
+const SIZE_SCALES = {
+  '転写': {
+    '極小（5cm角内）': 0.20, '小（10cm角内）': 0.30, '中小（15cm角内）': 0.45,
+    '中（20cm角内）': 0.60, 'A4サイズ内': 0.75, 'B4サイズ内': 0.90, 'A3サイズ内': 1.00,
+  },
+  'シルクスクリーン': {
+    'ワンポイント（15cm角内）': 0.45, '標準（34cm内）': 1.00, '大判（34cm以上）': 1.15,
+  },
+};
+
+// 小さいエリア（左右胸・袖）専用のサイズ表
+const SMALL_AREA_SIZE_SCALES = {
+  '転写': {
+    '極小（5cm角内）': 0.33, '小（10cm角内）': 0.66, '中小（15cm角内）': 1.00,
+  },
+  'シルクスクリーン': {
+    'ワンポイント（15cm角内）': 1.00,
+  },
+};
+
+const SMALL_AREAS = ['left_chest', 'right_chest', 'left_sleeve', 'right_sleeve'];
+
+function getSizesForArea(areaKey, method) {
+  const table = SMALL_AREAS.includes(areaKey) ? SMALL_AREA_SIZE_SCALES : SIZE_SCALES;
+  return table[method] || {};
+}
+
+function getScaleFactor(areaKey, method, sizeName) {
+  return getSizesForArea(areaKey, method)[sizeName] ?? 1.0;
+}
+
+// ============================================================
+// シーン構築
+// ============================================================
+const progress = document.getElementById('progress');
+const errorEl = document.getElementById('error');
+const errorDetailEl = document.getElementById('errorDetail');
+const hintEl = document.getElementById('hint');
+const btnRotate = document.getElementById('btnRotate');
+
+function setProgress(pct) { progress.classList.add('loading'); progress.style.setProperty('--p', pct + '%'); }
+function doneProgress() { progress.classList.remove('loading'); progress.classList.add('done'); }
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe8e8e8);
+
+const camera = new THREE.PerspectiveCamera(32, innerWidth/innerHeight, 0.01, 100);
+camera.position.set(0, 1.2, 2.6);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, preserveDrawingBuffer:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+// ACESFilmicは映画的に色を圧縮するため、シャツの色再現には NoToneMapping が忠実
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.getElementById('app').appendChild(renderer.domElement);
+
+// 環境光（IBL）
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.00;  // ユーザー確定値
+
+// ライト構成（2026-04-22 綿マット版・拡散光メイン）
+// ambient主体で全体を均一に照らし、方向光は立体感のアクセントに留める
+const hemi = new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.50);
+scene.add(hemi);
+const ambient = new THREE.AmbientLight(0xffffff, 1.00);
+scene.add(ambient);
+const key  = new THREE.DirectionalLight(0xffffff, 0.10); key.position.set(3, 5, 4);  scene.add(key);
+const fill = new THREE.DirectionalLight(0xffffff, 0.10); fill.position.set(-3, 2, 2); scene.add(fill);
+const back = new THREE.DirectionalLight(0xffffff, 0.30); back.position.set(0, 3, -4); scene.add(back);
+
+// === ライト調整パネル（?lights=1 で表示） ===
+if (new URLSearchParams(location.search).get('lights') === '1') {
+  const panel = document.createElement('div');
+  panel.id = 'lightsPanel';
+  panel.style.cssText = 'position:fixed;right:16px;top:60px;width:300px;background:rgba(255,255,255,0.97);border:1px solid #ddd;border-radius:10px;padding:14px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.1);z-index:50;backdrop-filter:blur(8px);font-family:sans-serif;';
+  panel.innerHTML =
+    '<div style="font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">💡 ライト調整 <span style="font-size:9px;background:#ff9800;color:#fff;padding:2px 6px;border-radius:8px;">DEV</span></div>' +
+    '<div style="font-size:10px;color:#888;margin-bottom:10px;">スライダーで実時間反映。決定したら「コピー」</div>';
+  const params = [
+    { key: 'ambient',  label: 'Ambient (全体)',     min: 0, max: 2, step: 0.01, val: ambient.intensity, target: ambient },
+    { key: 'hemi',     label: 'Hemisphere (上下)',  min: 0, max: 2, step: 0.01, val: hemi.intensity,    target: hemi },
+    { key: 'key',      label: 'Key (メイン)',        min: 0, max: 2, step: 0.01, val: key.intensity,     target: key },
+    { key: 'fill',     label: 'Fill (補助)',         min: 0, max: 2, step: 0.01, val: fill.intensity,    target: fill },
+    { key: 'back',     label: 'Back (リム)',         min: 0, max: 2, step: 0.01, val: back.intensity,    target: back },
+    { key: 'envI',     label: 'Env Intensity (反射)', min: 0, max: 2, step: 0.01, val: scene.environmentIntensity, target: 'env' },
+  ];
+  const refs = {};
+  params.forEach(p => {
+    const row = document.createElement('div');
+    row.style.cssText = 'margin:8px 0;';
+    row.innerHTML =
+      '<label style="display:flex;justify-content:space-between;font-size:11px;color:#333;margin-bottom:3px;">' +
+        '<span>' + p.label + '</span>' +
+        '<span id="lv-' + p.key + '" style="color:#1976D2;font-weight:600;">' + p.val.toFixed(2) + '</span>' +
+      '</label>';
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = p.min; input.max = p.max; input.step = p.step; input.value = p.val;
+    input.style.cssText = 'width:100%;';
+    input.addEventListener('input', () => {
+      const v = parseFloat(input.value);
+      document.getElementById('lv-' + p.key).textContent = v.toFixed(2);
+      if (p.target === 'env') scene.environmentIntensity = v;
+      else p.target.intensity = v;
+    });
+    row.appendChild(input);
+    refs[p.key] = { input, p };
+    panel.appendChild(row);
+  });
+
+  const btnCopy = document.createElement('button');
+  btnCopy.textContent = '📋 現在の設定をコピー';
+  btnCopy.style.cssText = 'width:100%;padding:8px;background:#4caf50;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;margin-top:8px;';
+  btnCopy.addEventListener('click', () => {
+    const v = {};
+    Object.keys(refs).forEach(k => v[k] = parseFloat(refs[k].input.value).toFixed(2));
+    const snippet =
+      'ambient.intensity = ' + v.ambient + ';\n' +
+      'hemi.intensity = ' + v.hemi + ';\n' +
+      'key.intensity = ' + v.key + ';\n' +
+      'fill.intensity = ' + v.fill + ';\n' +
+      'back.intensity = ' + v.back + ';\n' +
+      'scene.environmentIntensity = ' + v.envI + ';';
+    navigator.clipboard.writeText(snippet).then(() => {
+      btnCopy.textContent = '✅ コピーしました！';
+      setTimeout(() => btnCopy.textContent = '📋 現在の設定をコピー', 1800);
+    });
+  });
+  panel.appendChild(btnCopy);
+
+  const btnReset = document.createElement('button');
+  btnReset.textContent = '↺ デフォルトに戻す';
+  btnReset.style.cssText = 'width:100%;padding:6px;background:#fff;color:#666;border:1px solid #ddd;border-radius:5px;cursor:pointer;font-size:10px;margin-top:5px;';
+  btnReset.addEventListener('click', () => {
+    Object.values(refs).forEach(({ input, p }) => {
+      input.value = p.val;
+      input.dispatchEvent(new Event('input'));
+    });
+  });
+  panel.appendChild(btnReset);
+
+  document.body.appendChild(panel);
+}
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minDistance = 0.8;
+controls.maxDistance = 6;
+controls.target.set(0, 1, 0);
+controls.autoRotateSpeed = 1.5;
+
+function updateRotateBtn() { btnRotate.classList.toggle('show', !controls.autoRotate); }
+controls.addEventListener('start', () => {
+  if (controls.autoRotate) { controls.autoRotate = false; updateRotateBtn(); }
+});
+btnRotate.addEventListener('click', () => { controls.autoRotate = true; updateRotateBtn(); });
+
+let initialCamPos = camera.position.clone();
+let initialTarget = controls.target.clone();
+let shirtMeshes = [];
+
+// ============================================================
+// テクスチャ合成
+// ============================================================
+let baseCanvas = null;     // ボディ色用（ライティング適用される）
+let baseCtx = null;
+let printCanvas = null;    // プリントのみ用（自発光・ライティング非依存）
+let printCtx = null;
+let currentTexture = null;
+let printTexture = null;
+let origTexImage = null;
+let scaledAreas = null;  // テクスチャサイズに応じてスケール適用済み
+
+// プロダクションStateモデル
+const state = {
+  bodyColor: '#ffffff',
+  prints: [],   // [{ id, area, method, size, image (Image obj) }]
+};
+
+// 白ボディは純白のままだと背景と同化・視認性低下のため、
+// レンダリング時のみ #BFBFBF (RGB 191,191,191) に置換する。
+// Tシャツ・ロンT・将来追加の全カテゴリ共通。UIピッカーの選択値は白のまま。
+const WHITE_BODY_DISPLAY_COLOR = '#bfbfbf';
+function getDisplayBodyColor(color) {
+  if (!color) return WHITE_BODY_DISPLAY_COLOR;
+  const c = String(color).trim().toLowerCase().replace(/\s+/g, '');
+  if (c === '#ffffff' || c === '#fff' || c === 'white' || c === 'rgb(255,255,255)') {
+    return WHITE_BODY_DISPLAY_COLOR;
+  }
+  return color;
+}
+
+// 早期に届いた postMessage を一旦バッファ（GLB未ロード時用）
+let _pendingConfig = null;
+
+// 元diffuse（黒背景→透明化済み）のキャッシュ用
+let _diffuseProcessed = null;
+
+// postMessage リスナーは即時登録（iframe組込みで確実に拾うため）
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'tshirt3d-config') {
+    if (baseCanvas) {
+      // GLB読み込み済み → 即適用
+      applyExternalConfig(e.data.config);
+    } else {
+      // GLB未ロード → バッファ
+      _pendingConfig = e.data.config;
+    }
+  }
+});
+
+function initTextureCompose() {
+  const targetMesh = shirtMeshes.find(m => m.material?.map);
+  if (!targetMesh) {
+    console.warn('material.map not found'); return;
+  }
+  const originalTex = targetMesh.material.map;
+  origTexImage = originalTex.image;
+  if (!origTexImage) return;
+
+  // 2026-04-23: GLBのテクスチャ解像度が低い場合でもプリントを鮮明に描くため、
+  //             キャンバスサイズを最低 REFERENCE_TEX_SIZE (2048) 以上に拡張する。
+  //             UVは正規化されているのでサイズを変えてもマッピングは崩れない。
+  // 2026-04-24: さらに高解像度化 — プリント部分のキャンバスは 3072px に拡張
+  //   PRINT_AREAS は 2048 reference なので、3072 → sx=1.5 倍で位置は自動スケール。
+  //   袖などの小エリアが 205→307px になり、ダウンサンプル後の鮮鋭度が改善される。
+  const origW = origTexImage.width || origTexImage.naturalWidth;
+  const origH = origTexImage.height || origTexImage.naturalHeight;
+  const ar = origW / origH;
+  const TARGET_CANVAS_MIN = 3072;  // 2048 → 3072 に拡張（50%UP）
+  const w = Math.max(origW, TARGET_CANVAS_MIN);
+  const h = Math.max(origH, Math.round(w / ar));
+
+  // PRINT_AREASをテクスチャサイズにスケール
+  // ★ 2026-04-22 修正: 保存された (x, y) は Illustrator で「中央参照点」で測定された
+  //                    矩形の中心座標。コードは左上として使うので (x - w/2, y - h/2) に変換。
+  const sx = w / REFERENCE_TEX_SIZE;
+  const sy = h / REFERENCE_TEX_SIZE;
+  scaledAreas = {};
+  for (const k in PRINT_AREAS) {
+    const a = PRINT_AREAS[k];
+    const scaledW = a.width * sx;
+    const scaledH = a.height * sy;
+    scaledAreas[k] = {
+      ...a,
+      x: a.x * sx - scaledW / 2,
+      y: a.y * sy - scaledH / 2,
+      width: scaledW,
+      height: scaledH,
+    };
+  }
+
+  baseCanvas = document.createElement('canvas');
+  baseCanvas.width = w;
+  baseCanvas.height = h;
+  baseCtx = baseCanvas.getContext('2d');
+  // 2026-04-22: 高品質スムージングをデフォルトに
+  baseCtx.imageSmoothingEnabled = true;
+  baseCtx.imageSmoothingQuality = 'high';
+
+  printCanvas = document.createElement('canvas');
+  printCanvas.width = w;
+  printCanvas.height = h;
+  printCtx = printCanvas.getContext('2d');
+  printCtx.imageSmoothingEnabled = true;
+  printCtx.imageSmoothingQuality = 'high';
+
+  currentTexture = new THREE.CanvasTexture(baseCanvas);
+  currentTexture.colorSpace = THREE.SRGBColorSpace;
+  currentTexture.flipY = originalTex.flipY;
+  currentTexture.wrapS = originalTex.wrapS;
+  currentTexture.wrapT = originalTex.wrapT;
+  currentTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  // 2026-04-22: テクスチャフィルタを三線形補間で鮮明に（デフォルトLinearMipmapLinear）
+  currentTexture.minFilter = THREE.LinearMipmapLinearFilter;
+  currentTexture.magFilter = THREE.LinearFilter;
+  currentTexture.generateMipmaps = true;
+
+  printTexture = new THREE.CanvasTexture(printCanvas);
+  printTexture.colorSpace = THREE.SRGBColorSpace;
+  printTexture.flipY = originalTex.flipY;
+  printTexture.wrapS = originalTex.wrapS;
+  printTexture.wrapT = originalTex.wrapT;
+  printTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  printTexture.minFilter = THREE.LinearMipmapLinearFilter;
+  printTexture.magFilter = THREE.LinearFilter;
+  printTexture.generateMipmaps = true;
+
+  // ボディは map で通常ライティング、プリントは emissiveMap で自発光（色忠実）
+  shirtMeshes.forEach(m => {
+    if (m.material) {
+      m.material.map = currentTexture;
+      m.material.emissive = new THREE.Color(0xffffff);
+      m.material.emissiveMap = printTexture;
+      m.material.emissiveIntensity = 1.0;
+      if (m.material.color) m.material.color.set(0xffffff);
+      m.material.needsUpdate = true;
+    }
+  });
+
+  // 初回レンダリング（受け取った設定があれば適用、なければ白Tシャツ）
+  applyState();
+}
+
+// ディスクから最新の diffuse PNG を読み込んで origTexImage 上書き（赤マーカー反映用）
+function _tryLoadLatestDiffuse(callback) {
+  const img = new Image();
+  img.onload = () => { origTexImage = img; _diffuseProcessed = null; callback(); };
+  img.onerror = () => callback(); // 失敗時はGLB埋込のまま
+  img.src = ACTIVE_MODEL.diffusePath + '?_=' + Date.now();
+}
+
+function _ensureDiffuseProcessed() {
+  if (_diffuseProcessed || !origTexImage) return;
+  const W = baseCanvas.width, H = baseCanvas.height;
+  _diffuseProcessed = document.createElement('canvas');
+  _diffuseProcessed.width = W;
+  _diffuseProcessed.height = H;
+  const pctx = _diffuseProcessed.getContext('2d');
+  pctx.drawImage(origTexImage, 0, 0, W, H);
+  // 黒背景（RGB全て25未満の暗いピクセル）をアルファ0にする
+  // → multiply時に黒が乗らず、ボディ色が保たれる
+  // → 白パーツや赤マーカー等の有色部分はそのまま multiply される
+  try {
+    const id = pctx.getImageData(0, 0, W, H);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] < 25 && d[i+1] < 25 && d[i+2] < 25) d[i+3] = 0;
+    }
+    pctx.putImageData(id, 0, 0);
+  } catch(e) {
+    // CORSなどでgetImageData失敗時はそのまま使う（黒が出る）
+    console.warn('diffuse alpha mask failed:', e);
+  }
+}
+
+function applyState() {
+  if (!baseCanvas) return;
+
+  const W = baseCanvas.width, H = baseCanvas.height;
+
+  // === ボディキャンバス（ライティング適用される）===
+  // 1. キャンバス全体をボディ色で塗りつぶし（白は #BFBFBF に自動置換）
+  baseCtx.globalCompositeOperation = 'source-over';
+  baseCtx.fillStyle = getDisplayBodyColor(state.bodyColor);
+  baseCtx.fillRect(0, 0, W, H);
+
+  // 2. URLパラメータ ?showMarkers=1 のときだけ元diffuseのマーカー類を multiply 合成
+  const showMarkers = new URLSearchParams(location.search).get('showMarkers') === '1';
+  if (showMarkers) {
+    if (!_diffuseProcessed && !window._latestDiffuseTried) {
+      window._latestDiffuseTried = true;
+      _tryLoadLatestDiffuse(() => applyState());
+    }
+    _ensureDiffuseProcessed();
+    if (_diffuseProcessed) {
+      baseCtx.globalCompositeOperation = 'multiply';
+      baseCtx.drawImage(_diffuseProcessed, 0, 0, W, H);
+    }
+  }
+
+  // === プリントキャンバス（emissive・明色ブースト用）===
+  // 透明にクリアしてからプリントだけ描画
+  printCtx.globalCompositeOperation = 'source-over';
+  printCtx.clearRect(0, 0, W, H);
+  for (const p of state.prints) {
+    drawPrint(p, printCtx);
+  }
+
+  // === プリントをベースキャンバスにも描画（2026-04-22 デフォルト化）===
+  //   emissiveMap だけだと「黒インク = emissive 0 = ボディ色のまま＝見えない」となるため、
+  //   baseCanvas(=map) にもプリントを焼き込む。黒や暗い色もライティング付きで正しく表示される。
+  //   emissive 側は残してあるので白・蛍光系のインクには今まで通り自発光感が乗る。
+  baseCtx.globalCompositeOperation = 'source-over';
+  for (const p of state.prints) {
+    drawPrint(p, baseCtx);
+  }
+
+  // ?showAreas=1 のとき、PRINT_AREAS 全箇所をカラー枠で可視化（位置デバッグ用）
+  const showAreas = new URLSearchParams(location.search).get('showAreas') === '1';
+  if (showAreas && scaledAreas) {
+    const colors = {
+      front_center:'#ff0000', back_center:'#0080ff', left_chest:'#00c800',
+      right_chest:'#ff8000', left_sleeve:'#c800ff', right_sleeve:'#ffd700',
+      back_upper:'#00d8d8', front_hem:'#ff00ff', back_hem:'#80ff00',
+    };
+    const fs = Math.max(20, W * 0.018);
+    printCtx.font = 'bold ' + fs + 'px sans-serif';
+    printCtx.lineWidth = Math.max(4, W * 0.004);
+    for (const k in scaledAreas) {
+      const a = scaledAreas[k];
+      const c = colors[k] || '#ff0000';
+      printCtx.strokeStyle = c;
+      printCtx.fillStyle = c;
+      printCtx.strokeRect(a.x, a.y, a.width, a.height);
+      // ラベル背景
+      const label = a.label || k;
+      const tw = printCtx.measureText(label).width;
+      printCtx.globalAlpha = 0.85;
+      printCtx.fillRect(a.x + 4, a.y + 4, tw + 12, fs + 10);
+      printCtx.globalAlpha = 1.0;
+      printCtx.fillStyle = '#ffffff';
+      printCtx.fillText(label, a.x + 10, a.y + fs + 8);
+    }
+  }
+
+  if (currentTexture) currentTexture.needsUpdate = true;
+  if (printTexture) printTexture.needsUpdate = true;
+}
+
+function drawPrint(print, ctx) {
+  if (!print.image) return;
+  const targetCtx = ctx || baseCtx;
+  const area = scaledAreas[print.area];
+  if (!area) { console.warn('Unknown area:', print.area); return; }
+
+  const scale = getScaleFactor(print.area, print.method, print.size);
+  const targetW = area.width * scale;
+  const targetH = area.height * scale;
+
+  // contain: 比率維持
+  const imgAR = print.image.naturalWidth / print.image.naturalHeight;
+  const areaAR = targetW / targetH;
+  let dw, dh;
+  if (imgAR > areaAR) { dw = targetW; dh = targetW / imgAR; }
+  else { dh = targetH; dw = targetH * imgAR; }
+
+  // alignX/alignY
+  let dx, dy;
+  switch (area.alignX) {
+    case 'left':   dx = area.x; break;
+    case 'right':  dx = area.x + area.width - dw; break;
+    default:       dx = area.x + (area.width - dw) / 2;
+  }
+  switch (area.alignY) {
+    case 'top':    dy = area.y; break;
+    case 'bottom': dy = area.y + area.height - dh; break;
+    default:       dy = area.y + (area.height - dh) / 2;
+  }
+
+  // 2026-04-24: 多段階ダウンサンプリング（halving法）
+  //   3200px→205pxのような大比率縮小は1回のdrawImageでは粗く見える（袖プリントが荒い主因）。
+  //   画像を 2 倍ずつ縮小する中間キャンバスを通すことでシャープな結果を得る。
+  //   結果は print オブジェクトにキャッシュして再計算を避ける。
+  const prevSmooth = targetCtx.imageSmoothingEnabled;
+  const prevQuality = targetCtx.imageSmoothingQuality;
+  targetCtx.imageSmoothingEnabled = true;
+  targetCtx.imageSmoothingQuality = 'high';
+  const srcImg = _getSharpResizedSource(print, dw, dh);
+  targetCtx.drawImage(srcImg, dx, dy, dw, dh);
+  targetCtx.imageSmoothingEnabled = prevSmooth;
+  if (prevQuality) targetCtx.imageSmoothingQuality = prevQuality;
+}
+
+// 多段階ダウンサンプリングで中間キャンバスを生成（キャッシュ付き）
+function _getSharpResizedSource(print, dw, dh){
+  const img = print.image;
+  let srcW = img.naturalWidth || img.width;
+  let srcH = img.naturalHeight || img.height;
+  // 長辺比で判定（最大2倍になるまで halving）
+  const ratioW = srcW / Math.max(1, dw);
+  const ratioH = srcH / Math.max(1, dh);
+  const maxRatio = Math.max(ratioW, ratioH);
+  // 2倍以下ならそのまま（halving不要）
+  if(maxRatio <= 2) return img;
+  // キャッシュキー: 目標サイズの10単位で丸めて再利用（微小な変化で再生成しない）
+  const cacheKey = `${Math.round(dw/10)}_${Math.round(dh/10)}`;
+  if(!print._sharpCache) print._sharpCache = {};
+  if(print._sharpCache[cacheKey]) return print._sharpCache[cacheKey];
+  // halving
+  let curCanvas = img;
+  let curW = srcW, curH = srcH;
+  const targetMax = Math.max(dw, dh) * 2;  // 目標の2倍まで縮める
+  let safety = 8;  // 無限ループ回避
+  while(Math.max(curW, curH) > targetMax && safety-- > 0){
+    const nextW = Math.max(1, Math.floor(curW / 2));
+    const nextH = Math.max(1, Math.floor(curH / 2));
+    const buf = document.createElement('canvas');
+    buf.width = nextW;
+    buf.height = nextH;
+    const bctx = buf.getContext('2d');
+    bctx.imageSmoothingEnabled = true;
+    bctx.imageSmoothingQuality = 'high';
+    bctx.drawImage(curCanvas, 0, 0, nextW, nextH);
+    curCanvas = buf;
+    curW = nextW; curH = nextH;
+  }
+  print._sharpCache[cacheKey] = curCanvas;
+  return curCanvas;
+}
+
+// ============================================================
+// GLB読み込み
+// ============================================================
+function base64ToArrayBuffer(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function onLoaded(gltf) {
+  const model = gltf.scene;
+  scene.add(model);
+
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+  model.position.y += size.y / 2;
+
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const dist = maxDim * 2.4;
+  camera.position.set(0, size.y * 0.55, dist);
+  controls.target.set(0, size.y * 0.5, 0);
+  initialCamPos.copy(camera.position);
+  initialTarget.copy(controls.target);
+  controls.minDistance = maxDim * 0.8;
+  controls.maxDistance = maxDim * 6;
+
+  model.traverse((obj) => {
+    if (obj.isMesh && obj.material) {
+      obj.material = obj.material.clone();
+      if ('metalness' in obj.material) obj.material.metalness = 0;
+      // 完全マット仕上げ（バックライトの反射ハイライトを抑える・モデル間で見た目統一）
+      if ('roughness' in obj.material) obj.material.roughness = 1.0;
+      // 余計なテクスチャマップを全て無効化（V1モデルの metalness/normal/AO等が悪さするのを防ぐ）
+      ['metalnessMap','roughnessMap','normalMap','aoMap','emissiveMap','alphaMap','bumpMap','displacementMap','envMap','lightMap']
+        .forEach(k => { if (obj.material[k]) obj.material[k] = null; });
+      if (obj.material.color) obj.material.color.set(0xffffff);
+      // 透過・両面描画を切る（裏面が見えると表に漏れて見えるため）
+      obj.material.transparent = false;
+      obj.material.alphaTest = 0;
+      obj.material.side = THREE.FrontSide;
+      obj.material.depthWrite = true;
+      obj.material.depthTest = true;
+      obj.material.needsUpdate = true;
+      shirtMeshes.push(obj);
+    }
+  });
+
+  doneProgress();
+  hintEl.classList.add('show');
+  setTimeout(() => hintEl.classList.remove('show'), 3500);
+  controls.autoRotate = true;
+  updateRotateBtn();
+
+  initTextureCompose();
+  loadInputConfig();
+}
+
+function onError(err) {
+  console.error(err);
+  doneProgress();
+  errorEl.style.display = 'block';
+  errorDetailEl.textContent = String(err?.message || err);
+}
+
+const loader = new GLTFLoader();
+setProgress(20);
+
+// ACTIVE_MODEL に応じて動的に glb-data-*.js を読み込み、Base64から GLB をパース
+function _loadActiveModelGlb() {
+  const embedded = window[ACTIVE_MODEL.glbVar];
+  if (embedded) {
+    setProgress(60);
+    try {
+      const buffer = base64ToArrayBuffer(embedded);
+      setProgress(85);
+      loader.parse(buffer, '', onLoaded, onError);
+    } catch (e) { onError(e); }
+    return;
+  }
+  // 埋め込みなしの場合は外部glbファイルにフォールバック
+  loader.load(ACTIVE_MODEL.fallbackGlb,
+    onLoaded,
+    (p) => { if (p.lengthComputable) setProgress(Math.round(p.loaded / p.total * 90)); },
+    onError
+  );
+}
+
+// glb-data-*.js が <script> タグでまだ読まれていなければ動的ロード
+if (window[ACTIVE_MODEL.glbVar]) {
+  // 既にロード済み（Tシャツの場合 <script src="./glb-data.js"> でロード済）
+  setTimeout(_loadActiveModelGlb, 40);
+} else {
+  setProgress(30);
+  const s = document.createElement('script');
+  s.src = ACTIVE_MODEL.glbScript;
+  s.onload = () => { setProgress(50); _loadActiveModelGlb(); };
+  s.onerror = () => {
+    console.warn('glb-data scriptロード失敗、fallbackGlbを試みます:', ACTIVE_MODEL.glbScript);
+    _loadActiveModelGlb();
+  };
+  document.head.appendChild(s);
+}
+
+// ============================================================
+// 入力受付（フォーム連携）
+//  優先順:
+//   1. URL ?config=<base64 JSON>
+//   2. window.name (postMessage で前もって流し込み可)
+//   3. sessionStorage.tshirt3dConfig
+//   4. window.TSHIRT_DESIGN_SVG (旧仕組みフォールバック)
+//   5. 何もなければデモパネル表示
+// ============================================================
+function loadInputConfig() {
+  const params = new URLSearchParams(location.search);
+  const isEmbed = params.get('embed') === '1';
+  const isDemo  = params.get('demo')  === '1';
+  if (isEmbed) document.body.classList.add('embed');
+
+  // 0. GLB読込前にバッファされたpostMessage設定があれば最優先で処理
+  if (_pendingConfig) {
+    const pc = _pendingConfig;
+    _pendingConfig = null;
+    applyExternalConfig(pc);
+    if (isDemo) showDemoPanel();
+    return;
+  }
+
+  // 0.5. 2026-04-23: ?order=CK-xxx で既存注文の3Dを復元
+  //      GAS社内プラットフォームの getOrderViewerConfig を叩いて
+  //      bodyColor + prints[] を取得し applyExternalConfig に渡す。
+  //      URL長制限や CORS を気にせずに済む。
+  const orderId = params.get('order');
+  if (orderId) {
+    _loadConfigFromOrder(orderId, isDemo);
+    return;  // 非同期なのでここで抜ける
+  }
+
+  // 1. URL config
+  let cfg = null;
+  const cfgB64 = params.get('config');
+  if (cfgB64) {
+    try { cfg = JSON.parse(decodeURIComponent(escape(atob(cfgB64)))); }
+    catch(e) { console.warn('config parse failed', e); }
+  }
+
+  // 1.5. localStorage key（2026-04-22 追加: URL長制限回避用）
+  //       フォームが ?cfgKey=xxx で渡し、localStorage.xxx に JSON を置いておく方式
+  if (!cfg) {
+    const cfgKey = params.get('cfgKey');
+    if (cfgKey) {
+      try {
+        const raw = localStorage.getItem(cfgKey);
+        if (raw) {
+          cfg = JSON.parse(raw);
+          // 使い捨て: 読み取ったら削除（ストレージ溜め込み防止）
+          try { localStorage.removeItem(cfgKey); } catch(e){}
+        }
+      } catch(e) { console.warn('localStorage cfgKey parse failed', e); }
+    }
+  }
+
+  // 2. sessionStorage
+  if (!cfg && sessionStorage.tshirt3dConfig) {
+    try { cfg = JSON.parse(sessionStorage.tshirt3dConfig); }
+    catch(e) { console.warn('sessionStorage parse failed', e); }
+  }
+
+  if (cfg) {
+    applyExternalConfig(cfg);
+    if (isDemo) showDemoPanel();
+  } else if (isDemo && window.TSHIRT_DESIGN_SVG) {
+    // ?demo=1 のときだけ design-data.js のテストデザインを自動表示
+    loadImage(window.TSHIRT_DESIGN_SVG).then(img => {
+      state.prints = [{ id: 1, area: 'front_center', method: 'シルクスクリーン', size: '標準（34cm内）', image: img, imageDataUrl: window.TSHIRT_DESIGN_SVG }];
+      applyState();
+      refreshDemoPrintList();
+    });
+    showDemoPanel();
+  } else if (isDemo) {
+    showDemoPanel();
+  }
+  // 通常アクセス時は何も自動表示せず、真っ白Tシャツのみ
+}
+
+// 2026-04-23: ?order=CK-xxx で GAS からconfig取得
+//  社内プラットフォームGAS の getOrderViewerConfig エンドポイントを叩く。
+//  デプロイURLは CLAUDE.md 記載の platform GAS を使用。
+const _GAS_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
+// 2026-04-24: CORS回避のため fetch → JSONP方式に変更
+//   GASの /exec は script.google.com → script.googleusercontent.com に 302 リダイレクトするが、
+//   中間の 302 レスポンスに Access-Control-Allow-Origin ヘッダが付かないため、
+//   クロスオリジン fetch は "Failed to fetch" で失敗する。
+//   <script>タグは同源ポリシーが緩いので、GAS側に callback= を渡して JSONP で受け取る。
+function _loadConfigFromOrder(orderId, isDemo){
+  // 読み込み中インジケータ
+  const ind = document.createElement('div');
+  ind.id = '_orderLoadInd';
+  ind.textContent = `注文 ${orderId} の3D設定を取得中...`;
+  ind.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:16px 24px;background:rgba(0,0,0,.8);color:#fff;border-radius:8px;font:14px sans-serif;z-index:99999';
+  document.body.appendChild(ind);
+
+  // JSONP コールバック関数名（ユニーク）
+  const cbName = '_cocoro3d_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+  let script = null;
+  const timeoutId = setTimeout(() => {
+    cleanup();
+    alert('3D設定の取得がタイムアウトしました（30秒）。ネット接続・GASデプロイを確認してください。');
+  }, 30000);
+  const cleanup = () => {
+    try { document.getElementById('_orderLoadInd')?.remove(); } catch(_){}
+    try { delete window[cbName]; } catch(_){}
+    try { if(script) script.remove(); } catch(_){}
+    clearTimeout(timeoutId);
+  };
+
+  window[cbName] = async function(data){
+    try {
+      if(!data || data.ok !== true){
+        cleanup();
+        alert(`注文データが取得できませんでした: ${(data && data.error) || 'unknown'}`);
+        return;
+      }
+      const cfg = data.config;
+      if(!cfg || !Array.isArray(cfg.prints) || cfg.prints.length === 0){
+        cleanup();
+        // 2026-04-24: 除外理由を表示（GAS側 _debug フィールド）
+        let msg = 'この注文には3D表示できるプリントデータがありません\n';
+        if(data._debug){
+          msg += `\n▼診断情報:\n商品内プリント数: ${data._debug.totalPrintsInItem}\n反映可能: ${data._debug.included}\n除外: ${data._debug.skipped.length}件\n`;
+          (data._debug.skipped || []).forEach((s, i) => {
+            msg += `  [${i+1}] 箇所="${s.location}" 理由: ${s.reason}\n`;
+          });
+        }
+        console.warn('3D config empty:', data);
+        alert(msg);
+        return;
+      }
+      // GAS側で modelKey が付いていたらURLに反映（初回GLB読込後の切替用）
+      if(cfg.model && typeof setModel === 'function'){
+        try { setModel(cfg.model); } catch(e){}
+      }
+      await applyExternalConfig(cfg);
+      cleanup();
+      if(isDemo) showDemoPanel();
+    } catch(e){
+      cleanup();
+      console.error('loadConfigFromOrder(JSONP) failed', e);
+      alert(`3D設定の適用に失敗しました: ${e.message || e}`);
+    }
+  };
+
+  // <script> タグで GAS を叩く（JSONP）
+  script = document.createElement('script');
+  script.src = `${_GAS_PLATFORM_URL}?action=getOrderViewerConfig&orderId=${encodeURIComponent(orderId)}&callback=${cbName}`;
+  script.onerror = () => {
+    cleanup();
+    console.error('JSONP script load error');
+    alert('3D設定の取得に失敗しました（スクリプト読み込みエラー）\nGASが新バージョンでデプロイ済みか確認してください。');
+  };
+  document.head.appendChild(script);
+}
+
+async function applyExternalConfig(cfg) {
+  if (cfg.bodyColor) {
+    state.bodyColor = cfg.bodyColor;
+    document.getElementById('shirtColor').value = cfg.bodyColor;
+    document.getElementById('demoBodyColor').value = cfg.bodyColor;
+  }
+  if (Array.isArray(cfg.prints)) {
+    state.prints = [];
+    for (let i = 0; i < cfg.prints.length; i++) {
+      const p = cfg.prints[i];
+      const img = await loadImage(p.imageDataUrl || p.image || p.url);
+      state.prints.push({
+        id: Date.now() + i,
+        area: p.area, method: p.method, size: p.size, image: img,
+      });
+    }
+    refreshDemoPrintList();
+  }
+  applyState();
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+// ============================================================
+// 共通UI
+// ============================================================
+document.getElementById('shirtColor').addEventListener('input', (e) => {
+  state.bodyColor = e.target.value;
+  document.getElementById('demoBodyColor').value = e.target.value;
+  applyState();
+});
+
+document.getElementById('resetView').addEventListener('click', () => {
+  camera.position.copy(initialCamPos);
+  controls.target.copy(initialTarget);
+  controls.update();
+});
+
+document.getElementById('fsBtn').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+});
+
+document.getElementById('shootBtn').addEventListener('click', () => {
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tshirt_mockup_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.png`;
+  a.click();
+});
+
+// ===== シェアボタン =====
+const shareBtn = document.getElementById('shareBtn');
+const shareLabel = document.getElementById('shareLabel');
+shareBtn.addEventListener('click', async () => {
+  // 現在のstateを設定オブジェクトとしてエンコード
+  const cfg = {
+    bodyColor: state.bodyColor,
+    prints: state.prints.map(p => ({
+      area: p.area, method: p.method, size: p.size,
+      imageDataUrl: p.imageDataUrl || (p.image?.src || ''),
+    })),
+  };
+  const json = JSON.stringify(cfg);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  const shareUrl = `${location.origin}${location.pathname}?config=${b64}`;
+
+  // Web Share API が使えればそれを優先（モバイル等）
+  if (navigator.share && shareUrl.length < 2000) {
+    try {
+      await navigator.share({ title: 'Tシャツデザイン', url: shareUrl });
+      return;
+    } catch(e) { /* キャンセルされた等は無視してクリップボードへ */ }
+  }
+
+  // クリップボードコピー
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    shareLabel.textContent = 'コピー済み！';
+    shareBtn.classList.add('copied');
+    setTimeout(() => {
+      shareLabel.textContent = 'シェア';
+      shareBtn.classList.remove('copied');
+    }, 1800);
+  } catch(e) {
+    // フォールバック: 手動コピー用にprompt
+    prompt('このURLをコピーしてください', shareUrl);
+  }
+
+  // URLが長すぎる場合の警告（画像が大きい場合）
+  if (shareUrl.length > 6000) {
+    console.warn('Share URL is large (' + shareUrl.length + ' chars). Consider using sessionStorage for production.');
+  }
+});
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function tick() {
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+
+// ============================================================
+// デモパネル（手動テスト用）
+// ============================================================
+const demoPanel = document.getElementById('demoPanel');
+const demoArea = document.getElementById('demoArea');
+const demoMethod = document.getElementById('demoMethod');
+const demoSize = document.getElementById('demoSize');
+const demoFile = document.getElementById('demoFile');
+const demoPrintList = document.getElementById('demoPrintList');
+
+function showDemoPanel() {
+  demoPanel.classList.remove('hidden');
+  populateDemoSelectors();
+}
+
+function populateDemoSelectors() {
+  demoArea.innerHTML = '';
+  for (const k in PRINT_AREAS) {
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = PRINT_AREAS[k].label;
+    demoArea.appendChild(opt);
+  }
+  demoMethod.innerHTML = '';
+  ['シルクスクリーン', '転写'].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    demoMethod.appendChild(opt);
+  });
+  refreshDemoSize();
+}
+
+function refreshDemoSize() {
+  demoSize.innerHTML = '';
+  const sizes = getSizesForArea(demoArea.value, demoMethod.value);
+  for (const s in sizes) {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    demoSize.appendChild(opt);
+  }
+}
+
+demoArea.addEventListener('change', refreshDemoSize);
+demoMethod.addEventListener('change', refreshDemoSize);
+
+document.getElementById('demoBodyColor').addEventListener('input', e => {
+  state.bodyColor = e.target.value;
+  document.getElementById('shirtColor').value = e.target.value;
+  applyState();
+});
+document.getElementById('demoPresets').addEventListener('click', e => {
+  const c = e.target.dataset.c;
+  if (c) {
+    state.bodyColor = c;
+    document.getElementById('demoBodyColor').value = c;
+    document.getElementById('shirtColor').value = c;
+    applyState();
+  }
+});
+
+document.getElementById('demoAddPrint').addEventListener('click', async () => {
+  const file = demoFile.files[0];
+  if (!file) { alert('画像ファイルを選んでください'); return; }
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const img = await loadImage(ev.target.result);
+    state.prints.push({
+      id: Date.now(),
+      area: demoArea.value,
+      method: demoMethod.value,
+      size: demoSize.value,
+      image: img,
+      imageDataUrl: ev.target.result,
+    });
+    refreshDemoPrintList();
+    applyState();
+  };
+  reader.readAsDataURL(file);
+});
+
+function refreshDemoPrintList() {
+  document.getElementById('demoCount').textContent = state.prints.length;
+  if (state.prints.length === 0) {
+    demoPrintList.innerHTML = '<div style="color:#888; font-size:11px;">まだプリントがありません</div>';
+    return;
+  }
+  demoPrintList.innerHTML = state.prints.map((p, i) => {
+    const a = PRINT_AREAS[p.area];
+    return `<div class="print-row">
+      <div class="ph">${i+1}. ${a?.label || p.area}</div>
+      <div class="pi">${p.method} / ${p.size}</div>
+      <div class="actions">
+        <button class="danger" onclick="removeDemoPrint(${i})">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.removeDemoPrint = (idx) => {
+  state.prints.splice(idx, 1);
+  refreshDemoPrintList();
+  applyState();
+};
+
+document.getElementById('demoClearAll').addEventListener('click', () => {
+  state.prints = [];
+  refreshDemoPrintList();
+  applyState();
+});
+
+document.getElementById('demoExportConfig').addEventListener('click', () => {
+  const cfg = {
+    bodyColor: state.bodyColor,
+    prints: state.prints.map(p => ({
+      area: p.area, method: p.method, size: p.size,
+      imageDataUrl: p.imageDataUrl || (p.image?.src),
+    })),
+  };
+  const json = JSON.stringify(cfg, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    alert('JSON設定をクリップボードにコピーしました\n\n' + json.substring(0, 200) + '...');
+  });
+});
+
+document.getElementById('demoOpenWithConfig').addEventListener('click', () => {
+  const cfg = {
+    bodyColor: state.bodyColor,
+    prints: state.prints.map(p => ({
+      area: p.area, method: p.method, size: p.size,
+      imageDataUrl: p.imageDataUrl || (p.image?.src),
+    })),
+  };
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(cfg))));
+  const url = `${location.pathname}?config=${b64}`;
+  window.open(url, '_blank');
+});
+
+</script>
+</body>
+</html>
