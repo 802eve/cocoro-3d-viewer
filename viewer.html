@@ -570,7 +570,7 @@ function initTextureCompose() {
   const origW = origTexImage.width || origTexImage.naturalWidth;
   const origH = origTexImage.height || origTexImage.naturalHeight;
   const ar = origW / origH;
-  const TARGET_CANVAS_MIN = 3072;  // 2048 → 3072 に拡張（50%UP）
+  const TARGET_CANVAS_MIN = 4096;  // 2048 → 3072 に拡張（50%UP）
   const w = Math.max(origW, TARGET_CANVAS_MIN);
   const h = Math.max(origH, Math.round(w / ar));
 
