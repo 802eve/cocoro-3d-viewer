@@ -1093,29 +1093,73 @@ function _loadConfigFromOrder(orderId, isDemo){
     .catch(fetchErr => {
       console.warn('[loadConfig] fetch failed, falling back to JSONP:', fetchErr.message || fetchErr);
       // ② JSONP フォールバック
-      _loadViaJsonp(orderId, _applyData);
+      _loadViaJsonp(orderId, _applyData, (jsonpErr) => {
+        console.warn('[loadConfig] JSONP also failed, falling back to iframe+postMessage:', jsonpErr);
+        // ③ iframe + postMessage 最終フォールバック
+        _loadViaIframe(orderId, _applyData);
+      });
     });
 }
 
-function _loadViaJsonp(orderId, applyFn){
-  const cbName = '_cocoro3d_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
-  let script = null;
+// ③ iframe + postMessage 方式（CORS/MIME 問題を回避する最終手段）
+// GAS HtmlService を iframe でロードし、中のスクリプトが親に postMessage で送る
+function _loadViaIframe(orderId, applyFn){
+  const iframeUrl = `${_GAS_PLATFORM_URL}?action=getOrderViewerConfig&orderId=${encodeURIComponent(orderId)}&mode=iframe`;
+  console.log('[loadConfig] trying iframe+postMessage:', iframeUrl);
+  let iframe = null;
+  let done = false;
   const timeoutId = setTimeout(() => {
-    cleanup();
-    alert('3D設定の取得がタイムアウトしました（20秒）\n\n' +
+    if(done) return; done = true; cleanup();
+    console.error('[loadConfig] iframe timeout (25s)');
+    alert('3D設定の取得に失敗しました\n\n' +
+          '全ての通信方式（fetch / JSONP / iframe）で失敗しました。\n' +
           '■ 対処法:\n' +
-          '1. ページを Ctrl+Shift+R でリロード\n' +
-          '2. 別のブラウザ（Edge等）で試す\n' +
-          '3. 広告ブロッカーを一時無効化\n' +
-          '4. モバイル回線など別ネットワークで試す');
-  }, 20000);
+          '1. Ctrl+Shift+R でハードリロード\n' +
+          '2. 別のブラウザ（Edge, Firefox等）で試す\n' +
+          '3. スマートフォンから開いてみる\n' +
+          '4. ネットワーク環境を変える');
+  }, 25000);
   const cleanup = () => {
     try { document.getElementById('_orderLoadInd')?.remove(); } catch(_){}
-    try { delete window[cbName]; } catch(_){}
-    try { if(script) script.remove(); } catch(_){}
+    window.removeEventListener('message', handler);
+    try { if(iframe) iframe.remove(); } catch(_){}
     clearTimeout(timeoutId);
   };
+  const handler = async (e) => {
+    if(done) return;
+    if(!e.data || e.data.type !== 'cocoro3dConfig') return;
+    done = true;
+    clearTimeout(timeoutId);
+    window.removeEventListener('message', handler);
+    try { if(iframe) iframe.remove(); } catch(_){}
+    await applyFn(e.data.data, 'iframe');
+  };
+  window.addEventListener('message', handler);
+  iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:1px;height:1px;border:0;visibility:hidden';
+  iframe.src = iframeUrl;
+  iframe.onerror = (err) => {
+    if(done) return; done = true; cleanup();
+    console.error('[loadConfig] iframe onerror', err);
+    alert('3D設定の取得に失敗しました\n（iframe load error）\n\n別ブラウザでお試しください。');
+  };
+  document.body.appendChild(iframe);
+}
+
+function _loadViaJsonp(orderId, applyFn, onFailCallback){
+  const cbName = '_cocoro3d_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+  let script = null;
+  let done = false;
+  const timeoutId = setTimeout(() => {
+    if(done) return; done = true;
+    try { if(script) script.remove(); } catch(_){}
+    try { delete window[cbName]; } catch(_){}
+    clearTimeout(timeoutId);
+    console.warn('[loadConfig] JSONP timeout (15s)');
+    if(typeof onFailCallback === 'function') onFailCallback(new Error('JSONP timeout'));
+  }, 15000);
   window[cbName] = async function(data){
+    if(done) return; done = true;
     clearTimeout(timeoutId);
     try { if(script) script.remove(); } catch(_){}
     try { delete window[cbName]; } catch(_){}
@@ -1125,15 +1169,12 @@ function _loadViaJsonp(orderId, applyFn){
   script.src = `${_GAS_PLATFORM_URL}?action=getOrderViewerConfig&orderId=${encodeURIComponent(orderId)}&callback=${cbName}`;
   console.log('[loadConfig] trying JSONP:', script.src);
   script.onerror = (e) => {
-    cleanup();
+    if(done) return; done = true;
+    clearTimeout(timeoutId);
+    try { if(script) script.remove(); } catch(_){}
+    try { delete window[cbName]; } catch(_){}
     console.error('[loadConfig] JSONP script load error', e);
-    alert('3D設定の取得に失敗しました\n\n' +
-          '■ 考えられる原因:\n' +
-          '1. ブラウザのセキュリティ設定（Chrome の MIME 厳格化）\n' +
-          '2. 広告ブロッカー拡張機能の干渉\n' +
-          '3. ネットワーク接続の問題\n' +
-          '4. GAS の新バージョン未デプロイ\n\n' +
-          '■ 対処法: Ctrl+Shift+R でリロードするか別のブラウザでお試しください。');
+    if(typeof onFailCallback === 'function') onFailCallback(new Error('JSONP script load error'));
   };
   document.head.appendChild(script);
 }
