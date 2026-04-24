@@ -962,7 +962,16 @@ function loadInputConfig() {
     return;
   }
 
-  // 0.5. 2026-04-23: ?order=CK-xxx で既存注文の3Dを復元
+  // 0.3. 2026-04-24: ?cfg=<base64url(JSON)> で直接 config を受け取る（推奨方式）
+  //      GAS fetch が不要 → CORS/MIME 問題ゼロ、ロードも速い
+  //      JSON内のdriveIdは Drive CDN 直接参照の image URL に変換して画像取得
+  const cfgParam = params.get('cfg');
+  if (cfgParam) {
+    _loadConfigFromUrl(cfgParam, isDemo);
+    return;
+  }
+
+  // 0.5. 2026-04-23: ?order=CK-xxx で既存注文の3Dを復元（後方互換・非推奨）
   //      GAS社内プラットフォームの getOrderViewerConfig を叩いて
   //      bodyColor + prints[] を取得し applyExternalConfig に渡す。
   //      URL長制限や CORS を気にせずに済む。
@@ -1023,6 +1032,54 @@ function loadInputConfig() {
 //  社内プラットフォームGAS の getOrderViewerConfig エンドポイントを叩く。
 //  デプロイURLは CLAUDE.md 記載の platform GAS を使用。
 const _GAS_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
+// 2026-04-24: ?cfg=<base64url(JSON)> の直接URL方式（最優先・最高速）
+// JSON 内に driveId が含まれており、Drive の公開画像URLから直接 <img> で取得。
+// GAS fetch/JSONP/iframe 一切不要。読み込み 2-5秒。
+function _loadConfigFromUrl(cfgParam, isDemo){
+  const ind = document.createElement('div');
+  ind.id = '_orderLoadInd';
+  ind.textContent = '3D設定を読み込み中...';
+  ind.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:16px 24px;background:rgba(0,0,0,.8);color:#fff;border-radius:8px;font:14px sans-serif;z-index:99999';
+  document.body.appendChild(ind);
+  const _removeInd = () => { try { document.getElementById('_orderLoadInd')?.remove(); } catch(_){} };
+  try {
+    // base64url → UTF-8 → JSON
+    const b64 = cfgParam.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.length % 4;
+    const padded = pad ? b64 + '='.repeat(4 - pad) : b64;
+    const bin = atob(padded);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const json = new TextDecoder('utf-8').decode(bytes);
+    const cfg = JSON.parse(json);
+    console.log('[loadConfig] cfg URL decoded:', cfg);
+    // prints[].driveId → Drive CDN 画像URL に変換
+    if (Array.isArray(cfg.prints)) {
+      for (const p of cfg.prints) {
+        if (p.driveId && !p.imageDataUrl) {
+          // Drive の CORS 対応公開URLの第一候補（長辺3200pxで取得）
+          p.imageDataUrl = `https://lh3.googleusercontent.com/d/${encodeURIComponent(p.driveId)}=s3200`;
+        }
+      }
+    }
+    // model も URL パラメータで上書き可能
+    if (cfg.model && typeof setModel === 'function') {
+      try { setModel(cfg.model); } catch(e){}
+    }
+    applyExternalConfig(cfg)
+      .then(() => { _removeInd(); if (isDemo) showDemoPanel(); })
+      .catch(err => {
+        _removeInd();
+        console.error('[loadConfig] applyExternalConfig failed:', err);
+        alert('3D表示の構築に失敗しました: ' + (err.message || err));
+      });
+  } catch (e) {
+    _removeInd();
+    console.error('[loadConfig] cfg decode failed:', e);
+    alert('3D設定のURL解析に失敗しました。URLが壊れている可能性があります。\n' + (e.message || e));
+  }
+}
+
 // 2026-04-24: 2段フォールバック方式
 //   ① fetch（シンプル・標準） → 失敗したら
 //   ② JSONP（<script> タグ） → 失敗したら
@@ -1202,11 +1259,29 @@ async function applyExternalConfig(cfg) {
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
+    // 2026-04-24: Drive 画像URLは lh3.googleusercontent.com / drive.google.com/uc の2形式を試す
+    //   CORS や HTTP エラーで失敗した場合に別形式でリトライすることで成功率UP
+    const candidates = [src];
+    const m = /^https:\/\/lh3\.googleusercontent\.com\/d\/([^=]+)(?:=.*)?$/.exec(src);
+    if (m) {
+      // lh3 → drive.google.com/thumbnail へのフォールバック
+      candidates.push(`https://drive.google.com/thumbnail?id=${m[1]}&sz=w3200`);
+      candidates.push(`https://drive.google.com/uc?export=view&id=${m[1]}`);
+    }
+    let idx = 0;
+    const tryNext = () => {
+      if (idx >= candidates.length) { reject(new Error('all image sources failed: ' + src)); return; }
+      const url = candidates[idx++];
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        console.warn('[loadImage] failed:', url, '→ trying next');
+        tryNext();
+      };
+      img.src = url;
+    };
+    tryNext();
   });
 }
 
