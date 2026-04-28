@@ -4509,6 +4509,7 @@ function checkDesignToolData(){
     const targetArea = localStorage.getItem('cocoro_design_pid') || '';
     const designSize = localStorage.getItem('cocoro_design_size') || '';
     const usageRaw   = localStorage.getItem('cocoro_design_usage') || '';
+    const svgRaw     = localStorage.getItem('cocoro_design_svg') || '';   // ★ 2026-04-28: SVG を取得
     if(!targetArea){ _clearStudioKeys(); return; }
 
     // ★ 2026-04-26: スタジオの内容を「絶対的に」反映する
@@ -4550,6 +4551,7 @@ function checkDesignToolData(){
       if(!ln.printDesigns || !ln.printDesigns[targetArea]) return;
       const d = ln.printDesigns[targetArea];
       d.studioImage = data;
+      d.studioSvg   = svgRaw || '';                     // ★ 2026-04-28: SVG ベクター版を保持
       d.studioOriginalHexes = parsedUsageHexes || [];   // ★ 元色 hex を保存 (色替え時に置換するため)
       if(designSize) d.size = designSize;
       if(parsedUsageIds && parsedUsageIds.length){
@@ -5357,6 +5359,18 @@ function buildSubmitItems(){
           });
         }
       }
+      // ★ 2026-04-28: スタジオ SVG (ベクターデータ) も同時アップロード
+      if(d.studioSvg && typeof d.studioSvg === 'string' && d.studioSvg.length > 0){
+        try {
+          // SVG文字列を base64 化
+          const svgB64 = btoa(unescape(encodeURIComponent(d.studioSvg)));
+          uploadFiles.design.push({
+            name: 'studio-design.svg',
+            type: 'image/svg+xml',
+            base64: svgB64,
+          });
+        } catch(e){ console.warn('SVG base64 化失敗:', e); }
+      }
       const hasUpload = !!(uploadFiles.complete.length || uploadFiles.adjust.length || uploadFiles.design.length);
       return {
         location:  name,
@@ -5420,6 +5434,27 @@ function buildSubmitPayload(est){
     estimatedShipDate: '',
     estimatedTotal: est.taxIncluded || 0,
     totalQty: est.qty || 0,
+    // ★ v13 新規: 社内プラットフォーム表示用に明示フィールド化
+    fulfillmentMethod: dlv.method,        // 'pickup' | 'shipping'
+    delivery: {
+      method:           dlv.method,
+      // 発送モード時の希望
+      shipDate:         dlv.date || '',
+      shipTimeSlot:     dlv.timeSlot || '指定なし',
+      // 直接受取モード時の希望
+      pickupDate:       dlv.pickupDate || '',
+      pickupTimeSlot:   dlv.pickupTimeSlot || '指定なし',
+    },
+    pickupInfo: isPickup ? {
+      postalCode:   PICKUP_INFO.postalCode,
+      addressLines: PICKUP_INFO.addressLines,
+      phone:        PICKUP_INFO.phone,
+      hours:        PICKUP_INFO.hours,
+      note:         PICKUP_INFO.note,
+    } : null,
+    options: {
+      foldingBag:   !!(state.options && state.options.foldingBag),
+    },
     costBreakdown: {
       bodyCost:        est.bodyCost,
       bodyDiscRate:    est.bodyDiscRate,
@@ -5440,6 +5475,15 @@ function buildSubmitPayload(est){
       unitPrice:       est.unitPrice,
       hasConsult:      est.hasConsult,
       fulfillmentMethod: est.fulfillmentMethod,
+      // ★ v12 互換エイリアス（platform_ui.html の既存表示と整合）
+      bodyDisc:        Math.max(0, (est.bodyCost || 0) - (est.bodyDiscAmount || 0)),
+      bodyDiscAmt:     est.bodyDiscAmount || 0,
+      smallFee:        est.smallOrderFee || 0,
+      printTotal:      (est.inkCost || 0) + (est.transferCost || 0) + (est.colorChangeCost || 0),
+      plateTotal:      est.plateCost || 0,
+      dataTotal:       est.dataFee || 0,
+      grand:           est.beforeTax || 0,
+      perUnit:         est.unitPrice || 0,
     },
     items: buildSubmitItems(),
   };
@@ -5535,13 +5579,162 @@ function bindReviewActions(){
   const dlEst = document.getElementById('rvDlEstimate');
   if(dlEst && !dlEst.dataset.bound){
     dlEst.dataset.bound = '1';
-    dlEst.addEventListener('click', () => alert('見積書(PDF)のダウンロードは次フェーズで実装します。\n（v12 の printDoc() / printReceipt() を移植する想定）'));
+    dlEst.addEventListener('click', () => openDocumentWindow('estimate'));
   }
   const dlSpec = document.getElementById('rvDlSpec');
   if(dlSpec && !dlSpec.dataset.bound){
     dlSpec.dataset.bound = '1';
-    dlSpec.addEventListener('click', () => alert('仕様書(PDF)のダウンロードは次フェーズで実装します。\n（v12 の printSpec() を移植する想定）'));
+    dlSpec.addEventListener('click', () => openDocumentWindow('spec'));
   }
+}
+
+/* ============================================================
+   見積書 / 仕様書 を新ウィンドウで開く (印刷=PDF保存対応)
+   ============================================================ */
+function openDocumentWindow(type){
+  try {
+    const html = buildDocumentHtml(type);
+    const w = window.open('', '_blank');
+    if(!w){
+      alert('ポップアップがブロックされています。 ブラウザ設定で許可してください。');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  } catch(e){
+    console.error('openDocumentWindow failed', e);
+    alert('書類の生成に失敗しました: ' + (e && e.message || e));
+  }
+}
+
+function buildDocumentHtml(type){
+  const isEst = (type === 'estimate');
+  const title = isEst ? '見 積 書' : '仕 様 書';
+  const fileTitle = isEst ? '見積書' : '仕様書';
+  const est = calcEstimate();
+  const data = buildSubmitPayload(est);
+  const tempId = 'PREVIEW-' + new Date().toISOString().substring(0,10).replace(/-/g,'') + '-' + Math.random().toString(36).substr(2,4).toUpperCase();
+  const docDate = new Date().toISOString().substring(0,10);
+  const isPickup = data.fulfillmentMethod === 'pickup';
+
+  // 商品ブロック (仕様書 / 見積書 共通)
+  const productHtml = (data.items || []).map((item, idx) => {
+    let h = `<div style="border:1px solid #ddd;border-radius:6px;padding:10px 12px;margin-bottom:10px;">`;
+    h += `<div style="font-weight:700;font-size:13px;color:#2d5a3d;margin-bottom:6px;">商品${idx+1}：${escapeHtmlSimple(item.name||'')}</div>`;
+    if(item.sku) h += `<div style="font-size:11px;color:#666;margin-bottom:3px;">品番：${escapeHtmlSimple(item.sku)}${item.maker?' ('+escapeHtmlSimple(item.maker)+')':''}</div>`;
+    (item.colors||[]).forEach(c=>{
+      const sizes = c.sizes ? Object.entries(c.sizes).filter(([_,n])=>n>0).map(([sz,n])=>`${sz}×${n}`).join(' ') : '';
+      h += `<div style="font-size:11px;margin-bottom:2px;">カラー：<strong>${escapeHtmlSimple(c.colorName||'')}</strong>${sizes?' ('+escapeHtmlSimple(sizes)+')':''}</div>`;
+    });
+    const totalQ = (item.colors||[]).reduce((s,c)=>s + Object.values(c.sizes||{}).reduce((a,b)=>a+(Number(b)||0),0), 0);
+    h += `<div style="font-size:11px;margin-bottom:6px;">合計枚数：<strong>${totalQ}枚</strong></div>`;
+    (item.prints||[]).forEach((p, pi) => {
+      h += `<div style="font-size:11px;margin-top:6px;padding:6px 10px;background:#f8f7ff;border-left:3px solid #6b4fa0;border-radius:4px;">`;
+      h += `<div style="font-weight:600;color:#6b4fa0;margin-bottom:3px;">プリント${pi+1}：${escapeHtmlSimple(p.location||'')}</div>`;
+      h += `<div>加工方法：${escapeHtmlSimple(p.method||'')} ／ サイズ：${escapeHtmlSimple(p.size||'')} ／ 色：${escapeHtmlSimple(p.colorType||'')}</div>`;
+      if(Array.isArray(p.inkColors) && p.inkColors.length) h += `<div>インク色：${escapeHtmlSimple(p.inkColors.join(', '))}</div>`;
+      const plateLabel = {'new':'新規（版代発生）','reuse':'流用','none':'なし','unknown':'不明'}[p.plateType] || p.plateType || '';
+      if(plateLabel) h += `<div>版：${escapeHtmlSimple(plateLabel)}</div>`;
+      const dsLabel = {'complete':'完成データあり','adjust':'調整が必要','design':'デザインから相談','studio':'デザインスタジオ'}[p.dataState] || p.dataState || '';
+      if(dsLabel) h += `<div>データ：${escapeHtmlSimple(dsLabel)}</div>`;
+      if(p.printNote) h += `<div style="color:#666;">備考：${escapeHtmlSimple(p.printNote)}</div>`;
+      h += `</div>`;
+    });
+    h += `</div>`;
+    return h;
+  }).join('');
+
+  // 費用内訳 (見積書のみ)
+  let costHtml = '';
+  if(isEst){
+    const cb = data.costBreakdown || {};
+    const rows = [];
+    rows.push(['ボディ代', cb.bodyDisc || cb.bodyCost || 0]);
+    if((cb.bodyDiscAmt || cb.bodyDiscAmount || 0) > 0) rows.push([`　🎁 ボディ数量割引（${cb.bodyDiscRate||0}%OFF）`, -(cb.bodyDiscAmt || cb.bodyDiscAmount || 0)]);
+    if((cb.upchargeCost || 0) > 0) rows.push(['　🧵 素材追加料金', cb.upchargeCost]);
+    if((cb.smallFee || cb.smallOrderFee || 0) > 0) rows.push(['　⚠️ 小口手数料', cb.smallFee || cb.smallOrderFee]);
+    rows.push(['プリント加工費', cb.printTotal || ((cb.inkCost||0)+(cb.transferCost||0))]);
+    if((cb.colorChangeCost || 0) > 0) rows.push(['　🎨 色替え代', cb.colorChangeCost]);
+    rows.push(['版代・初回製版費', cb.plateTotal || cb.plateCost || 0]);
+    rows.push(['データ調整・制作費', cb.dataTotal || cb.dataFee || 0]);
+    if((cb.foldingFee || 0) > 0) rows.push(['　🎁 たたみ・袋入れオプション', cb.foldingFee]);
+    if((cb.shippingFee || 0) > 0) rows.push(['　🚚 送料', cb.shippingFee]);
+    if(isPickup) rows.push(['　🏬 直接受取（送料無料）', 0]);
+    const grand = cb.grand || cb.beforeTax || 0;
+    const tax   = Math.floor(grand * 0.10);
+    const total = grand + tax;
+    costHtml = `<div style="margin-top:14px;font-size:11px;font-weight:700;color:#888;border-bottom:1px solid #ddd;padding-bottom:3px;margin-bottom:10px;">費用内訳</div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        ${rows.map(([lbl,v]) => `<tr><td style="padding:3px 0;">${escapeHtmlSimple(lbl)}</td><td style="text-align:right;padding:3px 0;">${v<0?'-':''}¥${Math.abs(v).toLocaleString()}</td></tr>`).join('')}
+        <tr style="font-weight:700;border-top:2px solid #ccc;"><td style="padding-top:6px;">小計（税抜）</td><td style="text-align:right;padding-top:6px;">¥${grand.toLocaleString()}</td></tr>
+        <tr><td>消費税(10%)</td><td style="text-align:right;">¥${tax.toLocaleString()}</td></tr>
+        <tr style="font-weight:700;background:#e8f0ea;font-size:13px;"><td style="padding:6px 0;">合計（税込）</td><td style="text-align:right;padding:6px 0;">¥${total.toLocaleString()}</td></tr>
+      </table>`;
+  }
+
+  // 受取/発送情報
+  let fulfillHtml = '';
+  if(isPickup){
+    const pi = data.pickupInfo || {};
+    const dlv = data.delivery || {};
+    fulfillHtml = `<div style="margin-top:10px;padding:8px 12px;background:#fffbf0;border:1px solid #ffe9a8;border-radius:4px;font-size:11px;">
+      <strong>🏬 受取方法：直接受取</strong><br>
+      ${escapeHtmlSimple(pi.postalCode || '')} ${escapeHtmlSimple((pi.addressLines||[]).join(' '))}<br>
+      電話: ${escapeHtmlSimple(pi.phone||'')} ／ 営業時間: ${escapeHtmlSimple(pi.hours||'')}<br>
+      受取希望: ${escapeHtmlSimple(dlv.pickupDate || '指定なし')} ${escapeHtmlSimple(dlv.pickupTimeSlot || '')}
+    </div>`;
+  } else {
+    const dlv = data.delivery || {};
+    fulfillHtml = `<div style="margin-top:10px;padding:8px 12px;background:#f0f7f2;border:1px solid #b6d7c0;border-radius:4px;font-size:11px;">
+      <strong>🚚 受取方法：発送</strong><br>
+      発送先: 〒${escapeHtmlSimple(data.shipZip||'—')} ${escapeHtmlSimple(data.shipAddr||'')} ${escapeHtmlSimple(data.shipName||'')}<br>
+      発送希望: ${escapeHtmlSimple(dlv.shipDate || '指定なし')} ${escapeHtmlSimple(dlv.shipTimeSlot || '')}
+    </div>`;
+  }
+
+  return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>${fileTitle} ${tempId}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:15mm 12mm;}
+body{font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#333;max-width:680px;margin:0 auto;padding:20px;line-height:1.6;}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+@media print{button{display:none;}}
+</style></head><body>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2d5a3d;padding-bottom:10px;margin-bottom:16px;">
+  <div>
+    <div style="font-size:20px;font-weight:700;color:#2d5a3d;">ココロ工房</div>
+    <div style="font-size:10px;color:#666;">COCORO-KOBO | オリジナルプリント</div>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:18px;font-weight:700;color:#2d5a3d;letter-spacing:.2em;">${title}</div>
+    <div style="font-size:10px;color:#666;line-height:1.7;">仮番号: ${tempId}<br>発行日: ${docDate.replace(/-/g,'/')}</div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px;margin-bottom:14px;">
+  <div><span style="color:#888;margin-right:4px;">会社名</span><strong>${escapeHtmlSimple(data.companyName || '—')}</strong></div>
+  <div><span style="color:#888;margin-right:4px;">担当者</span>${escapeHtmlSimple(data.contactName || '—')}</div>
+  <div><span style="color:#888;margin-right:4px;">メール</span>${escapeHtmlSimple(data.email || '—')}</div>
+  <div><span style="color:#888;margin-right:4px;">電話</span>${escapeHtmlSimple(data.phone || '—')}</div>
+</div>
+${fulfillHtml}
+<div style="margin-top:16px;font-size:11px;font-weight:700;color:#888;border-bottom:1px solid #ddd;padding-bottom:3px;margin-bottom:10px;">商品・プリント仕様</div>
+${productHtml}
+${costHtml}
+<div style="margin-top:14px;font-size:10px;color:#666;border-top:1px solid #eee;padding-top:8px;">
+  ${isEst ? '※本見積書は概算です。確定金額は別途正式見積書をお送りいたします。<br>※本見積書の有効期限は発行日より1週間です。' : '※本仕様書は仮版です。'}
+</div>
+<div style="margin-top:12px;text-align:center;">
+  <button onclick="window.print()" style="padding:9px 24px;background:#2d5a3d;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;">🖨 印刷 / PDF保存</button>
+</div>
+</body></html>`;
+}
+
+// ローカル escapeHtml (依存を増やさない)
+function escapeHtmlSimple(s){
+  if(s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 }
 
 /* ========================================================================
