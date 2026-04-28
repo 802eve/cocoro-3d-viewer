@@ -5637,4 +5637,131 @@ document.getElementById('btnNext').addEventListener('click', () => {
   gotoStep(state.step + 1);
 });
 // + 別の商品も追加 (STEP 05)
-const btnAddLine = docu
+const btnAddLine = document.getElementById('btnAddLine');
+if(btnAddLine) btnAddLine.addEventListener('click', () => addNewLine());
+// + 同じ商品で別の色を追加 (STEP 04)
+const btnAddColor = document.getElementById('btnAddColor');
+if(btnAddColor) btnAddColor.addEventListener('click', () => addColorVariant());
+// STEP 05 入口分岐: 新しく入力 / 他の商品と同じ
+const srcNewBtn = document.getElementById('srcNew');
+const srcReuseBtn = document.getElementById('srcReuse');
+const reuseSel = document.getElementById('reuseSelect');
+if(srcNewBtn)   srcNewBtn.addEventListener('click', () => chooseSrcNew());
+if(srcReuseBtn) srcReuseBtn.addEventListener('click', () => chooseSrcReuse());
+if(reuseSel)    reuseSel.addEventListener('change', e => applyReuseSelection(e.target.value));
+document.getElementById('btnBack').addEventListener('click', () => {
+  gotoStep(state.step - 1);
+});
+
+/* INTRO MODE: 矢印ボタン + CTA
+    標準カルーセル方式 — 「カテゴリが横に並んでる」感覚に合わせる:
+      - ＞ 押下 (next): 次カテゴリ(右隣)が右から滑り込み、現は左へ退場 (slideDir='left')
+      - ＜ 押下 (prev): 前カテゴリ(左隣)が左から滑り込み、現は右へ退場 (slideDir='right')
+    → カテゴリの並び [Tシャツ][ロンT][パーカー]... を覗き込む窓のメンタルモデル */
+document.getElementById('stageArrowL').addEventListener('click', () => cycleCategory(-1, 'right'));
+document.getElementById('stageArrowR').addEventListener('click', () => cycleCategory(+1, 'left'));
+document.getElementById('heroCta').addEventListener('click', () => confirmCategoryFromIntro());
+document.getElementById('heroReset').addEventListener('click', () => {
+  if(!confirm('入力した内容を全てリセットして最初からやり直しますか？')) return;
+  // 全ライン削除して新規ラインに、共通設定もデフォルトに
+  state.lines = [ newLine() ];
+  state.lineIdx = 0;
+  state.deadline = '10';
+  state.customer = { company:'', name:'', email:'', phone:'', zipcode:'', address:'' };
+  state.shipping = { sameAsCustomer:true, recipient:'', zipcode:'', address:'' };
+  state.delivery = { date:'', timeSlot:'指定なし' };
+  state.catIndex = 0;
+  // intro に戻し、再描画
+  state.introMode = true;
+  state.step = 1;
+  document.getElementById('app').classList.add('intro-mode');
+  // pane-7 の input にも反映するため bound フラグをクリア
+  const pane7 = document.getElementById('pane-7');
+  if(pane7) delete pane7.dataset.bound;
+  loadViewerInitial(CATEGORIES[0].model3d);
+  renderHero();
+  renderCategoryGrid();
+  renderProductList();
+  renderColorGrid();
+  refreshChrome();
+});
+
+/* キーボードショートカット
+    intro時: ←/→ でカテゴリ切替、Enter で決定
+    通常時: ←/→ でステップ前後 */
+document.addEventListener('keydown', (e) => {
+  if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+  if(state.introMode){
+    if(e.key === 'ArrowRight'){ e.preventDefault(); cycleCategory(1); }
+    if(e.key === 'ArrowLeft') { e.preventDefault(); cycleCategory(-1); }
+    if(e.key === 'Enter')     { e.preventDefault(); confirmCategoryFromIntro(); }
+    return;
+  }
+  if(e.key === 'ArrowRight' && !document.getElementById('btnNext').disabled) gotoStep(state.step + 1);
+  if(e.key === 'ArrowLeft'  && !document.getElementById('btnBack').disabled) gotoStep(state.step - 1);
+});
+
+/* ========================================================================
+   INIT
+   ======================================================================== */
+function init(){
+  // INTRO MODE で起動 — Tシャツから始まる（初回はスライド遷移なしで即表示）
+  state.catIndex = 0;
+  loadViewerInitial(CATEGORIES[0].model3d);
+  renderHero();
+  setupStageSwipe();
+  // パネル側も予め描画しておく（CTA後にすぐ見える状態にするため）
+  renderCategoryGrid();
+  renderProductList();
+  renderColorGrid();
+  refreshChrome();
+  // インク色ピッカーモーダル: 閉じる動作
+  const inkClose = document.getElementById('inkPickerClose');
+  const inkOverlay = document.getElementById('inkPickerOverlay');
+  if(inkClose) inkClose.addEventListener('click', closeInkPicker);
+  if(inkOverlay){
+    inkOverlay.addEventListener('click', e => {
+      if(e.target === inkOverlay) closeInkPicker();
+    });
+  }
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && inkOverlay && inkOverlay.classList.contains('is-open')){
+      closeInkPicker();
+    }
+  });
+  // デザインスタジオから戻ってきた時の自動受信
+  window.addEventListener('focus', () => {
+    checkDesignToolData();
+  });
+  // 起動時にも一度チェック (ページリロード後)
+  setTimeout(() => checkDesignToolData(), 500);
+  // viewer.html から位置調整の offset 通知を受信
+  window.addEventListener('message', e => {
+    if(!e.data || e.data.type !== 'tshirt3d-offset') return;
+    const { area, offsetX, offsetY } = e.data;
+    if(!area) return;
+    const line = cur();
+    const d = ensurePrintDesign(line, area);
+    d.offsetX = offsetX;
+    d.offsetY = offsetY;
+    // 詳細パネルの「(調整済)」ラベル更新のため再描画
+    // ただし viewer 内で apply 中なので setTimeout で次フレームへ
+    setTimeout(() => renderPrintGrid(), 0);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+
+<!-- ===== インク色ピッカーモーダル (D-1d) ===== -->
+<div class="ink-picker-overlay" id="inkPickerOverlay">
+  <div class="ink-picker">
+    <div class="ink-picker-head">
+      <div class="ink-picker-ttl">インク色を選択</div>
+      <button class="ink-picker-close" id="inkPickerClose" type="button" aria-label="閉じる">✕</button>
+    </div>
+    <div class="ink-picker-grid" id="inkPickerGrid"></div>
+  </div>
+</div>
+</body>
+</html>
