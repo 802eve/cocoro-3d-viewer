@@ -3019,7 +3019,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '45';
+const VIEWER_VERSION = '46';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -4711,13 +4711,18 @@ function openInkPicker(area, slotIdx, isOverride){
     const b = parseInt(hex.slice(5,7), 16);
     return (r*0.299 + g*0.587 + b*0.114) > 170;
   };
-  // ★ 転写「その他（フルカラー価格）」はホワイト・ブラック除外 (v12 仕様)
-  //   その2色は別の選択肢として既に存在するため重複を避ける
+  // ★ 転写「その他（フルカラー価格）」のスウォッチ除外ルール:
+  //   - ホワイト・ブラック (C-21,C-22) は別選択肢で重複なので除外
+  //   - 金銀(特殊) / 蛍光色は転写フルカラーで再現できないため除外
   const line = cur();
   const d = line && line.printDesigns ? line.printDesigns[area] : null;
   const isTransferOther = d && d.method === '転写' && d.colorCount === 'その他（フルカラー価格）';
   const colors = isTransferOther
-    ? INK_COLORS.filter(c => c.id !== 'C-21' && c.id !== 'C-22')
+    ? INK_COLORS.filter(c =>
+        c.id !== 'C-21' && c.id !== 'C-22' &&     // 白黒除外
+        c.group !== '特殊' &&                       // 金銀(C-41,42)
+        c.group !== '蛍光'                          // 蛍光色(C-45〜49)
+      )
     : INK_COLORS;
   grid.innerHTML = colors.map(c => `
     <div class="ink-pick-cell ${isLight(c.hex)?'is-light':''}" data-id="${c.id}" style="background:${c.hex};" title="${c.id} ${c.name}">
@@ -5139,13 +5144,21 @@ function calcEstimate(){
 
       if(d.method === 'シルクスクリーン'){
         // ★ 色替えライン (reuse) の場合: 版代は加算しない (親で計上済み)
-        //   代わりに「色替え代」を計上 (1色 × ¥1,000 × 色数)
+        //   色替え代は「実際に親と異なる色のスロット数」 × ¥1,000 のみ計上
         if(isColorVariant){
           const ov = (l.inkOverrides || {})[loc.area];
-          // override がある時だけ色替え代発生 (override がなければ親と同じ色なので発生しない)
           if(ov && Array.isArray(ov.inkSlots)){
-            const need = parseInt(d.colorCount, 10) || 1;
-            colorChangeCost += 1000 * need;
+            // 親の inkSlots と override を比較し、異なるスロット数だけカウント
+            const parentIdx = parseInt(l.printSource.slice(6), 10);
+            const parentLine = state.lines[parentIdx];
+            const parentSlots = (parentLine && parentLine.printDesigns && parentLine.printDesigns[loc.area] && parentLine.printDesigns[loc.area].inkSlots) || [];
+            const childSlots = ov.inkSlots;
+            let changedCount = 0;
+            const maxLen = Math.max(parentSlots.length, childSlots.length);
+            for(let j = 0; j < maxLen; j++){
+              if((parentSlots[j] || '') !== (childSlots[j] || '')) changedCount++;
+            }
+            colorChangeCost += 1000 * changedCount;
           }
         } else {
           // 通常ライン: 版代 (★ v12 互換: 版代 × 色数)
