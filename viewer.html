@@ -130,34 +130,14 @@
   }
   #hint.show { opacity:1; }
 
-  /* embed=1 モード（iframe埋め込み用）— v13プロトに最適化
-     - 不要ボタンは display:none、ただし #topbar 自体は残して btnRotate を残す
-     - body 背景を dark に変更し、stage::before の暗グラデと馴染ませる */
-  body.embed {
-    background: #0a0a0a !important;            /* 親ページの暗ステージと馴染む dark theme */
-  }
-  body.embed #colorPanel,
-  body.embed #fsBtn,
-  body.embed #shootBtn,
-  body.embed #shareBtn,
-  body.embed #back,
-  body.embed #demoPanel,
-  body.embed #hint { display:none !important; }
-  /* topbar は維持（btnRotate 表示のため） — intro時は親側で iframe pointer-events:none なので
-     btnRotate は触れない＝視覚的にも自動回転中は updateRotateBtn() で隠れるため安全 */
-  body.embed #topbar { padding:6px 10px; justify-content:flex-end; pointer-events:none; background:transparent; border:none; }
+  /* embed=1 モード（iframe埋め込み用） */
+  body.embed #colorPanel, body.embed #fsBtn, body.embed #shootBtn, body.embed #shareBtn { display:none; }
+  body.embed #back { display:none; } /* 戻るリンクは非表示 */
+  body.embed #topbar { padding:8px 12px; justify-content:flex-end; pointer-events:none; }
   body.embed #topbar #btnRotate { pointer-events:auto; }
 </style>
 </head>
 <body>
-<script>
-  // 2026-04-25: embed クラスを即時適用（GLB ロード完了を待たずに UI を隠す）
-  // ※ loadInputConfig() 内の class追加は GLB onLoad 後でしか走らないため、
-  //   その間 1〜2秒は UI が見えてしまう問題を解消
-  if (new URLSearchParams(location.search).get('embed') === '1') {
-    document.body.classList.add('embed');
-  }
-</script>
 <div id="progress"></div>
 
 <div id="topbar">
@@ -224,63 +204,6 @@ function _3d_goBackFallback(){
 </button>
 
 <div id="hint">ドラッグで回転 / ホイールでズーム</div>
-
-<!-- ★ 2026-04-26 追加: 位置調整モード オーバーレイ -->
-<div id="adjustOverlay" class="adjust-overlay">
-  <div class="adjust-msg">
-    <span class="adjust-icon">✥</span>
-    <span class="adjust-text">プリント位置を調整中</span>
-    <span class="adjust-hint">ドラッグで移動</span>
-  </div>
-  <div class="adjust-actions">
-    <button class="adjust-btn adjust-reset" id="adjustReset" type="button">中央に戻す</button>
-    <button class="adjust-btn adjust-done" id="adjustDone" type="button">完了</button>
-  </div>
-</div>
-<style>
-/* ★ 2026-04-29 修正: 画面下端から「左上のコンパクトツールバー」に移動。
-   3D の操作領域を覆わないように、 メッセージとボタンは小さく左上にまとめる */
-.adjust-overlay{
-  position:fixed; top:8px; left:8px; right:auto; bottom:auto;
-  display:none; flex-direction:column; gap:6px;
-  padding:0;
-  background:transparent;
-  z-index:300;
-  pointer-events:none;
-  max-width:230px;
-}
-.adjust-overlay.on{ display:flex; pointer-events:auto; }
-.adjust-overlay .adjust-msg{
-  display:inline-flex; align-items:center; gap:6px;
-  background:rgba(213,0,28,.95); color:#fff;
-  padding:6px 10px;
-  font-family:system-ui, -apple-system, sans-serif;
-  font-size:11px; font-weight:600; letter-spacing:.02em;
-  border-radius:6px;
-  box-shadow:0 2px 8px rgba(0,0,0,.3);
-  width:fit-content;
-}
-.adjust-overlay .adjust-icon{ font-size:14px; }
-.adjust-overlay .adjust-hint{ font-size:10px; opacity:.9; font-weight:400; }
-.adjust-overlay .adjust-actions{
-  display:flex; gap:6px;
-  width:fit-content;
-}
-.adjust-overlay .adjust-btn{
-  padding:6px 12px;
-  font-family:inherit; font-size:11px; font-weight:600;
-  background:#fff; color:#0a0a0a; border:none;
-  cursor:pointer;
-  border-radius:5px;
-  box-shadow:0 2px 6px rgba(0,0,0,.25);
-}
-.adjust-overlay .adjust-reset{
-  background:rgba(0,0,0,.7); color:#fff; border:1px solid rgba(255,255,255,.3);
-}
-.adjust-overlay .adjust-done{ background:#fff; color:#0a0a0a; font-weight:700; }
-body.adjusting #app{ cursor:grab; }
-body.adjusting.dragging #app{ cursor:grabbing; }
-</style>
 
 <!-- ====== デモパネル（テスト用 / フォームから来た時は非表示） ====== -->
 <div id="demoPanel" class="hidden">
@@ -485,14 +408,7 @@ scene.background = new THREE.Color(0xe8e8e8);
 const camera = new THREE.PerspectiveCamera(32, innerWidth/innerHeight, 0.01, 100);
 camera.position.set(0, 1.2, 2.6);
 
-// 2026-04-25 (rev2): embed mode は body bg と完全に同じ #0a0a0a で塗りつぶす
-//   → スライド時に iframe の「モデルが居ない部分」も親ステージと完全一致 → 黒帯消滅
-//   alpha:false の方が描画コスト低い & contrast 0 は確実
-const _isEmbedMode = new URLSearchParams(location.search).get('embed') === '1';
 const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, preserveDrawingBuffer:true });
-if(_isEmbedMode){
-  renderer.setClearColor(0x0a0a0a, 1);   // body bg と同じ dark
-}
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -598,14 +514,6 @@ controls.enablePan = false;
 controls.minDistance = 0.8;
 controls.maxDistance = 6;
 controls.target.set(0, 1, 0);
-// 2026-04-25 (rev2): zoom がまだ 2段階に感じる問題対策
-//   zoomSpeed をさらに 0.2 まで下げる（デフォルト 1.0 の 1/5）。
-//   1ホイールノッチで radius * 0.95^0.2 ≈ 0.99 倍 (1%) しか変わらないので
-//   min/max まで届くのに数十ノッチかかる = 無段階感を確保
-controls.zoomSpeed = 0.2;
-controls.rotateSpeed = 0.7;
-controls.enableZoom = true;
-controls.zoomToCursor = false;  // 明示的に false (target 移動の副作用回避)
 // 2026-04-24 夜: 社内フォーム側の体感速度に統一（1.5 → 2.5）。
 //   デザインスタジオ/社内プラットフォーム/フォーム各所すべて同じ viewer.html を使用するため
 //   ここを変えれば全画面一斉に揃う。
@@ -617,153 +525,8 @@ controls.addEventListener('start', () => {
 });
 btnRotate.addEventListener('click', () => { controls.autoRotate = true; updateRotateBtn(); });
 
-// ============================================================
-// 2026-04-25: 外部からの "魔法スピン" 制御（v13プロトタイプ用）
-//   - rotationSpeed: 通常時の autoRotateSpeed を上書き（未指定なら現状の 2.5 維持）
-//   - spinOnce: true で「正面に瞬時スナップ → 288°を1.4秒でcubicカーブ → baseline速度の連続回転にスムーズ接続」
-//   ★ cubic多項式 f(s) = a*s + b*s² + c*s³ を使い、f'(1) が baseline角速度に
-//     一致するよう係数を計算。これにより spin 終了時の "停止 → 再起動" 不連続を解消。
-//   ★ 後方互換: これらフィールドを含まない既存呼び出しは従来通り動作する
-// ============================================================
-let _baselineRotateSpeed = controls.autoRotateSpeed;
-const _SPIN_TOTAL_RAD     = 288 * Math.PI / 180;       // 288°
-const _SPIN_DURATION_MS   = 1800;                      // スピン本編 (静止フェーズ含まず)
-const _SPIN_HOLD_MS       = 250;                       // ★ 開始前「正面静止」フェーズ
-const _SPIN_ACC_START     = 4.0;                       // f''(0) — 初期加速度（大きいほど早く速度上昇）
-let _spinning = false;
-let _spinStartTime = 0;                                // 静止フェーズ込みの開始時刻
-let _spinAccumulatedRad = 0;
-// quintic多項式 f(s) = a*s + b*s² + c*s³ + d*s⁴ + e*s⁵
-// 制約: f(0)=0, f(1)=1, f'(0)=0, f'(1)=baseline, f''(0)=accStart, f''(1)=0
-//   → 速度0から滑らかに加速 → baseline速度で滑らかに着地
-//   → "正面で一瞬止まって見える" + "ゆっくり連続回転に滑らか接続" の両立
-let _spinCoefA = 0, _spinCoefB = 0, _spinCoefC = 0, _spinCoefD = 0, _spinCoefE = 0;
-
 let initialCamPos = camera.position.clone();
 let initialTarget = controls.target.clone();
-
-// 2026-04-25: 魔法スピン用ヘルパー — initialCamPos/initialTarget が確定した後に定義
-function _snapToFront() {
-  // 正面位置に瞬時にスナップ
-  camera.position.copy(initialCamPos);
-  controls.target.copy(initialTarget);
-  camera.lookAt(controls.target);
-  // ★ OrbitControls の内部 spherical state を新しい camera.position から再構築させる
-  //   damping を一時OFFしないと、damping smoother が前の位置に引き戻してしまう
-  const damping = controls.enableDamping;
-  controls.enableDamping = false;
-  controls.update();
-  controls.enableDamping = damping;
-}
-function _rotateCameraAroundTargetY(deltaRad) {
-  // controls.target の Y軸まわりに camera を deltaRad 回転させる。
-  // 2026-04-25 修正: 符号を反転して OrbitControls の autoRotate (CCW from +Y) と
-  // 同じ方向に回るようにした。これで spin と通常自動回転の方向が一致する。
-  const target = controls.target;
-  const ox = camera.position.x - target.x;
-  const oz = camera.position.z - target.z;
-  const cos = Math.cos(deltaRad), sin = Math.sin(deltaRad);
-  const nx = ox * cos - oz * sin;
-  const nz = ox * sin + oz * cos;
-  camera.position.x = target.x + nx;
-  camera.position.z = target.z + nz;
-  camera.lookAt(target);
-}
-function _triggerMagicSpin() {
-  _spinning = true;
-  _spinStartTime = performance.now();   // 0..HOLD は静止 / HOLD..HOLD+DURATION は spin
-  _spinAccumulatedRad = 0;
-  controls.autoRotate = false;
-
-  // baseline角速度（rad/sec）
-  const baselineRadPerSec = _baselineRotateSpeed * (Math.PI / 30);
-  // f'(1) = baseline_velocity を normalized time 単位に換算
-  const v1 = baselineRadPerSec * (_SPIN_DURATION_MS / 1000) / _SPIN_TOTAL_RAD;
-  // quintic 解（f(0)=0, f(1)=1, f'(0)=0, f'(1)=v1, f''(0)=accStart, f''(1)=0）
-  //   a = 0
-  //   b = accStart / 2
-  //   e = 6 - b - 3*v1
-  //   d = 3*b + 7*v1 - 15
-  //   c = 1 - b - d - e
-  const b = _SPIN_ACC_START / 2;
-  _spinCoefA = 0;
-  _spinCoefB = b;
-  _spinCoefE = 6 - b - 3 * v1;
-  _spinCoefD = 3 * b + 7 * v1 - 15;
-  _spinCoefC = 1 - b - _spinCoefD - _spinCoefE;
-
-  _snapToFront();                       // 正面スナップ + OrbitControls 内部状態同期
-  // 2026-04-26: spin中は updateRotateBtn を呼ばない
-  //   呼ぶと autoRotate=false の状態でボタンが瞬間的に表示されてしまうため。
-  //   spin 終了時の tick() で autoRotate=true に戻したあと updateRotateBtn() が呼ばれる。
-}
-
-// ★ 2026-04-25 追加: spin なしで camera を正面にリセットする
-//   STEP01 戻り時など、ユーザーがズーム・回転で動かした視点を初期化したい場面用
-function _resetView() {
-  if (_spinning) { _spinning = false; }
-  _spinAccumulatedRad = 0;
-  _snapToFront();
-  controls.autoRotateSpeed = _baselineRotateSpeed;
-  controls.autoRotate = true;
-  updateRotateBtn();
-}
-
-// ★ 2026-04-26 追加: 指定 area が見える角度に滑らかに回転
-//   v13 STEP 5 でプリント箇所を選んだ時、その箇所が画面中央に来るように 360°+α回す。
-//   Y軸まわりの回転のみ（カメラ高さ・距離は維持）。autoRotate と magic spin の中間動作。
-const AREA_FOCUS_ANGLES_Y = {
-  // 2026-04-26 修正: 左右を反転 (GLB モデルの軸とユーザー視点の対応)
-  front_center:  0,
-  back_center:   Math.PI,
-  back_upper:    Math.PI,
-  left_chest:    Math.PI * 0.30,     // 着る人の左胸 = カメラから見て右側に位置
-  right_chest:   -Math.PI * 0.30,    // 着る人の右胸 = カメラから見て左側
-  left_sleeve:   Math.PI * 0.55,     // 着る人の左袖
-  right_sleeve:  -Math.PI * 0.55,    // 着る人の右袖
-  front_hem:     0,
-  back_hem:      Math.PI,
-  other:         0,
-};
-let _focusing = false;
-let _focusStartTime = 0;
-let _focusFromRad = 0;
-let _focusDeltaRad = 0;
-let _focusAccumulated = 0;        // ★ 累積回転量 (magic spin の _spinAccumulatedRad と同役割)
-let _pendingFocusArea = null;     // (廃止予定だが互換性のため残す)
-const _FOCUS_DURATION_MS = 1300;  // ぐるっと回って止まるまでの時間 (1.3秒)
-
-function _getCurrentCameraYAngle() {
-  // 現在のカメラの Y軸まわり角度 (controls.target を中心)
-  const dx = camera.position.x - controls.target.x;
-  const dz = camera.position.z - controls.target.z;
-  return Math.atan2(dx, dz);  // +Z 正面を 0 とする
-}
-function _focusToArea(areaKey) {
-  const targetAngle = AREA_FOCUS_ANGLES_Y[areaKey];
-  if (typeof targetAngle !== 'number') return;
-  // ★ 2026-04-26 シンプル化: magic spin (色選択時の動作) と同じ「中断して再起動」方式
-  //   - magic spin 中は無視 (色変更などが走ってる)
-  //   - focusing 中なら中断して、現在角度から新しい focus を開始
-  //   → 連打しても累積でぐるぐるしない。各タップで「現在地から目標まで1周」のみ。
-  if (_spinning) return;
-  _pendingFocusArea = null;        // キュー機構は使わない
-  controls.autoRotate = false;
-  _focusing = true;                // 既に true でも上書きで OK (進行中アニメをリスタート)
-  _focusStartTime = performance.now();
-  _focusAccumulated = 0;           // ★ 累積カウンタを 0 に戻す (リスタート時)
-  _focusFromRad = _getCurrentCameraYAngle();
-  // ★ atan2 値 (= AREA_FOCUS_ANGLES_Y) と rotate 量 (= _rotateCameraAroundTargetY 引数) は
-  //   符号が逆。 _rotateCameraAroundTargetY(+θ) でカメラ atan2 値が -θ 変化する。
-  //   さらに「autoRotate と同じ方向 (CCW = +rotate 量) で一周追加」したいので最終的に + にする。
-  let atan2Delta = targetAngle - _focusFromRad;
-  while (atan2Delta >  Math.PI) atan2Delta -= 2 * Math.PI;
-  while (atan2Delta < -Math.PI) atan2Delta += 2 * Math.PI;
-  // rotate 量に変換 (符号反転) + 一周追加 (autoRotate と同じ CCW 方向)
-  _focusDeltaRad = -atan2Delta + 2 * Math.PI;
-  updateRotateBtn();
-}
-
 let shirtMeshes = [];
 
 // ============================================================
@@ -1048,22 +811,6 @@ function drawPrint(print, ctx) {
     default:       dy = area.y + (area.height - dh) / 2;
   }
 
-  // ★ 2026-04-26 追加: offsetX/offsetY (-1.0..1.0) でユーザーが微調整可能
-  //   area.width/height の半分を最大値とし、area 境界を超えない範囲に制限
-  const offX = (typeof print.offsetX === 'number') ? print.offsetX : 0;
-  const offY = (typeof print.offsetY === 'number') ? print.offsetY : 0;
-  if (offX || offY) {
-    const maxShiftX = (area.width  - dw) / 2 + (area.width  * 0.20);   // 多少 area からはみ出してもOK
-    const maxShiftY = (area.height - dh) / 2 + (area.height * 0.20);
-    dx += Math.max(-maxShiftX, Math.min(maxShiftX, offX * area.width  * 0.5));
-    dy += Math.max(-maxShiftY, Math.min(maxShiftY, offY * area.height * 0.5));
-  }
-
-  // ★ 2026-04-26: rotated 描画ロジックは廃止。
-  //   代わりに「画像自体のアスペクト比を入れ替える」方式に変更
-  //   (画像レベルで縦長↔横長 を切替えれば、文字の向きは正向きのまま保てる)
-  //   → 詳細は v13 側 getPrintSampleImg(size, rotated) を参照
-
   // 2026-04-24: 多段階ダウンサンプリング（halving法）
   //   3200px→205pxのような大比率縮小は1回のdrawImageでは粗く見える（袖プリントが荒い主因）。
   //   画像を 2 倍ずつ縮小する中間キャンバスを通すことでシャープな結果を得る。
@@ -1183,15 +930,6 @@ function onLoaded(gltf) {
 
   initTextureCompose();
   loadInputConfig();
-
-  // 2026-04-25: 親ウィンドウに「モデル準備完了」を通知（v13プロト等が
-  // この timing で spinOnce を発動できるようにする。後方互換: 既存の
-  // 親側はこのメッセージを listen していないので無害）
-  try {
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'tshirt3d-ready' }, '*');
-    }
-  } catch(e){}
 }
 
 function onError(err) {
@@ -1308,10 +1046,7 @@ function loadInputConfig() {
   }
 
   // 2. sessionStorage
-  //   ★ 2026-04-26: embed=1 (v13 等の親フォームから iframe 経由で開かれた場合) は
-  //     sessionStorage を読まない。過去のテストデータ (MIYAMOTO HOMARE等) が
-  //     復元されて 3D に意図しないプリントが出る問題を防ぐ。親が postMessage で渡してくる。
-  if (!cfg && !isEmbed && sessionStorage.tshirt3dConfig) {
+  if (!cfg && sessionStorage.tshirt3dConfig) {
     try { cfg = JSON.parse(sessionStorage.tshirt3dConfig); }
     catch(e) { console.warn('sessionStorage parse failed', e); }
   }
@@ -1556,31 +1291,9 @@ async function applyExternalConfig(cfg) {
       state.prints.push({
         id: Date.now() + i,
         area: p.area, method: p.method, size: p.size, image: img,
-        rotated: !!p.rotated,                                      // ★ 縦横切替
-        offsetX: (typeof p.offsetX === 'number') ? p.offsetX : 0,
-        offsetY: (typeof p.offsetY === 'number') ? p.offsetY : 0,
       });
     }
     refreshDemoPrintList();
-  }
-  // 2026-04-25: 外部からのスピン制御（後方互換: 未指定なら現状維持）
-  if (typeof cfg.rotationSpeed === 'number' && isFinite(cfg.rotationSpeed)) {
-    _baselineRotateSpeed = cfg.rotationSpeed;
-    if (!_spinning) controls.autoRotateSpeed = _baselineRotateSpeed;
-  }
-  if (cfg.resetView === true) {
-    _resetView();      // spin なしで camera を正面に戻す
-  } else if (cfg.spinOnce === true) {
-    _triggerMagicSpin();
-  } else if (cfg.focusArea && typeof cfg.focusArea === 'string') {
-    // ★ 2026-04-26: プリント箇所選択時の自動回転
-    _focusToArea(cfg.focusArea);
-  }
-  // ★ 2026-04-26: 位置調整モード (専用)
-  if (cfg.adjustMode === true && cfg.adjustArea){
-    _enterAdjustMode(cfg.adjustArea);
-  } else if (cfg.adjustMode === false){
-    _exitAdjustMode();
   }
   applyState();
 }
@@ -1686,105 +1399,6 @@ shareBtn.addEventListener('click', async () => {
   }
 });
 
-/* ============================================================
-   ★ 2026-04-26 追加: 位置調整モード (postMessage `adjustMode: areaKey` で起動)
-   ============================================================ */
-let _adjustArea = null;       // 調整対象 area key (null = 通常モード)
-let _adjustDragging = false;
-let _adjustStartXY = null;    // pointerdown 時の screen 座標
-let _adjustBaseOffset = null; // pointerdown 時点の offset
-const _ADJUST_SENSITIVITY = 280;  // 画面 280px ドラッグ で offset 1.0 (適度な操作感)
-
-function _enterAdjustMode(area){
-  if(!area) return;
-  _adjustArea = area;
-  controls.enabled = false;
-  controls.autoRotate = false;
-  document.body.classList.add('adjusting');
-  const ov = document.getElementById('adjustOverlay');
-  if(ov) ov.classList.add('on');
-  // 該当 print の現在 offset を初期値として記録
-  const p = state.prints.find(p => p.area === area);
-  _adjustBaseOffset = p ? { x: p.offsetX || 0, y: p.offsetY || 0 } : { x:0, y:0 };
-}
-function _exitAdjustMode(){
-  _adjustArea = null;
-  _adjustDragging = false;
-  _adjustStartXY = null;
-  _adjustBaseOffset = null;
-  controls.enabled = true;
-  controls.autoRotate = true;
-  document.body.classList.remove('adjusting','dragging');
-  const ov = document.getElementById('adjustOverlay');
-  if(ov) ov.classList.remove('on');
-  updateRotateBtn();
-}
-function _adjustResetCurrent(){
-  if(!_adjustArea) return;
-  const p = state.prints.find(p => p.area === _adjustArea);
-  if(p){
-    p.offsetX = 0; p.offsetY = 0;
-    _adjustBaseOffset = { x:0, y:0 };
-    applyState();
-    _notifyOffsetToParent(_adjustArea, 0, 0);
-  }
-}
-function _notifyOffsetToParent(area, offsetX, offsetY){
-  try {
-    parent.postMessage({ type:'tshirt3d-offset', area, offsetX, offsetY }, '*');
-  } catch(e){}
-}
-
-// canvas (renderer.domElement) のドラッグハンドラ
-function _bindAdjustDrag(){
-  const el = renderer.domElement;
-  if(!el) return;
-  const onDown = (e) => {
-    if(!_adjustArea) return;
-    _adjustDragging = true;
-    document.body.classList.add('dragging');
-    _adjustStartXY = { x: e.clientX, y: e.clientY };
-    const p = state.prints.find(p => p.area === _adjustArea);
-    _adjustBaseOffset = p ? { x: p.offsetX || 0, y: p.offsetY || 0 } : { x:0, y:0 };
-    e.preventDefault();
-  };
-  const onMove = (e) => {
-    if(!_adjustArea || !_adjustDragging || !_adjustStartXY) return;
-    // 画面ドラッグ量 → offset 変位
-    // X: 画面右ドラッグ = +offsetX (テクスチャ右へ)
-    // Y: 画面下ドラッグ = +offsetY (テクスチャ下へ)
-    const dx = e.clientX - _adjustStartXY.x;
-    const dy = e.clientY - _adjustStartXY.y;
-    const ox = Math.max(-1.5, Math.min(1.5, _adjustBaseOffset.x + dx / _ADJUST_SENSITIVITY));
-    const oy = Math.max(-1.5, Math.min(1.5, _adjustBaseOffset.y + dy / _ADJUST_SENSITIVITY));
-    const p = state.prints.find(p => p.area === _adjustArea);
-    if(p){ p.offsetX = ox; p.offsetY = oy; }
-    applyState();
-    _notifyOffsetToParent(_adjustArea, ox, oy);
-    e.preventDefault();
-  };
-  const onUp = (e) => {
-    if(!_adjustArea) return;
-    _adjustDragging = false;
-    _adjustStartXY = null;
-    document.body.classList.remove('dragging');
-  };
-  el.addEventListener('pointerdown', onDown, { passive:false });
-  el.addEventListener('pointermove', onMove, { passive:false });
-  el.addEventListener('pointerup',   onUp);
-  el.addEventListener('pointercancel', onUp);
-  el.addEventListener('pointerleave',  onUp);
-}
-_bindAdjustDrag();
-
-// 完了ボタン・リセットボタン bind
-document.addEventListener('DOMContentLoaded', () => {
-  const btnDone  = document.getElementById('adjustDone');
-  const btnReset = document.getElementById('adjustReset');
-  if(btnDone)  btnDone.addEventListener('click',  _exitAdjustMode);
-  if(btnReset) btnReset.addEventListener('click', _adjustResetCurrent);
-});
-
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
@@ -1792,55 +1406,6 @@ addEventListener('resize', () => {
 });
 
 function tick() {
-  // 2026-04-25: 魔法スピン進行（quintic + 静止フェーズ）
-  //   フェーズ1 (0..HOLD_MS): 正面静止 — ユーザーが「正面のT-shirt」を確実に見える
-  //   フェーズ2 (HOLD_MS..HOLD_MS+DURATION): 288°回転を quintic で滑らかに
-  //   フェーズ3 (終了後): baseline速度の autoRotate に handoff
-  if (_spinning) {
-    const elapsed = performance.now() - _spinStartTime;
-    if (elapsed < _SPIN_HOLD_MS) {
-      // 静止フェーズ — 何もしない（カメラは _snapToFront でセット済み）
-    } else if (elapsed >= _SPIN_HOLD_MS + _SPIN_DURATION_MS) {
-      const remaining = _SPIN_TOTAL_RAD - _spinAccumulatedRad;
-      if (Math.abs(remaining) > 1e-6) _rotateCameraAroundTargetY(remaining);
-      _spinAccumulatedRad = _SPIN_TOTAL_RAD;
-      _spinning = false;
-      controls.autoRotateSpeed = _baselineRotateSpeed;
-      controls.autoRotate = true;
-      updateRotateBtn();
-    } else {
-      const s = (elapsed - _SPIN_HOLD_MS) / _SPIN_DURATION_MS;
-      const s2 = s*s, s3 = s2*s, s4 = s3*s, s5 = s4*s;
-      const fs = _spinCoefA*s + _spinCoefB*s2 + _spinCoefC*s3 + _spinCoefD*s4 + _spinCoefE*s5;
-      const totalSoFar = _SPIN_TOTAL_RAD * fs;
-      const delta = totalSoFar - _spinAccumulatedRad;
-      _spinAccumulatedRad = totalSoFar;
-      if (delta) _rotateCameraAroundTargetY(delta);
-    }
-  }
-  // ★ 2026-04-26 修正: focus アニメ進行 (magic spin と同じ累積方式)
-  //   旧版バグ: targetAngle (線形値、2π超え可) と curAngle (atan2 で [-π,π] にラップ) を
-  //             直接引き算 → 毎フレーム余計に回転 → 8〜10周ぐるぐる現象
-  //   修正版: 累積回転量 _focusAccumulated を保持し、目標累積量との差分だけ回す
-  if (_focusing) {
-    const elapsed = performance.now() - _focusStartTime;
-    const t = Math.min(1, elapsed / _FOCUS_DURATION_MS);
-    // ease-in-out cubic
-    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    const totalSoFar = _focusDeltaRad * eased;        // 累積目標 (0 → _focusDeltaRad)
-    const delta = totalSoFar - _focusAccumulated;     // 前フレームからの差分
-    _focusAccumulated = totalSoFar;
-    if (Math.abs(delta) > 1e-6) _rotateCameraAroundTargetY(delta);
-    if (t >= 1) {
-      // 残り回転を完全実行 (浮動小数点誤差吸収)
-      const remaining = _focusDeltaRad - _focusAccumulated;
-      if (Math.abs(remaining) > 1e-6) _rotateCameraAroundTargetY(remaining);
-      _focusAccumulated = _focusDeltaRad;
-      _focusing = false;
-      controls.autoRotate = true;
-      updateRotateBtn();
-    }
-  }
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
