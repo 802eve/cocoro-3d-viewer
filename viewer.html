@@ -14,10 +14,6 @@
   }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); font-family: -apple-system, "Segoe UI", "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", sans-serif; color:var(--text); }
-  /* ★ 2026-04-30 embed mode: 透過レンダリング (親フォーム側のテキスト/枠が透けて見える) */
-  html.embed-transparent,
-  html.embed-transparent body,
-  html.embed-transparent #app { background: transparent !important; }
   #app { position:fixed; inset:0; }
 
   #progress { position:fixed; top:0; left:0; right:0; height:3px; background:transparent; z-index:50; }
@@ -614,8 +610,7 @@ let renderer;
 try {
   renderer = new THREE.WebGLRenderer({
     antialias: !_isIOS,                     // iOS では antialias OFF (安定化)
-    // ★ 2026-04-30 embed モードでは alpha:true (親の text や枠が透けて見えるように)
-    alpha: _isEmbedMode,
+    alpha: _isEmbedMode,                    // embed 時は透過 (親の bg / text が透ける)
     preserveDrawingBuffer: !_isMobile,      // モバイルでは false でメモリ削減
     powerPreference: 'default',
     failIfMajorPerformanceCaveat: false,
@@ -628,10 +623,9 @@ try {
   throw e;
 }
 if(_isEmbedMode){
-  renderer.setClearColor(0x000000, 0);   // ★ 透過: 親のテキスト/枠が透けて見えるように
-  try { document.documentElement.classList.add('embed-transparent'); } catch(e){}
-  try { document.body.classList.add('embed-transparent'); } catch(e){}
+  renderer.setClearColor(0x000000, 0);   // 透過クリア
 }
+// embed mode 以外は body bg = var(--bg) #e8e8e8 (light) のまま
 const _MAX_DPR = _isMobile ? 1.5 : 2;
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, _MAX_DPR));
 renderer.setSize(innerWidth, innerHeight);
