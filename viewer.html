@@ -588,12 +588,59 @@ camera.position.set(0, 1.2, 2.6);
 //   → スライド時に iframe の「モデルが居ない部分」も親ステージと完全一致 → 黒帯消滅
 //   alpha:false の方が描画コスト低い & contrast 0 は確実
 const _isEmbedMode = new URLSearchParams(location.search).get('embed') === '1';
-const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, preserveDrawingBuffer:true });
+// ★ F10 2026-04-30: iOS 安定化
+//   - antialias を iOS で false にする (古いiPad/iPhone では描画エラー要因)
+//   - preserveDrawingBuffer は screenshot が必要な時のみ true
+//   - PixelRatio はモバイルで 1.5 に制限 (memory 削減)
+const _ua = navigator.userAgent || '';
+const _isIOS = /iP(ad|hone|od)/.test(_ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const _isMobile = _isIOS || /Android|Mobile/.test(_ua);
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({
+    antialias: !_isIOS,                     // iOS では antialias OFF (安定化)
+    alpha: false,
+    preserveDrawingBuffer: !_isMobile,      // モバイルでは false でメモリ削減
+    powerPreference: 'default',
+    failIfMajorPerformanceCaveat: false,
+  });
+} catch(e){
+  // WebGL 取得失敗 (iOS Low Power Mode 等)
+  console.error('WebGLRenderer creation failed', e);
+  document.getElementById('error').style.display = 'block';
+  document.getElementById('errorDetail').textContent = 'WebGL 初期化エラー: ' + (e.message || e);
+  throw e;
+}
 if(_isEmbedMode){
   renderer.setClearColor(0x0a0a0a, 1);   // body bg と同じ dark
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const _MAX_DPR = _isMobile ? 1.5 : 2;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, _MAX_DPR));
 renderer.setSize(innerWidth, innerHeight);
+
+// ★ F10: WebGL context-lost ハンドラ (iOS でメモリ不足時の自動リカバリ)
+const _glCanvas = renderer.domElement;
+_glCanvas.addEventListener('webglcontextlost', (ev) => {
+  ev.preventDefault();
+  console.warn('WebGL context lost — attempting recovery in 1s');
+  try {
+    const errEl = document.getElementById('error');
+    if(errEl){
+      errEl.style.display = 'block';
+      const det = document.getElementById('errorDetail');
+      if(det) det.textContent = '3D描画が一時停止しました。再試行中…';
+    }
+  } catch(e){}
+}, false);
+_glCanvas.addEventListener('webglcontextrestored', () => {
+  console.log('WebGL context restored');
+  try {
+    const errEl = document.getElementById('error');
+    if(errEl) errEl.style.display = 'none';
+  } catch(e){}
+  // モデル再ロード
+  setTimeout(() => { try{ location.reload(); }catch(e){} }, 200);
+}, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 // ACESFilmicは映画的に色を圧縮するため、シャツの色再現には NoToneMapping が忠実
 renderer.toneMapping = THREE.NoToneMapping;
@@ -1905,6 +1952,7 @@ function tick() {
       _spinAccumulatedRad = _SPIN_TOTAL_RAD;
       _spinning = false;
       controls.autoRotateSpeed = _baselineRotateSpeed;
+      // ★ spinOnce 後は連続回転に handoff (focusArea で初めて停止)
       controls.autoRotate = true;
       updateRotateBtn();
     } else {
@@ -1936,7 +1984,8 @@ function tick() {
       if (Math.abs(remaining) > 1e-6) _rotateCameraAroundTargetY(remaining);
       _focusAccumulated = _focusDeltaRad;
       _focusing = false;
-      controls.autoRotate = true;
+      // ★ F4 2026-04-30: focusArea 終了後は自動回転を停止 (プリント箇所で止まり続ける)
+      controls.autoRotate = false;
       updateRotateBtn();
     }
   }
