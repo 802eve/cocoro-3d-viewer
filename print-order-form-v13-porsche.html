@@ -981,7 +981,24 @@ img{ display:block; max-width:100%; }
 }
 .cat-card:hover .cat-icon{ transform:scale(1.06); }
 .cat-card.is-active .cat-icon{ transform:scale(1.10); }
-@media (max-width:480px){ .cat-icon{ font-size:38px; padding:12px 4px 2px; } }
+/* ★ 2026-04-30 SVG アイコン (絵文字より視認性UP・テーマ色追従) */
+.cat-icon.cat-icon-svg{
+  font-size:0;
+  padding:18px 8px 6px;
+  color: var(--fg-muted);
+  transition: color var(--dur-mid) var(--easing), transform var(--dur-slow) var(--easing);
+}
+.cat-icon.cat-icon-svg svg{
+  width:54px; height:54px;
+  display:block;
+}
+.cat-card:hover .cat-icon.cat-icon-svg{ color: var(--fg); }
+.cat-card.is-active .cat-icon.cat-icon-svg{ color: var(--accent); }
+@media (max-width:480px){
+  .cat-icon{ font-size:38px; padding:12px 4px 2px; }
+  .cat-icon.cat-icon-svg{ padding:14px 4px 4px; }
+  .cat-icon.cat-icon-svg svg{ width:42px; height:42px; }
+}
 
 .cat-meta{
   padding:10px 12px 12px;
@@ -2732,7 +2749,9 @@ img{ display:block; max-width:100%; }
 const CATEGORIES = [
   {
     key:'tshirt', label:'Tシャツ', sub:'T-SHIRT',
-    icon:'👕', priceFrom:790, model3d:'tshirt', supported:true,
+    icon:'👕',
+    iconSvg:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22 8 L12 14 L8 26 L16 28 L18 24 L18 56 L46 56 L46 24 L48 28 L56 26 L52 14 L42 8 L38 12 Q32 16 26 12 Z"/></svg>',
+    priceFrom:790, model3d:'tshirt', supported:true,
     feature:'通年定番。 オリジナルプリントの王道',
     items:[
       { sku:'00085', maker:'Printstar', name:'ヘビーウェイトTシャツ', oz:'5.6oz', material:'綿100%', basePrice:1090,
@@ -2814,6 +2833,7 @@ const CATEGORIES = [
   },
   {
     key:'long', label:'ロングTシャツ', sub:'LONG SLEEVE',
+    iconSvg:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22 8 L8 14 L4 50 L14 52 L18 30 L18 56 L46 56 L46 30 L50 52 L60 50 L56 14 L42 8 L38 12 Q32 16 26 12 Z"/></svg>',
     feature:'春秋の定番。 重ね着にも◎',
     icon:'🥼', priceFrom:1260, model3d:'long_sleeve', supported:true,
     items:[
@@ -2879,6 +2899,7 @@ const CATEGORIES = [
   },
   {
     key:'polo', label:'ポロシャツ', sub:'POLO',
+    iconSvg:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22 8 L12 14 L8 26 L16 28 L18 24 L18 56 L46 56 L46 24 L48 28 L56 26 L52 14 L42 8 L38 12 L32 22 L26 12 Z"/><path d="M28 12 L32 30 L36 12"/><path d="M30 18 L30 26 M34 18 L34 26"/></svg>',
     feature:'清潔感のあるユニフォーム向き',
     icon:'👔', priceFrom:1450, model3d:null, supported:false,
     items:[
@@ -2924,6 +2945,7 @@ const CATEGORIES = [
   },
   {
     key:'hoodie', label:'パーカー', sub:'HOODIE',
+    iconSvg:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M20 14 Q32 4 44 14 L52 18 L56 30 L48 32 L48 58 L16 58 L16 32 L8 30 L12 18 Z"/><path d="M22 14 Q32 26 42 14"/><path d="M30 30 L30 50 M34 30 L34 50"/></svg>',
     feature:'秋冬定番。 厚地でしっかり',
     icon:'🧥', priceFrom:3720, model3d:null, supported:false,
     items:[
@@ -3030,6 +3052,7 @@ const CATEGORIES = [
   },
   {
     key:'sweat', label:'スウェット', sub:'SWEATSHIRT',
+    iconSvg:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M20 10 L8 16 L4 50 L14 52 L18 32 L18 58 L46 58 L46 32 L50 52 L60 50 L56 16 L44 10 Q40 18 32 18 Q24 18 20 10 Z"/><path d="M20 10 Q32 14 44 10"/></svg>',
     feature:'カジュアルに使える厚手トレーナー',
     icon:'🥋', priceFrom:2860, model3d:null, supported:false,
     items:[
@@ -3598,7 +3621,7 @@ const PRICING = {
       '34x12cm':   {fee:0, label:'袖いっぱい（縦34×幅12cm）'},
     },
   },
-  dataFee: { complete:0, adjust:4000, design:10000 },
+  dataFee: { complete:0, adjust:4000, design:10000, studio:0 },   // ★ 2026-04-30 studio (デザインスタジオ製作) はデータ代無料
   bodyDiscount: [
     {minQty:100, rate:0.40},
     {minQty:65,  rate:0.30},
@@ -4349,7 +4372,7 @@ function renderCategoryGrid(){
       <div class="cat-card ${active?'is-active':''}"
            data-key="${c.key}" role="button" tabindex="0" aria-label="${c.label}">
         ${!c.supported ? '<div class="cat-badge">3D Soon</div>' : ''}
-        <div class="cat-icon">${c.icon}</div>
+        <div class="cat-icon ${c.iconSvg ? 'cat-icon-svg' : ''}">${c.iconSvg || c.icon}</div>
         <div class="cat-meta">
           <div class="cat-name">${c.label}</div>
           ${c.feature ? `<div class="cat-feature">${c.feature}</div>` : ''}
