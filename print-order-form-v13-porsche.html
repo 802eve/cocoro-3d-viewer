@@ -94,6 +94,234 @@ img{ display:block; max-width:100%; }
   grid-template-rows: 56px 1fr;
 }
 
+/* ========================================================================
+   ★ 2026-04-30 WELCOME SCREEN (オープニング)
+   ======================================================================== */
+.welcome-screen{
+  position:fixed; inset:0;
+  z-index:9999;
+  background: radial-gradient(ellipse at 30% 30%, #1a1a1a 0%, #050505 60%, #000 100%);
+  color:var(--fg);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  opacity:1; transition: opacity .55s var(--easing), visibility .55s var(--easing);
+}
+.welcome-screen.is-out{
+  opacity:0; visibility:hidden;
+  pointer-events:none;
+}
+/* グリッド背景ライン */
+.welcome-bg-grid{
+  position:absolute; inset:-2px;
+  display:grid;
+  grid-template-columns: repeat(8, 1fr);
+  pointer-events:none;
+  opacity:.18;
+}
+.welcome-bg-grid > span{
+  border-right:1px solid #fff;
+}
+.welcome-bg-grid > span:last-child{ border-right:none; }
+/* 左下の赤い光彩 */
+.welcome-bg-glow{
+  position:absolute;
+  bottom:-18%; left:-12%;
+  width:55vw; height:55vw;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 60%);
+  opacity:.18;
+  pointer-events:none;
+  filter: blur(40px);
+  animation: wsGlowPulse 8s ease-in-out infinite;
+}
+@keyframes wsGlowPulse{
+  0%,100%{ transform: translate(0,0) scale(1); opacity:.18; }
+  50%    { transform: translate(20px,-20px) scale(1.15); opacity:.28; }
+}
+.welcome-inner{
+  position:relative; z-index:2;
+  width:min(720px, 92vw);
+  padding:0 22px;
+  display:flex; flex-direction:column; align-items:flex-start;
+  text-align:left;
+}
+.welcome-mark{
+  display:inline-flex; align-items:baseline; gap:8px;
+  margin-bottom:48px;
+  font-family:var(--font-num);
+  letter-spacing:.18em;
+  font-size:13px;
+  color:var(--fg-muted);
+  opacity:0;
+  animation: wsFadeIn .8s var(--easing) .15s forwards;
+}
+.welcome-mark .wm-dot{
+  width:8px; height:8px; border-radius:50%;
+  background:var(--accent);
+  display:inline-block;
+  animation: wsDotBlink 2.4s ease-in-out infinite;
+}
+@keyframes wsDotBlink{
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:.3; transform:scale(.85); }
+}
+.welcome-mark .wm-text{
+  color:var(--fg); font-weight:500;
+}
+.welcome-mark .wm-sub{
+  color:var(--fg-muted); font-size:10px;
+}
+.welcome-title{
+  margin:0 0 20px;
+  font-size:clamp(28px, 5vw, 48px);
+  line-height:1.18;
+  font-weight:300;
+  letter-spacing:.01em;
+  color:var(--fg);
+}
+.welcome-title .wt-line{
+  display:block;
+  opacity:0;
+  transform: translateY(14px);
+}
+.welcome-title .wt-line-1{ animation: wsLineUp .7s var(--easing) .35s forwards; }
+.welcome-title .wt-line-2{ animation: wsLineUp .7s var(--easing) .50s forwards; }
+.welcome-title .wt-line-3{
+  color:var(--accent); font-weight:500;
+  animation: wsLineUp .7s var(--easing) .65s forwards;
+}
+.welcome-title .wt-line-4{ animation: wsLineUp .7s var(--easing) .80s forwards; }
+@keyframes wsLineUp{
+  to{ opacity:1; transform: translateY(0); }
+}
+@keyframes wsFadeIn{
+  to{ opacity:1; }
+}
+.welcome-lead{
+  margin:0 0 44px;
+  font-size:14px;
+  line-height:1.85;
+  color:var(--fg-muted);
+  letter-spacing:.04em;
+  opacity:0;
+  animation: wsFadeIn .8s var(--easing) 1.0s forwards;
+}
+.welcome-actions{
+  display:flex; flex-direction:column; gap:12px;
+  width:100%;
+  opacity:0;
+  animation: wsFadeIn .8s var(--easing) 1.2s forwards;
+}
+.welcome-btn{
+  display:flex; align-items:center; gap:18px;
+  padding:18px 24px;
+  width:100%;
+  background:transparent;
+  border:1px solid rgba(255,255,255,.18);
+  color:var(--fg);
+  font-family:inherit;
+  cursor:pointer;
+  text-align:left;
+  transition: all var(--dur-mid) var(--easing);
+  position:relative;
+  overflow:hidden;
+}
+.welcome-btn::before{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(90deg, var(--accent) 0%, var(--accent) 100%);
+  transform: translateX(-101%);
+  transition: transform var(--dur-mid) var(--easing);
+  z-index:-1;
+}
+.welcome-btn:hover{
+  border-color:var(--accent);
+  transform: translateX(4px);
+}
+.welcome-btn:hover::before{
+  transform: translateX(0);
+}
+.welcome-btn-primary{
+  border-color:var(--accent);
+  background:var(--accent-soft);
+}
+.welcome-btn-primary:hover{
+  background:var(--accent);
+  color:#fff;
+}
+.welcome-btn-tertiary{
+  border-color: rgba(255,255,255,.12);
+  opacity:.7;
+}
+.welcome-btn-tertiary .wb-arrow{ font-size:18px; color:var(--fg-muted); }
+.welcome-btn-tertiary:hover{
+  opacity:1;
+  border-color: rgba(255,255,255,.25);
+}
+.welcome-btn .wb-arrow{
+  font-size:24px;
+  font-weight:300;
+  width:32px; flex-shrink:0;
+  color:var(--accent);
+  transition: color var(--dur-mid) var(--easing);
+}
+.welcome-btn-primary:hover .wb-arrow,
+.welcome-btn:hover .wb-arrow{ color:#fff; }
+.welcome-btn .wb-content{
+  display:flex; flex-direction:column; gap:2px;
+  flex:1;
+}
+.welcome-btn .wb-eyebrow{
+  font-size:9px; letter-spacing:.28em;
+  color:var(--fg-muted);
+  font-weight:500;
+}
+.welcome-btn-primary .wb-eyebrow{ color:rgba(255,255,255,.7); }
+.welcome-btn .wb-label{
+  font-size:18px; font-weight:400;
+  letter-spacing:.02em;
+}
+.welcome-btn .wb-detail{
+  font-size:11px; color:var(--fg-muted);
+  margin-top:4px; letter-spacing:.04em;
+}
+.welcome-btn-primary:hover .wb-eyebrow,
+.welcome-btn:hover .wb-eyebrow,
+.welcome-btn:hover .wb-detail{ color:rgba(255,255,255,.85); }
+.welcome-clear{
+  margin-top:16px;
+  background:none; border:none;
+  color:var(--fg-muted);
+  font-size:11px;
+  letter-spacing:.04em;
+  cursor:pointer;
+  padding:6px 0;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  font-family:inherit;
+  opacity:0;
+  animation: wsFadeIn .8s var(--easing) 1.4s forwards;
+}
+.welcome-clear:hover{ color:var(--fg); }
+.welcome-corner-meta{
+  position:absolute;
+  bottom:24px; right:24px;
+  font-family:var(--font-num);
+  font-size:10px; letter-spacing:.18em;
+  color:rgba(255,255,255,.35);
+  display:flex; gap:8px;
+  opacity:0;
+  animation: wsFadeIn .8s var(--easing) 1.6s forwards;
+}
+.welcome-corner-meta .wcm-dot{ opacity:.5; }
+@media (max-width: 640px){
+  .welcome-inner{ padding:0 16px; }
+  .welcome-mark{ margin-bottom:32px; font-size:11px; }
+  .welcome-title{ font-size:32px; }
+  .welcome-lead{ font-size:12px; margin-bottom:32px; }
+  .welcome-btn{ padding:16px 18px; gap:14px; }
+  .welcome-btn .wb-label{ font-size:16px; }
+  .welcome-corner-meta{ bottom:14px; right:16px; font-size:9px; }
+}
+
 /* ------------------------------------------------------------------------
    HEADER
    ------------------------------------------------------------------------ */
@@ -765,6 +993,16 @@ img{ display:block; max-width:100%; }
   font-size:12px; font-weight:400; letter-spacing:.04em;
   color:var(--fg);
 }
+/* ★ 2026-04-30 カテゴリの一行特徴 */
+.cat-feature{
+  font-size:10px; color:var(--fg-muted); margin-top:4px;
+  letter-spacing:.02em; line-height:1.4;
+  opacity:.85;
+}
+.cat-card.is-active .cat-feature{
+  color:var(--accent);
+  opacity:1;
+}
 .cat-price{
   font-size:9px; color:var(--fg-muted); margin-top:3px;
   letter-spacing:.16em; text-transform:uppercase;
@@ -779,6 +1017,91 @@ img{ display:block; max-width:100%; }
   text-transform:uppercase; font-weight:500;
   background:rgba(0,0,0,.55);
   backdrop-filter: blur(4px);
+}
+
+/* ----- STEP 2: Filter Bar (★ 2026-04-29) ----- */
+.product-filter-bar{
+  position:sticky;
+  top:-1px;
+  z-index:20;
+  background:linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel) 88%, rgba(13,13,13,0));
+  padding:6px 0 12px;
+  margin-bottom:10px;
+  display:grid;
+  gap:6px;
+  transition: transform .25s var(--easing), opacity .2s var(--easing), max-height .25s var(--easing), margin .25s var(--easing), padding .25s var(--easing);
+  max-height:200px;
+  overflow:hidden;
+}
+.product-filter-bar.is-collapsed{
+  transform: translateY(-100%);
+  opacity:0;
+  max-height:0;
+  margin:0;
+  padding:0;
+  pointer-events:none;
+}
+.pfb-row{
+  display:grid;
+  grid-template-columns: 64px 1fr;
+  align-items:center;
+  gap:8px;
+}
+.pfb-label{
+  font-size:9px;
+  letter-spacing:.18em;
+  color:var(--fg-muted);
+  text-transform:uppercase;
+  font-weight:500;
+}
+.pfb-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.filter-chip{
+  background:transparent;
+  color:var(--fg);
+  border:1px solid var(--line);
+  padding:6px 12px;
+  font-size:11px;
+  letter-spacing:.04em;
+  cursor:pointer;
+  transition: all var(--dur-mid) var(--easing);
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-family: inherit;
+  white-space:nowrap;
+}
+.filter-chip small{
+  font-size:9px;
+  color:var(--fg-muted);
+  letter-spacing:.04em;
+}
+.filter-chip:hover{
+  border-color:var(--line-strong);
+  background:rgba(255,255,255,.02);
+}
+.filter-chip.is-active{
+  background:var(--accent);
+  color:#000;
+  border-color:var(--accent);
+}
+.filter-chip.is-active small{
+  color:rgba(0,0,0,.55);
+}
+.pfb-result{
+  font-size:10px;
+  color:var(--fg-muted);
+  letter-spacing:.06em;
+  text-align:right;
+  padding-right:2px;
+}
+@media (max-width:480px){
+  .pfb-row{ grid-template-columns: 48px 1fr; }
+  .filter-chip{ padding:5px 10px; font-size:10px; }
+  .filter-chip small{ font-size:8px; }
 }
 
 /* ----- STEP 2: Product Cards ----- */
@@ -823,6 +1146,22 @@ img{ display:block; max-width:100%; }
 }
 .pr-name{
   font-size:14px; font-weight:400; letter-spacing:.01em;
+}
+/* ★ 2026-04-30 公式詳細リンク */
+.pr-detail-link{
+  display:inline-block;
+  margin-top:6px;
+  font-size:10px;
+  color:var(--fg-muted);
+  text-decoration:none;
+  border-bottom:1px solid rgba(255,255,255,.15);
+  padding:1px 0;
+  letter-spacing:.04em;
+  transition: color .15s var(--easing), border-color .15s var(--easing);
+}
+.pr-detail-link:hover{
+  color:var(--accent);
+  border-bottom-color:var(--accent);
 }
 .pr-meta{
   font-size:10px; color:var(--fg-muted); margin-top:4px;
@@ -1258,9 +1597,30 @@ img{ display:block; max-width:100%; }
 .ink-pick-cell.is-light .ink-pick-name{
   color:#000; text-shadow:0 0 3px rgba(255,255,255,.9), 0 0 2px rgba(255,255,255,.9);
 }
+/* ★ 2026-04-30 特殊色 (金銀/蛍光) のアップチャージマーク */
+.ink-pick-cell .ink-pick-upcharge{
+  position:absolute;
+  top:3px; right:3px;
+  background:#000;
+  color:#ffd700;
+  font-size:8px;
+  font-weight:700;
+  padding:2px 4px;
+  border-radius:2px;
+  letter-spacing:0;
+  font-family: var(--font-num);
+  box-shadow:0 1px 2px rgba(0,0,0,.4);
+  border:1px solid rgba(255,215,0,.5);
+}
+.ink-pick-cell.is-light .ink-pick-upcharge{
+  background:#fff;
+  color:#c00;
+  border-color:#c00;
+}
 @media (max-width:480px){
   .ink-picker-grid{ grid-template-columns: repeat(5, 1fr); gap:4px; }
   .ink-pick-cell .ink-pick-name{ font-size:7px; }
+  .ink-pick-cell .ink-pick-upcharge{ font-size:7px; padding:1px 3px; }
 }
 
 /* プリントセル ヘッダー: 選択時の右側マーカー強化 */
@@ -1490,6 +1850,8 @@ img{ display:block; max-width:100%; }
   font-size:13px; color:var(--fg); margin-top:2px; font-weight:400;
 }
 .dl-meta .dl-sub{ font-size:10px; color:var(--fg-dim); margin-top:1px; letter-spacing:.04em; }
+.dl-meta .dl-date{ font-size:10px; color:var(--fg-muted); margin-top:3px; letter-spacing:.04em; font-family:var(--font-num); }
+.deadline-card.is-on .dl-meta .dl-date{ color:var(--accent); font-weight:600; }
 .dl-mul{
   font-family:var(--font-num); font-size:14px; font-weight:400;
   color:var(--accent);
@@ -1524,6 +1886,27 @@ img{ display:block; max-width:100%; }
   text-transform:none; font-weight:600;
   margin-left:8px;
 }
+/* ★ 2026-04-30 リピート注文番号などの補足ヒント */
+.ff-lbl .ff-hint{
+  font-size:9px; color:var(--accent);
+  letter-spacing:.04em; text-transform:none; font-weight:400;
+  margin-left:8px;
+}
+.ff-note{
+  margin-top:10px;
+  padding:10px 14px;
+  background: rgba(213, 0, 28, .06);
+  border-left: 2px solid var(--accent);
+  font-size:11.5px;
+  color:var(--fg-muted);
+  line-height:1.6;
+  display:flex; gap:8px;
+  align-items:flex-start;
+}
+.ff-note-icon{
+  font-size:14px; flex-shrink:0;
+}
+.ff-note strong{ color:var(--fg); font-weight:500; }
 .ff input, .ff select{
   appearance:none; -webkit-appearance:none;
   width:100%;
@@ -1890,10 +2273,110 @@ img{ display:block; max-width:100%; }
 .section-label{
   font-size:10px; letter-spacing:.3em; color:var(--fg-muted);
   text-transform:uppercase; margin-bottom:10px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; flex-wrap:wrap;
+}
+/* ★ 2026-04-29 セクションラベル横の小さなヘルプリンク (2026-04-30 更新: 視認性UP) */
+.section-help{
+  font-size:11px;
+  letter-spacing:.02em;
+  color:#fff;
+  background: rgba(213, 0, 28, .85);
+  text-decoration:none;
+  text-transform:none;
+  font-weight:600;
+  padding:4px 10px 4px 9px;
+  border-radius:3px;
+  transition: all .2s var(--easing);
+  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  border:1px solid rgba(255,255,255,.15);
+}
+.section-help::before{
+  content:"?";
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:14px; height:14px;
+  background:#fff;
+  color:var(--accent);
+  border-radius:50%;
+  font-size:10px;
+  font-weight:700;
+  font-family:var(--font-num);
+}
+.section-help:hover{
+  background: var(--accent);
+  border-color: rgba(255,255,255,.4);
+  transform: translateY(-1px);
+  box-shadow:0 2px 8px rgba(213,0,28,.4);
 }
 </style>
 </head>
 <body>
+
+<!-- ============================================================
+     ★ 2026-04-30 オープニング画面 (案A: 新規 / 保存内容)
+     ============================================================ -->
+<div class="welcome-screen" id="welcomeScreen">
+  <div class="welcome-bg-grid" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <div class="welcome-bg-glow" aria-hidden="true"></div>
+  <div class="welcome-inner">
+    <div class="welcome-mark">
+      <span class="wm-dot"></span>
+      <span class="wm-text">COCORO</span>
+      <span class="wm-sub">Configurator</span>
+    </div>
+    <h1 class="welcome-title">
+      <span class="wt-line wt-line-1">あなただけの</span>
+      <span class="wt-line wt-line-2">オリジナル</span>
+      <span class="wt-line wt-line-3" id="wtAccent">Tシャツ</span>
+      <span class="wt-line wt-line-4">を、ここから。</span>
+    </h1>
+    <p class="welcome-lead">
+      8ステップで、ボディ・カラー・サイズ・プリント仕様まで<br>
+      まとめてお見積りできます。
+    </p>
+    <div class="welcome-actions" id="welcomeActions">
+      <button class="welcome-btn welcome-btn-primary" id="btnNewStart" type="button">
+        <span class="wb-arrow">→</span>
+        <span class="wb-content">
+          <span class="wb-eyebrow">START</span>
+          <span class="wb-label">新規で始める</span>
+        </span>
+      </button>
+      <!-- 保存内容ボタンは saved があれば JS で表示 -->
+      <button class="welcome-btn welcome-btn-secondary" id="btnResume" type="button" hidden>
+        <span class="wb-arrow">↩</span>
+        <span class="wb-content">
+          <span class="wb-eyebrow" id="wbResumeEyebrow">SAVED ・ — 前</span>
+          <span class="wb-label">続きから再開</span>
+          <span class="wb-detail" id="wbResumeDetail">—</span>
+        </span>
+      </button>
+      <!-- JSON ファイルから復元 -->
+      <button class="welcome-btn welcome-btn-tertiary" id="btnLoadJson" type="button">
+        <span class="wb-arrow">📁</span>
+        <span class="wb-content">
+          <span class="wb-eyebrow">FILE</span>
+          <span class="wb-label">保存したJSONファイルから復元</span>
+        </span>
+      </button>
+      <input type="file" id="loadJsonFile" accept=".json,application/json" hidden>
+    </div>
+    <button class="welcome-clear" id="btnClearSaved" type="button" hidden>保存データを削除して新規で始める</button>
+    <div class="welcome-corner-meta">
+      <span>v13 PROTO</span>
+      <span class="wcm-dot">·</span>
+      <span>2026 SPRING</span>
+    </div>
+  </div>
+</div>
 
 <div class="app intro-mode" id="app">
   <!-- ============= HEADER ============= -->
@@ -1983,7 +2466,32 @@ img{ display:block; max-width:100%; }
 
         <!-- ========== STEP 2: Product ========== -->
         <div class="step-pane" id="pane-2">
-          <div class="section-label">シリーズ・厚み</div>
+          <div class="section-label">
+            シリーズ・厚み
+            <a href="help-fabric.html" target="_blank" rel="noopener" class="section-help">商品詳細・素材にお困りの方は ›</a>
+          </div>
+          <!-- ★ 2026-04-29 メーカー・素材フィルタバー（スクロール時に隠れる） -->
+          <div class="product-filter-bar" id="productFilterBar">
+            <div class="pfb-row">
+              <div class="pfb-label">メーカー</div>
+              <div class="pfb-chips">
+                <button type="button" class="filter-chip is-active" data-filter="maker" data-val="">すべて</button>
+                <button type="button" class="filter-chip" data-filter="maker" data-val="Printstar">TOMS<small>(Printstar)</small></button>
+                <button type="button" class="filter-chip" data-filter="maker" data-val="UnitedAthle">CAB<small>(United Athle)</small></button>
+              </div>
+            </div>
+            <div class="pfb-row">
+              <div class="pfb-label">素材</div>
+              <div class="pfb-chips">
+                <button type="button" class="filter-chip is-active" data-filter="material" data-val="">すべて</button>
+                <button type="button" class="filter-chip" data-filter="material" data-val="綿">綿</button>
+                <button type="button" class="filter-chip" data-filter="material" data-val="ドライ">ドライ</button>
+                <button type="button" class="filter-chip" data-filter="material" data-val="綿ポリ">綿ポリ</button>
+                <button type="button" class="filter-chip" data-filter="material" data-val="ナイロン">ナイロン</button>
+              </div>
+            </div>
+            <div class="pfb-result" id="pfbResult"></div>
+          </div>
           <div class="product-list" id="productList"><!-- populated --></div>
         </div>
 
@@ -2037,7 +2545,10 @@ img{ display:block; max-width:100%; }
           </div>
           <!-- プリント箇所選択 (新しく入力時 or 単独商品時) -->
           <div id="printMain">
-            <div class="section-label">プリント箇所を選んでください（複数可）</div>
+            <div class="section-label">
+              プリント箇所を選んでください（複数可）
+              <a href="help-print.html" target="_blank" rel="noopener" class="section-help">プリント方法でお悩みの方は ›</a>
+            </div>
             <div class="print-grid" id="printGrid"><!-- populated --></div>
             <div class="print-info" id="printInfo">
               <div class="pi-count">選択中: <strong id="printCount">0</strong> 箇所</div>
@@ -2067,6 +2578,11 @@ img{ display:block; max-width:100%; }
               <label class="ff"><span class="ff-lbl">電話 <em>必須</em></span><input type="tel" data-cust="phone" placeholder="090-1234-5678" inputmode="tel" required></label>
               <label class="ff ff-zip"><span class="ff-lbl">郵便番号 <em>必須</em> <span class="zip-status" id="zipStatusCust"></span></span><input type="text" data-cust="zipcode" placeholder="1500001" inputmode="numeric" maxlength="8" required></label>
               <label class="ff ff-addr"><span class="ff-lbl">ご住所 <em>必須</em></span><input type="text" data-cust="address" placeholder="郵便番号入力で自動補完" required></label>
+              <label class="ff ff-repeat"><span class="ff-lbl">過去の受注番号（任意）<span class="ff-hint">リピート注文の方</span></span><input type="text" data-cust="repeatOrderNo" placeholder="CK-20260420-103045" autocomplete="off"></label>
+            </div>
+            <div class="ff-note">
+              <span class="ff-note-icon">💡</span>
+              <span>同じデザインで再注文の方は、 前回の受注番号 (CK-XXXXXXXX-XXXXXX) をご記入いただくと、 <strong>版・データを流用してお安く</strong> ご提案できます。</span>
             </div>
           </div>
 
@@ -2217,6 +2733,7 @@ const CATEGORIES = [
   {
     key:'tshirt', label:'Tシャツ', sub:'T-SHIRT',
     icon:'👕', priceFrom:790, model3d:'tshirt', supported:true,
+    feature:'通年定番。 オリジナルプリントの王道',
     items:[
       { sku:'00085', maker:'Printstar', name:'ヘビーウェイトTシャツ', oz:'5.6oz', material:'綿100%', basePrice:1090,
         sizes:['100cm','110cm','120cm','130cm','140cm','150cm','160cm','XS','S','M','L','XL','XXL','XXXL','4XL','5XL','WM','WL'],
@@ -2252,11 +2769,52 @@ const CATEGORIES = [
         sizes:['100cm','110cm','120cm','130cm','140cm','150cm','SS','S','M','L','LL','WM','WL','3L','4L','5L','6L','7L'],
         sizeSurcharge:{},
         colors:['アイビーグリーン','アーミーグリーン','イエロー','イエロー×グリーン','インディゴ','オリーブ','オレンジ','ガーネットレッド','ガーネットレッド×ブラック','グリーン','グレー','コヨーテ','サックス','サンセットオレンジ','シルバーグレー','ジャパンブルー','ターコイズ','ダークグレー','デイジー','ネイビー','バーガンディ','パープル','ピンク','ブライトグリーン','ブラック','ブラック×ターコイズ','ホットピンク','ホワイト','ホワイト×ロイヤルブルー','ミックスグレー','ミックスパープル','ミックスピンク','ミックスブルー','ミックスレッド','ミディアムブルー','ミントグリーン','ミントブルー','メトロブルー','メロン','ライトイエロー','ライトグリーン','ライトパープル','ライトピンク','ライトブルー','ライトベージュ','ライム','ラベンダー','レッド','ロイヤルブルー','ロイヤルブルー×ブラック','蛍光イエロー','蛍光オレンジ','蛍光ピンク']
+      },
+      // ===== CAB (United Athle) Tシャツ — 2026-04-30 新価格表(上代) より更新 =====
+      // ※ basePrice は 2026春夏 新価格表「上代」 の S/M サイズ単価 (税抜)
+      { sku:'5001', maker:'UnitedAthle', name:'5.6oz ハイクオリティー Tシャツ', oz:'5.6oz', material:'綿100%', basePrice:1260,
+        // ★ 2026-04-30 5001-01(アダルト ¥1260)+5001-02(90-160cm ¥1150)+5001-03(ガールズ ¥1260)を統合
+        //   サイズ順: KIDS → GIRLS → ADULT
+        sizes:['90cm','100cm','110cm','120cm','130cm','140cm','150cm','160cm','G-M','G-L','S','M','L','XL'],
+        sizeSurcharge:{'90cm':-110,'100cm':-110,'110cm':-110,'120cm':-110,'130cm':-110,'140cm':-110,'150cm':-110,'160cm':-110},
+        // ※ カラーは United Athle 標準帯を推定。 正確な色はカタログ/公式サイトで要確認
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','チャコール','オートミール','ライトグレー','アイボリー','ナチュラル','イエロー','ゴールド','ミントグリーン','グリーン','シティグリーン','メロン','ダークブラウン','ライトベージュ','パープル','オレンジ','ピンク','レッド','バーガンディ','ラベンダー','サックス','アクアブルー','ロイヤルブルー','ネイビー','インディゴ','スレート','スミ','カナリアイエロー','バニラホワイト','ハイレッド','アシッドブルー','バナナ','ライトイエロー','ライトブルー','ライトパープル','ライトピンク','アイビーグリーン','トロピカルピンク','サンドカーキ','ターコイズブルー','バイオレットパープル','サンドベージュ','アプリコット','アップルグリーン','ベビーピンク','ダークヘザーネイビー','ダークネイビー','ヘザーブラック','ライトオリーブ','ヘイジーブラック','ヘイジーネイビー','ヘイジーグリーン','グレイッシュパープル','グレイッシュグリーン','グレージュ','ヘイジーパープル','ヘイジーオレンジ','ヘイジーブルー']
+      },
+      { sku:'5942', maker:'UnitedAthle', name:'6.2oz プレミアム Tシャツ', oz:'6.2oz', material:'綿100%', basePrice:1760,
+        sizes:['XS','S','M','L','XL'],
+        sizeSurcharge:{},
+        // ※ プレミアムT は厚手の上品ライン。 カラー推定
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','チャコール','オートミール','アイボリー','ナチュラル','イエロー','ゴールド','グリーン','シティグリーン','ライムグリーン','ダークブラウン','モスグリーン','オレンジ','ピンク','レッド','バーガンディ','マットパープル','サックス','ロイヤルブルー','ネイビー','インディゴ','スレート','スミ','バニラホワイト','セージグリーン','スモーキーピンク','バナナ','フロストパープル','スモーキーレッド','ライトブルー','アイビーグリーン','サンドカーキ','ベビーピンク','フロストブルー','ヘイジーブラック','ヘイジーネイビー']
+      },
+      { sku:'4411', maker:'UnitedAthle', name:'9.1oz マグナムウェイト ビッグシルエット Tシャツ', oz:'9.1oz', material:'綿100%', basePrice:2700,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','ネイビー','スミ','アシッドブルー','アシッドカーキ','フロストグレー','ストーングリーン','ヴィンテージナチュラル']
+      },
+      { sku:'5508', maker:'UnitedAthle', name:'5.6oz ビッグシルエット Tシャツ', oz:'5.6oz', material:'綿100%', basePrice:2050,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','ミックスグレー','ネイビー','セージグリーン','アシッドブルー','サンドベージュ']
+      },
+      { sku:'5900', maker:'UnitedAthle', name:'4.1oz ドライアスレチック Tシャツ', oz:'4.1oz', material:'ポリエステル100%', basePrice:890,
+        // ★ 2026-04-30 5900-01(アダルト ¥890)+5900-02(120-160cm ¥820)+5900-03(ウィメンズ ¥890)を統合
+        //   サイズ順: KIDS → WOMENS → ADULT
+        sizes:['120cm','130cm','140cm','150cm','160cm','WM','WL','S','M','L','XL'],
+        sizeSurcharge:{'120cm':-70,'130cm':-70,'140cm':-70,'150cm':-70,'160cm':-70},
+        // ※ ドライ系は蛍光・ビビッドが豊富。 カラー推定
+        colors:['ホワイト','ブラック','グレー','イエロー','ゴールド','ミントグリーン','ブライトグリーン','グリーン','オリーブ','ライムグリーン','パープル','オレンジ','ピンク','レッド','バーガンディ','ラベンダー','アクアブルー','コバルトブルー','ネイビー','インディゴ','マリンブルー','ＯＤ','蛍光イエロー','蛍光オレンジ','蛍光ピンク','ローズレッド','ガンメタル','カナリアイエロー','ディープパープル','ホワイトウッドランド','ブラックウッドランド','コヨーテ','ライトブルー','アイビーグリーン','トロピカルピンク','アイスグレー','ターコイズブルー','バイオレットパープル','ベビーピンク','ヘザーチャコール','ヘザーピンク','ヘザーブルー','グリーンウッドランド','ブルーウッドランド','ピンクウッドランド']
+      },
+      { sku:'5088', maker:'UnitedAthle', name:'4.7oz ドライシルキータッチ Tシャツ', oz:'4.7oz', material:'ポリエステル100%', basePrice:1250,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        // ※ シルキータッチは綿風合いのドライ。 カラー推定
+        colors:['ホワイト','ブラック','イエロー','ライムグリーン','オレンジ','レッド','バーガンディ','コバルトブルー','ネイビー','ＯＤ','ガンメタル','トロピカルピンク','ターコイズブルー','バイオレットパープル']
       }
     ]
   },
   {
     key:'long', label:'ロングTシャツ', sub:'LONG SLEEVE',
+    feature:'春秋の定番。 重ね着にも◎',
     icon:'🥼', priceFrom:1260, model3d:'long_sleeve', supported:true,
     items:[
       { sku:'00102', maker:'Printstar', name:'ヘビーウェイト長袖Tシャツ', oz:'5.6oz', material:'綿100%', basePrice:1610,
@@ -2283,11 +2841,45 @@ const CATEGORIES = [
         sizes:['140cm','150cm','SS','S','M','L','LL','3L','4L','5L','6L','7L'],
         sizeSurcharge:{},
         colors:['アーミーグリーン','オレンジ','グリーン','グレー','ターコイズ','ダークグレー','デイジー','ネイビー','バーガンディ','パープル','ピンク','ブラック','ホットピンク','ホワイト','ミントグリーン','ライトイエロー','ライトグリーン','ライトブルー','レッド','ロイヤルブルー']
+      },
+      // ===== CAB (United Athle) ロンT — 2026-04-30 新価格表(上代) より更新 =====
+      { sku:'5010', maker:'UnitedAthle', name:'5.6oz ロングスリーブ Tシャツ', oz:'5.6oz', material:'綿100%', basePrice:1750,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        // ※ ロングT 標準カラー帯
+        colors:['ホワイト','ブラック','ミックスグレー','チャコール','ナチュラル','ネイビー','アシッドブルー','サンドカーキ','バイオレットパープル','ライトオリーブ']
+      },
+      { sku:'5011', maker:'UnitedAthle', name:'5.6oz ロングスリーブ Tシャツ (1.6インチリブ)', oz:'5.6oz', material:'綿100%', basePrice:1980,
+        sizes:['XS','S','M','L','XL'],
+        sizeSurcharge:{},
+        // ※ リブ袖の上品ライン。 カラー推定
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','レッド','バーガンディ','ロイヤルブルー','ネイビー','スミ','ストーングレー','ミルキーライム','アシッドブルー','スモーキーグリーン','ライトパープル','アイビーグリーン','サンドベージュ','ヴィンテージナチュラル','ライトオリーブ','オフピンク','ダークキャメル','ヘイジーグリーン','ヘイジーレッド','ヘイジーイエロー']
+      },
+      { sku:'5509', maker:'UnitedAthle', name:'5.6oz ビッグシルエット ロングスリーブ Tシャツ (1.8インチリブ)', oz:'5.6oz', material:'綿100%', basePrice:2470,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','スミ','アシッドブルー','フロストグレー']
+      },
+      { sku:'5913', maker:'UnitedAthle', name:'6.2oz プレミアム ロングスリーブ Tシャツ (2.1インチリブ)', oz:'6.2oz', material:'綿100%', basePrice:2930,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ネイビー','スミ','ライトブルー','アイビーグリーン']
+      },
+      { sku:'4422', maker:'UnitedAthle', name:'9.1oz マグナムウェイト ビッグシルエット ロングスリーブ Tシャツ (2.1インチリブ)', oz:'9.1oz', material:'綿100%', basePrice:4100,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アシッドブルー','アシッドカーキ','フロストグレー','ヴィンテージナチュラル']
+      },
+      { sku:'5089', maker:'UnitedAthle', name:'4.7oz ドライシルキータッチ ロングスリーブ Tシャツ', oz:'4.7oz', material:'ポリエステル100%', basePrice:1760,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','オレンジ','レッド','バーガンディ','コバルトブルー','ネイビー','ＯＤ','ガンメタル','ターコイズブルー']
       }
     ]
   },
   {
     key:'polo', label:'ポロシャツ', sub:'POLO',
+    feature:'清潔感のあるユニフォーム向き',
     icon:'👔', priceFrom:1450, model3d:null, supported:false,
     items:[
       { sku:'00302', maker:'glimmer', name:'ドライポロシャツ', oz:'4.4oz', material:'ポリエステル100%', basePrice:1450,
@@ -2299,11 +2891,40 @@ const CATEGORIES = [
         sizes:['SS','S','M','L','LL','3L','4L','5L'],
         sizeSurcharge:{},
         colors:['イエロー','オレンジ','グレー','サックス','ターコイズ','ネイビー','ピンク','ブラック','ホワイト','レッド','ロイヤルブルー']
+      },
+      // ===== CAB (United Athle) ポロ — 2026-04-30 新価格表(上代) より更新 =====
+      { sku:'5050', maker:'UnitedAthle', name:'5.3oz ドライカノコ ユーティリティー ポロシャツ', oz:'5.3oz', material:'ポリエステル100%', basePrice:2490,
+        sizes:['XS','S','M','L','XL'],
+        sizeSurcharge:{},
+        // ※ カノコ織りの定番ポロ。 カラー推定
+        colors:['ホワイト','ブラック','レッド','ロイヤルブルー','ネイビー','インディゴ','OX グレー','ブリティッシュグリーン']
+      },
+      { sku:'5910', maker:'UnitedAthle', name:'4.1oz ドライアスレチック ポロシャツ', oz:'4.1oz', material:'ポリエステル100%', basePrice:1610,
+        sizes:['XS','S','M','L','XL'],
+        sizeSurcharge:{},
+        // ※ ドライ系ポロ・ビビッドカラー多め
+        colors:['ホワイト','ブラック','グリーン','パープル','オレンジ','レッド','バーガンディ','コバルトブルー','ネイビー','カナリアイエロー','ライトブルー','トロピカルピンク','ターコイズブルー']
+      },
+      { sku:'5560', maker:'UnitedAthle', name:'6.0oz ヘヴィーウェイト コットン ファイン カノコ ポロシャツ', oz:'6.0oz', material:'綿100%', basePrice:2800,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','ダークグレー','ネイビー']
+      },
+      { sku:'2020', maker:'UnitedAthle', name:'4.7oz スペシャル ドライ カノコ ポロシャツ', oz:'4.7oz', material:'ポリエステル100%', basePrice:1790,
+        sizes:['XS','S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','ミックスグレー','グリーン','シティグリーン','レッド','バーガンディ','コバルトブルー','ネイビー','インディゴ','カナリアイエロー','カーボン','ライトブルー','サンドカーキ','ターコイズブルー','ヘザーチャコール']
+      },
+      { sku:'2022', maker:'UnitedAthle', name:'4.7oz スペシャル ドライ カノコ ポロシャツ (ボタンダウン)', oz:'4.7oz', material:'ポリエステル100%', basePrice:2140,
+        sizes:['XS','S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','コバルトブルー','ネイビー']
       }
     ]
   },
   {
     key:'hoodie', label:'パーカー', sub:'HOODIE',
+    feature:'秋冬定番。 厚地でしっかり',
     icon:'🧥', priceFrom:3720, model3d:null, supported:false,
     items:[
       { sku:'00216', maker:'Printstar', name:'フーデッドライトパーカー', oz:'8.4oz', material:'ポリエステル100%', basePrice:3720,
@@ -2335,11 +2956,81 @@ const CATEGORIES = [
         sizes:['S','M','L','XL','2XL'],
         sizeSurcharge:{},
         colors:['ネイビー','ブラック','ホワイト','ライトベージュ','杢グレー']
+      },
+      // ===== CAB (United Athle) パーカー — 2026-04-30 新価格表(上代) より更新 =====
+      // ※ OPEN PRICE 表記の品番は 下代 × 2.857 (標準マークアップ) で推定。 確定後に上書き推奨
+      { sku:'5397', maker:'UnitedAthle', name:'8.8oz オーセンティック パイル スウェット フルジップ パーカ', oz:'8.8oz', material:'綿100%', basePrice:4540,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','グレー','ゴールド','モスグリーン','バーガンディ','ネイビー','インディゴ','マリンブルー','スミ','グレージュ','ハイレッド','ダークチョコレート','ヴィンテージナチュラル','ヴィンテージイエロー','ヴィンテージサックス']
+      },
+      { sku:'5398', maker:'UnitedAthle', name:'8.8oz オーセンティック パイル スウェット プルオーバー パーカ', oz:'8.8oz', material:'綿100%', basePrice:3870,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','グレー','ゴールド','モスグリーン','バーガンディ','ネイビー','インディゴ','マリンブルー','スミ','グレージュ','ハイレッド','ダークチョコレート','ヴィンテージナチュラル','ヴィンテージイエロー','ヴィンテージサックス']
+      },
+      { sku:'5213', maker:'UnitedAthle', name:'10.0oz スウェット フルジップ パーカ', oz:'10.0oz', material:'綿100%', basePrice:5500,
+        // ★ 2026-04-30 5213-01(アダルト ¥5500)+5213-02(110/130/150cm ¥5140)を統合
+        sizes:['110cm','130cm','150cm','S','M','L','XL'],
+        sizeSurcharge:{'110cm':-360,'130cm':-360,'150cm':-360},
+        colors:['ホワイト','ブラック','ミックスグレー','チャコール','ナチュラル','オリーブ','ダークブラウン','パープル','オレンジ','レッド','バーガンディ','ロイヤルブルー','ネイビー','マリンブルー','アシッドブルー','ライトピンク','アイビーグリーン','サンドカーキ','サンドベージュ','ライトオリーブ','ブラック/レッド','ミックスグレー/ブラック','ネイビー/ブレージングイエロー']
+      },
+      { sku:'5214', maker:'UnitedAthle', name:'10.0oz スウェット プルオーバー パーカ', oz:'10.0oz', material:'綿100%', basePrice:4950,
+        // ★ 2026-04-30 5214-01(アダルト ¥4950)+5214-02(110/130/150cm ¥4530)を統合
+        sizes:['110cm','130cm','150cm','S','M','L','XL'],
+        sizeSurcharge:{'110cm':-420,'130cm':-420,'150cm':-420},
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','チャコール','ナチュラル','オリーブ','ダークブラウン','パープル','オレンジ','レッド','バーガンディ','ロイヤルブルー','ネイビー','インディゴ','マリンブルー','スミ','アシッドブルー','ストーングリーン','フロストイエロー','ライトピンク','アイビーグリーン','サンドカーキ','サンドベージュ','ライトオリーブ','ブラック/レッド','ミックスグレー/ブラック','ネイビー/ブレージングイエロー']
+      },
+      { sku:'5203', maker:'UnitedAthle', name:'10.0oz ビッグシルエット スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿100%', basePrice:8680,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','アッシュ','ネイビー']
+      },
+      { sku:'5204', maker:'UnitedAthle', name:'10.0oz ビッグシルエット スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿100%', basePrice:7600,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','アッシュ','ネイビー']
+      },
+      { sku:'5767', maker:'UnitedAthle', name:'12.7oz ヘヴィーウェイト スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'12.7oz', material:'綿100%', basePrice:8110,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','オフホワイト','ミックスグレー','ネイビー']
+      },
+      { sku:'5768', maker:'UnitedAthle', name:'12.7oz ヘヴィーウェイト スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'12.7oz', material:'綿100%', basePrice:7130,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','オフホワイト','アッシュ','ミックスグレー','ナチュラル','ネイビー','フォレストグリーン']
+      },
+      { sku:'5621', maker:'UnitedAthle', name:'10.0oz T/C ボックスシルエット スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿/ポリエステル', basePrice:7800,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ネイビー','スミ']
+      },
+      { sku:'5618', maker:'UnitedAthle', name:'10.0oz T/C スウェット プルオーバー パーカ', oz:'10.0oz', material:'綿/ポリエステル', basePrice:4950,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ナチュラル','オリーブ','ダークブラウン','レッド','バーガンディ','ロイヤルブルー','ネイビー','インディゴ','スミ','セメント','スモーキーグリーン','アイビーグリーン','サンドベージュ','ヘザーグレー']
+      },
+      { sku:'5631', maker:'UnitedAthle', name:'10.0oz T/C ビッグシルエット スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿/ポリエステル', basePrice:7590,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ']
+      },
+      { sku:'5797', maker:'UnitedAthle', name:'15.0oz オープンエンド マグナムウェイト スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'15.0oz', material:'綿100%', basePrice:9900,
+        sizes:['M','L','XL','XXL'],
+        sizeSurcharge:{},
+        colors:['ブラック','アッシュ']
+      },
+      { sku:'5798', maker:'UnitedAthle', name:'15.0oz オープンエンド マグナムウェイト スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'15.0oz', material:'綿100%', basePrice:8500,
+        sizes:['M','L','XL','XXL'],
+        sizeSurcharge:{},
+        colors:['ブラック','アッシュ']
       }
     ]
   },
   {
     key:'sweat', label:'スウェット', sub:'SWEATSHIRT',
+    feature:'カジュアルに使える厚手トレーナー',
     icon:'🥋', priceFrom:2860, model3d:null, supported:false,
     items:[
       { sku:'00219', maker:'Printstar', name:'クルーネックライトトレーナー', oz:'8.4oz', material:'綿/ポリエステル', basePrice:2860,
@@ -2356,6 +3047,55 @@ const CATEGORIES = [
         sizes:['S','M','L','XL','2XL'],
         sizeSurcharge:{},
         colors:['ネイビー','ブラック','ホワイト','ライトベージュ','杢グレー']
+      },
+      // ===== CAB (United Athle) スウェット/トレーナー — 2026-04-30 新価格表(上代) より更新 =====
+      // ※ OPEN PRICE 表記の品番は 下代 × 2.857 (標準マークアップ) で推定。 確定後に上書き推奨
+      { sku:'5044', maker:'UnitedAthle', name:'10.0oz クルーネック スウェット (裏パイル)', oz:'10.0oz', material:'綿100%', basePrice:3680,
+        // ★ 2026-04-30 5044-01(アダルト ¥3680)+5044-02(110/130/150cm ¥3260)を統合
+        sizes:['110cm','130cm','150cm','S','M','L','XL'],
+        sizeSurcharge:{'110cm':-420,'130cm':-420,'150cm':-420},
+        // ※ スウェットは秋冬の落ち着いたカラー帯
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','チャコール','ナチュラル','オリーブ','ダークブラウン','パープル','オレンジ','レッド','バーガンディ','ロイヤルブルー','ネイビー','インディゴ','マリンブルー','スミ','アシッドブルー','ストーングリーン','フロストイエロー','ライトピンク','アイビーグリーン','サンドカーキ','サンドベージュ','ライトオリーブ']
+      },
+      { sku:'5928', maker:'UnitedAthle', name:'10.0oz T/C クルーネック スウェット (裏起毛)', oz:'10.0oz', material:'綿/ポリエステル', basePrice:3680,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ナチュラル','オリーブ','ダークブラウン','レッド','バーガンディ','ロイヤルブルー','ネイビー','インディゴ','スミ','セメント','スモーキーグリーン','アイビーグリーン','サンドベージュ','ヘザーグレー']
+      },
+      { sku:'5399', maker:'UnitedAthle', name:'8.8oz オーセンティック パイル クルーネック スウェット', oz:'8.8oz', material:'綿100%', basePrice:2870,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','グレー','ゴールド','モスグリーン','バーガンディ','ネイビー','インディゴ','マリンブルー','スミ','グレージュ','ハイレッド','ダークチョコレート','ヴィンテージナチュラル','ヴィンテージイエロー','ヴィンテージサックス']
+      },
+      { sku:'5205', maker:'UnitedAthle', name:'10.0oz ビッグシルエット クルーネック スウェット ※OPEN PRICE推定', oz:'10.0oz', material:'綿100%', basePrice:5910,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','アッシュ','ネイビー']
+      },
+      { sku:'5242', maker:'UnitedAthle', name:'10.0oz ラグランスリーブ クルーネック スウェット (裏パイル)', oz:'10.0oz', material:'綿100%', basePrice:3900,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','ミックスグレー','ネイビー']
+      },
+      { sku:'5769', maker:'UnitedAthle', name:'12.7oz ヘヴィーウェイト クルーネック スウェット ※OPEN PRICE推定', oz:'12.7oz', material:'綿100%', basePrice:5840,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','オフホワイト','アッシュ','ミックスグレー','ナチュラル','ネイビー','フォレストグリーン']
+      },
+      { sku:'5627', maker:'UnitedAthle', name:'10.0oz T/C ビッグシルエット クルーネック スウェット ※OPEN PRICE推定', oz:'10.0oz', material:'綿/ポリエステル', basePrice:5910,
+        sizes:['M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ']
+      },
+      { sku:'5764', maker:'UnitedAthle', name:'12.0oz ヘヴィーウェイト クルーネック スウェット ※OPEN PRICE推定', oz:'12.0oz', material:'綿100%', basePrice:5840,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','ネイビー','ストーンブルー','サンドベージュ']
+      },
+      { sku:'5799', maker:'UnitedAthle', name:'15.0oz オープンエンド マグナムウェイト クルーネック スウェット ※OPEN PRICE推定', oz:'15.0oz', material:'綿100%', basePrice:7100,
+        sizes:['M','L','XL','XXL'],
+        sizeSurcharge:{},
+        colors:['ブラック','アッシュ']
       }
     ]
   }
@@ -2416,6 +3156,83 @@ const COLOR_HEX = {
   'ロイヤルブルー×ブラック':'#0e3da2',
   'ミックスグレー':'#7e7e7e', 'ミックスパープル':'#6a3597',
   'ミックスピンク':'#f0a0bf', 'ミックスブルー':'#3766b8', 'ミックスレッド':'#c8102e',
+  // ★ 2026-04-30 CAB 公式スウォッチから抽出した hex (united-athle.jp/img/color/c_NNNN.gif 中央9点平均)
+  'OX グレー':'#bdc8d7',
+  'アイスグレー':'#dae1e8',
+  'アクアブルー':'#58bcd8',
+  'アシッドカーキ':'#8a7749',
+  'アップルグリーン':'#0b877f',
+  'アプリコット':'#f4b4a6',
+  'オフピンク':'#eac0ba',
+  'カーボン':'#4b4948',
+  'ガンメタル':'#474f56',
+  'グリーンウッドランド':'#55653f',
+  'グレイッシュグリーン':'#0c323b',
+  'グレイッシュパープル':'#504a55',
+  'グレージュ':'#cfceca',
+  'コバルトブルー':'#245587',
+  'ゴールド':'#f5a439',
+  'サンドベージュ':'#e3d8c4',
+  'シティグリーン':'#736e4b',
+  'ストーングリーン':'#6e817d',
+  'ストーングレー':'#898989',
+  'ストーンブルー':'#828a9c',
+  'スミ':'#4b4948',
+  'スモーキーグリーン':'#8b9975',
+  'スモーキーピンク':'#bda19a',
+  'スモーキーレッド':'#964c5a',
+  'スレート':'#3d4d54',
+  'セージグリーン':'#9fb5ab',
+  'ターコイズブルー':'#00849e',
+  'ダークキャメル':'#866e51',
+  'ダークチョコレート':'#4e3428',
+  'ダークヘザーネイビー':'#464f60',
+  'ディープパープル':'#332965',
+  'トロピカルピンク':'#d54477',
+  'ネイビー/ブレージングイエロー':'#bfae2c',
+  'ハイレッド':'#e60012',
+  'バイオレットパープル':'#71589d',
+  'バナナ':'#f8c963',
+  'バニラホワイト':'#dad8d6',
+  'ピンクウッドランド':'#d77899',
+  'フォレストグリーン':'#5a6b63',
+  'フロストイエロー':'#edf2b7',
+  'フロストグレー':'#cfcfcd',
+  'フロストパープル':'#d6d3e9',
+  'フロストブルー':'#cddadf',
+  'ブラック/レッド':'#95080f',
+  'ブラックウッドランド':'#403b42',
+  'ブリティッシュグリーン':'#446763',
+  'ブルーウッドランド':'#6795b7',
+  'ヘイジーイエロー':'#a17e40',
+  'ヘイジーオレンジ':'#b04a37',
+  'ヘイジーグリーン':'#4b8286',
+  'ヘイジーネイビー':'#003f63',
+  'ヘイジーパープル':'#655f78',
+  'ヘイジーブラック':'#1d261d',
+  'ヘイジーブルー':'#57708d',
+  'ヘイジーレッド':'#8f243f',
+  'ヘザーグレー':'#92979d',
+  'ヘザーチャコール':'#686868',
+  'ヘザーピンク':'#edbed8',
+  'ヘザーブラック':'#615d59',
+  'ヘザーブルー':'#0079b6',
+  'ベビーピンク':'#fadadf',
+  'ホワイトウッドランド':'#bfbdc4',
+  'マットパープル':'#735471',
+  'マリンブルー':'#122a88',
+  'ミックスグレー/ブラック':'#4b4443',
+  'ミルキーライム':'#c4d4a4',
+  'モスグリーン':'#143429',
+  'ライトオリーブ':'#80825b',
+  'ライトグレー':'#aeadae',
+  'ライムグリーン':'#b2d474',
+  'ローズレッド':'#a61f24',
+  'ヴィンテージイエロー':'#e9bc81',
+  'ヴィンテージサックス':'#a6c3e6',
+  'ヴィンテージナチュラル':'#e1d6b6',
+  'ＯＤ':'#546657',
+
 };
 
 /* ========================================================================
@@ -2564,7 +3381,7 @@ const state = {
   lineIdx: 0,                // 編集中ラインの index
   // 見積全体に共通する設定
   deadline: '10',
-  customer: { company:'', name:'', email:'', phone:'', zipcode:'', address:'' },
+  customer: { company:'', name:'', email:'', phone:'', zipcode:'', address:'', repeatOrderNo:'' },
   shipping: { sameAsCustomer:true, recipient:'', zipcode:'', address:'' },
   delivery: {
     method: 'shipping',     // 'shipping' | 'pickup' (★ 2026-04-28 追加)
@@ -2576,6 +3393,8 @@ const state = {
   options: {
     foldingBag: false,      // ★ オプション: たたみ・袋入れ (¥80/枚)
   },
+  // ★ 2026-04-29 STEP 2 商品フィルタ（メーカー / 素材）
+  productFilter: { maker: '', material: '' },
 };
 
 // 編集中の商品ライン取得
@@ -2791,6 +3610,14 @@ const PRICING = {
   ],
   // 小口手数料 (合計 1〜5枚で適用)
   smallOrderFee: 680,
+  // ★ 2026-04-30 特殊インクアップチャージ (シルクのみ・1色×1枚あたり)
+  //   特殊 (金/銀): C-41,C-42 → +¥50/枚
+  //   蛍光: C-45〜C-49 → +¥30/枚
+  //   ※ 仮値・要確認 (実値が確定したら上書き)
+  specialInkUpcharge: {
+    '特殊':  50,   // 金銀
+    '蛍光':  30,   // 蛍光5色
+  },
 };
 
 // 素材追加料金 (★ 2026-04-28 修正: パーカー/スウェットのみ全プリント加算。 ロンTは「袖いっぱい(34x12cm)」のプリントだけ加算)
@@ -3019,7 +3846,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '46';
+const VIEWER_VERSION = '47';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -3525,6 +4352,7 @@ function renderCategoryGrid(){
         <div class="cat-icon">${c.icon}</div>
         <div class="cat-meta">
           <div class="cat-name">${c.label}</div>
+          ${c.feature ? `<div class="cat-feature">${c.feature}</div>` : ''}
           <div class="cat-price">FROM ¥${c.priceFrom.toLocaleString()}</div>
         </div>
       </div>
@@ -3566,26 +4394,93 @@ function selectCategory(key){
 /* ========================================================================
    STEP 2 — PRODUCT
    ======================================================================== */
+// ★ 2026-04-29 素材文字列を 4 区分（綿/ドライ/綿ポリ/ナイロン）に分類
+function _detectMaterial(material){
+  if(!material) return '';
+  const m = String(material).toLowerCase();
+  // ナイロン優先（ナイロン ≠ ポリエステル）
+  if(m.includes('ナイロン') || m.includes('nylon')) return 'ナイロン';
+  // 綿ポリ（混紡）
+  if((m.includes('綿') || m.includes('コットン') || m.includes('cotton')) && (m.includes('ポリ') || m.includes('poly'))) return '綿ポリ';
+  // ドライ系（ポリエステル単独）
+  if(m.includes('ポリエステル') || m.includes('polyester') || m.includes('ドライ') || m.includes('dry')) return 'ドライ';
+  // 綿100%
+  if(m.includes('綿') || m.includes('コットン') || m.includes('cotton')) return '綿';
+  return '';
+}
+
+// ★ 2026-04-29 メーカー名の正規化（フォーム表記揺れ吸収）
+function _normalizeMaker(maker){
+  if(!maker) return '';
+  const m = String(maker).trim();
+  // United Athle 系
+  if(m === 'UnitedAthle' || m === 'United Athle' || m === 'CAB' || m === 'cab') return 'UnitedAthle';
+  // Printstar 系（TOMS と表記する場合あり）
+  if(m === 'Printstar' || m === 'TOMS' || m === 'toms') return 'Printstar';
+  // glimmer はそのまま（ドライ系で素材フィルタには引っかかる）
+  return m;
+}
+
 function renderProductList(){
   const wrap = document.getElementById('productList');
   const line = cur();
   if(!line.category){ wrap.innerHTML = '<div class="muted center">カテゴリを先に選んでください</div>'; return; }
-  // 価格昇順にソート + メーカー名 + 色数・サイズ数表示
-  const sortedItems = [...line.category.items].sort((a,b) => (a.basePrice||0) - (b.basePrice||0));
-  wrap.innerHTML = sortedItems.map(p => {
+  // 価格昇順にソート
+  let items = [...line.category.items].sort((a,b) => (a.basePrice||0) - (b.basePrice||0));
+  // ★ 2026-04-29 メーカー / 素材 フィルタ
+  const fMaker    = (state.productFilter && state.productFilter.maker)    || '';
+  const fMaterial = (state.productFilter && state.productFilter.material) || '';
+  const totalCnt  = items.length;
+  if(fMaker)    items = items.filter(p => _normalizeMaker(p.maker) === fMaker);
+  if(fMaterial) items = items.filter(p => _detectMaterial(p.material) === fMaterial);
+
+  // 結果サマリ
+  const resBox = document.getElementById('pfbResult');
+  if(resBox){
+    if(fMaker || fMaterial){
+      resBox.textContent = `表示 ${items.length} / ${totalCnt} 件`;
+    } else {
+      resBox.textContent = `${totalCnt} 件`;
+    }
+  }
+
+  if(!items.length){
+    wrap.innerHTML = '<div class="muted center" style="padding:40px 0;">該当する商品がありません<br><small style="opacity:.7;">フィルタを変更してください</small></div>';
+    return;
+  }
+
+  wrap.innerHTML = items.map(p => {
     const active = line.product && line.product.sku === p.sku;
     const colorCnt = (p.colors || []).length;
     const sizeCnt  = (p.sizes  || []).length;
+    const makerKey = _normalizeMaker(p.maker);
+    const makerLabel = makerKey === 'UnitedAthle' ? 'CAB / United Athle'
+                     : makerKey === 'Printstar'   ? 'TOMS / Printstar'
+                     : (p.maker || '');
+    // ★ 2026-04-30 公式商品詳細ページへのリンク
+    //   CAB(UnitedAthle): https://united-athle.jp/ua/item/{SKU}01/  (確認済URL構造)
+    //   Printstar/glimmer: 個別商品ページは無く、 デジタルカタログ (Flipper3) のみ
+    //     → 開いたら品番で検索してもらう想定
+    let officialUrl = '';
+    let officialLabel = '公式詳細を見る ↗';
+    if(makerKey === 'UnitedAthle'){
+      officialUrl = 'https://united-athle.jp/ua/item/' + encodeURIComponent(p.sku) + '01/';
+    } else if(makerKey === 'Printstar' || p.maker === 'glimmer'){
+      // TOMS デジタルカタログ (Printstar & glimmer 共通)
+      officialUrl = 'https://tomsj.com/ebook/26ss/#page=1';
+      officialLabel = 'カタログを開く ↗';
+    }
     return `
       <div class="product-row ${active?'is-active':''}" data-sku="${p.sku}" role="button" tabindex="0">
         <div>
-          <div class="pr-maker">${p.maker || ''}</div>
+          <div class="pr-maker">${makerLabel}</div>
           <div class="pr-name">${p.name}</div>
           <div class="pr-meta">
             <span class="pr-oz">${p.oz}</span>${p.material} ・ 品番 ${p.sku}
             ${colorCnt ? ` ・ <span class="pr-tag">${colorCnt}色</span>` : ''}
             ${sizeCnt ? ` ・ <span class="pr-tag">${sizeCnt}サイズ</span>` : ''}
           </div>
+          ${officialUrl ? `<a class="pr-detail-link" href="${officialUrl}" target="_blank" rel="noopener" title="公式サイトの詳細ページを別タブで開く ${makerKey==='UnitedAthle'?'':'(品番 '+p.sku+' で検索してください)'}">${officialLabel}</a>` : ''}
         </div>
         <div class="pr-price">
           <small>¥ from</small>
@@ -3595,11 +4490,62 @@ function renderProductList(){
     `;
   }).join('');
   wrap.querySelectorAll('.product-row').forEach(el => {
-    el.addEventListener('click', () => selectProduct(el.dataset.sku));
+    el.addEventListener('click', (e) => {
+      // 詳細リンクのクリックは商品選択に拾わせない
+      if(e.target.closest('.pr-detail-link')) return;
+      selectProduct(el.dataset.sku);
+    });
     el.addEventListener('keydown', (e) => {
+      if(e.target.closest('.pr-detail-link')) return;
       if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectProduct(el.dataset.sku); }
     });
   });
+  // 詳細リンク自体のクリックは伝搬を止める (商品選択を防止)
+  wrap.querySelectorAll('.pr-detail-link').forEach(a => {
+    a.addEventListener('click', e => e.stopPropagation());
+  });
+}
+
+// ★ 2026-04-29 フィルタチップのクリックハンドラ
+function setupProductFilterChips(){
+  const bar = document.getElementById('productFilterBar');
+  if(!bar || bar._wired) return;
+  bar._wired = true;
+  bar.addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-chip');
+    if(!btn) return;
+    const f = btn.dataset.filter;
+    const v = btn.dataset.val || '';
+    if(!state.productFilter) state.productFilter = { maker:'', material:'' };
+    state.productFilter[f] = v;
+    // chip active 切替（同 row 内で）
+    btn.parentElement.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    renderProductList();
+  });
+}
+
+// ★ 2026-04-29 STEP 2 にいる時だけ panel-body のスクロール量に応じてフィルタを隠す
+function setupProductFilterAutoHide(){
+  const panelBody = document.querySelector('.panel-body');
+  const bar = document.getElementById('productFilterBar');
+  if(!panelBody || !bar || panelBody._pfbWired) return;
+  panelBody._pfbWired = true;
+  let lastY = 0;
+  panelBody.addEventListener('scroll', () => {
+    if(state.step !== 2) return;          // STEP 2 以外は何もしない
+    const y = panelBody.scrollTop;
+    const dy = y - lastY;
+    // 一定量下にスクロール → 隠す / 上に戻る or トップ近く → 戻す
+    if(y < 24){
+      bar.classList.remove('is-collapsed');
+    } else if(dy > 4){
+      bar.classList.add('is-collapsed');
+    } else if(dy < -4){
+      bar.classList.remove('is-collapsed');
+    }
+    lastY = y;
+  }, { passive:true });
 }
 
 function selectProduct(sku){
@@ -4713,22 +5659,30 @@ function openInkPicker(area, slotIdx, isOverride){
   };
   // ★ 転写「その他（フルカラー価格）」のスウォッチ除外ルール:
   //   - ホワイト・ブラック (C-21,C-22) は別選択肢で重複なので除外
-  //   - 金銀(特殊) / 蛍光色は転写フルカラーで再現できないため除外
+  //   - 蛍光色は転写フルカラーで再現できないため除外
+  //   - 金銀(特殊) は転写フルカラーでも使用可なので表示する (2026-04-29 ユーザー指定)
   const line = cur();
   const d = line && line.printDesigns ? line.printDesigns[area] : null;
   const isTransferOther = d && d.method === '転写' && d.colorCount === 'その他（フルカラー価格）';
   const colors = isTransferOther
     ? INK_COLORS.filter(c =>
         c.id !== 'C-21' && c.id !== 'C-22' &&     // 白黒除外
-        c.group !== '特殊' &&                       // 金銀(C-41,42)
-        c.group !== '蛍光'                          // 蛍光色(C-45〜49)
+        c.group !== '蛍光'                          // 蛍光色(C-45〜49) のみ除外
       )
     : INK_COLORS;
-  grid.innerHTML = colors.map(c => `
-    <div class="ink-pick-cell ${isLight(c.hex)?'is-light':''}" data-id="${c.id}" style="background:${c.hex};" title="${c.id} ${c.name}">
+  grid.innerHTML = colors.map(c => {
+    // ★ 2026-04-30 特殊色 (金銀/蛍光) には +¥XX のアップチャージマーク表示
+    const upFee = (PRICING.specialInkUpcharge && PRICING.specialInkUpcharge[c.group]) || 0;
+    const upBadge = upFee > 0
+      ? `<span class="ink-pick-upcharge">+¥${upFee}</span>`
+      : '';
+    return `
+    <div class="ink-pick-cell ${isLight(c.hex)?'is-light':''}" data-id="${c.id}" style="background:${c.hex};" title="${c.id} ${c.name}${upFee>0?' (+¥'+upFee+'/枚)':''}">
       <span class="ink-pick-name">${c.name}</span>
+      ${upBadge}
     </div>
-  `).join('');
+    `;
+  }).join('');
   grid.querySelectorAll('.ink-pick-cell').forEach(el => {
     el.addEventListener('click', () => {
       selectInkColor(el.dataset.id);
@@ -4836,6 +5790,68 @@ function pushPrintsTo3D(extras){
 /* ========================================================================
    STEP 6 — DEADLINE
    ======================================================================== */
+// ★ 2026-04-30 営業日(土日除外)で N 営業日後の Date を返す
+function _addBusinessDays(baseDate, days){
+  const d = new Date(baseDate);
+  let added = 0;
+  while(added < days){
+    d.setDate(d.getDate() + 1);
+    const w = d.getDay();
+    if(w !== 0 && w !== 6) added++;
+  }
+  return d;
+}
+
+// ★ 2026-04-30 営業日数 → 「だいたい何日頃」表示文字列
+function _estimateShipDateLabel(days){
+  const today = new Date();
+  const ship = _addBusinessDays(today, parseInt(days, 10));
+  const m = ship.getMonth() + 1;
+  const d = ship.getDate();
+  const wkd = ['日','月','火','水','木','金','土'][ship.getDay()];
+  return `${m}/${d} (${wkd}) 頃`;
+}
+
+// ★ 2026-04-30 出荷予定日 (Date) を取得
+function _estimatedShipDate(){
+  const days = parseInt(state.deadline || '10', 10);
+  return _addBusinessDays(new Date(), days);
+}
+
+// ★ 2026-04-30 出荷予定日を YYYY-MM-DD で取得 (input[type=date] 用)
+function _estimatedShipDateISO(){
+  const d = _estimatedShipDate();
+  // ローカルタイムで YYYY-MM-DD (toISOString はUTC換算なので時差で前日になる場合あり)
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+// ★ 2026-04-30 STEP 7 の発送日・受取日カレンダーの min を出荷予定日に揃える
+function _applyDeliveryMinDate(){
+  const min = _estimatedShipDateISO();
+  const pane = document.getElementById('pane-7');
+  if(!pane) return;
+  const dateEl = pane.querySelector('[data-deliv="date"]');
+  if(dateEl){
+    dateEl.setAttribute('min', min);
+    // 既存の値が min より前なら空にする (再選択を促す)
+    if(dateEl.value && dateEl.value < min){
+      dateEl.value = '';
+      state.delivery.date = '';
+    }
+  }
+  const pickEl = pane.querySelector('[data-pickup="pickupDate"]');
+  if(pickEl){
+    pickEl.setAttribute('min', min);
+    if(pickEl.value && pickEl.value < min){
+      pickEl.value = '';
+      state.delivery.pickupDate = '';
+    }
+  }
+}
+
 function renderDeadline(){
   const grid = document.getElementById('deadlineGrid');
   grid.innerHTML = DEADLINE_OPTIONS.map(d => {
@@ -4843,12 +5859,14 @@ function renderDeadline(){
     const mulPct = Math.round((d.mul - 1) * 100);
     const mulCls = mulPct > 0 ? '' : (mulPct < 0 ? 'dn' : 'eq');
     const mulTxt = mulPct > 0 ? '+' + mulPct + '%' : (mulPct < 0 ? mulPct + '%' : '±0');
+    const dateLbl = _estimateShipDateLabel(d.days);
     return `
       <div class="deadline-card ${on?'is-on':''}" data-days="${d.days}" role="button" tabindex="0">
         <div class="dl-days">${d.days}<small style="font-size:10px;color:var(--fg-muted);margin-left:2px">日</small></div>
         <div class="dl-meta">
           <div class="dl-eyebrow">${d.eyebrow}</div>
           <div class="dl-label">${d.label} (${d.sub})</div>
+          <div class="dl-date">出荷予定: ${dateLbl}</div>
         </div>
         <div class="dl-mul ${mulCls}">${mulTxt}</div>
       </div>
@@ -4862,6 +5880,8 @@ function renderDeadline(){
 function selectDeadline(days){
   state.deadline = days;
   renderDeadline();
+  // ★ 2026-04-30 納期変更時は STEP 7 の発送日 min も更新
+  _applyDeliveryMinDate();
   refreshChrome();   // ヘッダー単価・合計が即時更新
 }
 function deadlineMul(){
@@ -4886,6 +5906,7 @@ function renderCustomerForm(){
     document.getElementById('sameAsCust').checked = state.shipping.sameAsCustomer;
     document.getElementById('shippingFields').style.display = state.shipping.sameAsCustomer ? 'none' : '';
     applyFulfillmentMode();   // ★ 受取方法の表示同期
+    _applyDeliveryMinDate();  // ★ 2026-04-30 STEP 6→7 移動時に min を更新
     return;
   }
   pane.dataset.bound = '1';
@@ -4912,12 +5933,8 @@ function renderCustomerForm(){
     `;
   }
 
-  // 配達日 min を翌日に
-  const today = new Date(); today.setDate(today.getDate()+1);
-  const min = today.toISOString().slice(0,10);
-  pane.querySelector('[data-deliv="date"]').setAttribute('min', min);
-  const pickupDateEl = pane.querySelector('[data-pickup="pickupDate"]');
-  if(pickupDateEl) pickupDateEl.setAttribute('min', min);
+  // ★ 2026-04-30 配達日・受取日の min を「STEP 6 で選んだ納期 (出荷予定日) 以降」に制限
+  _applyDeliveryMinDate();
 
   // 受取方法ラジオ
   pane.querySelectorAll('input[name="fulfillMethod"]').forEach(rad => {
@@ -5110,6 +6127,7 @@ function calcEstimate(){
   let transferCost = 0;    // 転写代
   let colorChangeCost = 0; // 色替え代 (シルク・1色 ¥1,000)
   let upchargeCost = 0;    // 素材追加料金 (per-piece × プリント数 × ライン枚数)
+  let specialInkCost = 0;  // ★ 2026-04-30 特殊色アップチャージ (金銀/蛍光)
   let dataFee = 0;         // データ代 (1ラインで1回適用)
   let qty = 0;             // 全合計枚数
   let hasConsult = false;  // 要相談プリント有無
@@ -5178,6 +6196,19 @@ function calcEstimate(){
           inkCost += perPiece * lineQty;
           upchargeCost += upch * lineQty;
         }
+        // ★ 2026-04-30 特殊色 (金銀/蛍光) アップチャージ計算
+        //   inkSlots を見て特殊・蛍光グループの色が含まれていれば、 1色×1枚あたりの単価を加算
+        //   reuse ライン (色替え) では override されたスロットを優先評価
+        const evalSlots = isColorVariant
+          ? (((l.inkOverrides || {})[loc.area] || {}).inkSlots || (d.inkSlots || []))
+          : (d.inkSlots || []);
+        evalSlots.forEach(inkId => {
+          if(!inkId) return;
+          const ink = INK_COLORS.find(c => c.id === inkId);
+          if(!ink) return;
+          const fee = (PRICING.specialInkUpcharge && PRICING.specialInkUpcharge[ink.group]) || 0;
+          if(fee > 0) specialInkCost += fee * lineQty;
+        });
       } else if(d.method === '転写'){
         const tColorKey = transferColorToCostKey(d.colorCount);
         const sizeTbl = PRICING.transferCost[d.size];
@@ -5186,6 +6217,17 @@ function calcEstimate(){
           transferCost += perPiece * lineQty;
           upchargeCost += upch * lineQty;
         }
+        // ★ 2026-04-30 転写でも特殊色アップチャージ (フルカラー価格時のみ inkSlots 走査)
+        const evalSlots = isColorVariant
+          ? (((l.inkOverrides || {})[loc.area] || {}).inkSlots || (d.inkSlots || []))
+          : (d.inkSlots || []);
+        evalSlots.forEach(inkId => {
+          if(!inkId) return;
+          const ink = INK_COLORS.find(c => c.id === inkId);
+          if(!ink) return;
+          const fee = (PRICING.specialInkUpcharge && PRICING.specialInkUpcharge[ink.group]) || 0;
+          if(fee > 0) specialInkCost += fee * lineQty;
+        });
       }
 
       // dataState 優先度: design > adjust > complete > studio
@@ -5210,7 +6252,7 @@ function calcEstimate(){
   // 送料 (発送選択時のみ。 直接受取は無料)
   const shippingFee = getShippingFee();
 
-  const printCost = plateCost + inkCost + transferCost + colorChangeCost + upchargeCost;
+  const printCost = plateCost + inkCost + transferCost + colorChangeCost + upchargeCost + specialInkCost;
   const subtotal  = bodyCost + printCost + dataFee + smallOrderFee + foldingFee + shippingFee;
 
   // ボディ割引 (v12 互換: ボディ代のみに適用、合計枚数で段階的)
@@ -5231,7 +6273,7 @@ function calcEstimate(){
   const unit = (cl && cl.product && cl.product.basePrice) || 0;
   return {
     qty, unit,
-    bodyCost, plateCost, inkCost, transferCost, colorChangeCost, upchargeCost, printCost,
+    bodyCost, plateCost, inkCost, transferCost, colorChangeCost, upchargeCost, specialInkCost, printCost,
     dataFee, smallOrderFee, foldingFee, shippingFee,
     bodyDiscRate, bodyDiscAmount,
     subtotal, qtyMul, dlMul,
@@ -5243,7 +6285,11 @@ function calcEstimate(){
 
 function renderReview(){
   const dlOpt = DEADLINE_OPTIONS.find(d => d.days === state.deadline);
-  const dlLabel = dlOpt ? `${dlOpt.label}（${dlOpt.sub}） ${dlOpt.mul===1?'':((dlOpt.mul-1)*100>0?'+':'')+Math.round((dlOpt.mul-1)*100)+'%'}` : '—';
+  // ★ 2026-04-30 出荷予定日 (例: 5/12 (火) 頃) を併記
+  const shipLbl = dlOpt ? _estimateShipDateLabel(dlOpt.days) : '';
+  const dlLabel = dlOpt
+    ? `${dlOpt.label}（${dlOpt.sub}）${dlOpt.mul===1?'':' '+((dlOpt.mul-1)*100>0?'+':'')+Math.round((dlOpt.mul-1)*100)+'%'}${shipLbl?' ／ 出荷予定 '+shipLbl:''}`
+    : '—';
   const est = calcEstimate();
   const cust = state.customer;
   const ship = state.shipping;
@@ -5322,6 +6368,7 @@ function renderReview(){
   if(est.inkCost > 0)      priceRows.push(['インク代（シルク）', `¥${est.inkCost.toLocaleString()}`]);
   if(est.transferCost > 0) priceRows.push(['転写代', `¥${est.transferCost.toLocaleString()}`]);
   if(est.colorChangeCost > 0) priceRows.push(['色替え代（シルク）', `¥${est.colorChangeCost.toLocaleString()}`]);
+  if(est.specialInkCost > 0) priceRows.push(['特殊色アップチャージ（金銀・蛍光）', `¥${est.specialInkCost.toLocaleString()}`]);
   if(est.upchargeCost > 0) priceRows.push(['素材追加料金', `¥${est.upchargeCost.toLocaleString()}`]);
   if(est.dataFee > 0)      priceRows.push(['データ代', `¥${est.dataFee.toLocaleString()}`]);
   if(est.smallOrderFee > 0) priceRows.push(['小口手数料（5枚以下）', `¥${est.smallOrderFee.toLocaleString()}`]);
@@ -5541,6 +6588,7 @@ function buildSubmitPayload(est){
       inkCost:         est.inkCost,
       transferCost:    est.transferCost,
       colorChangeCost: est.colorChangeCost,
+      specialInkCost:  est.specialInkCost || 0,
       upchargeCost:    est.upchargeCost,
       dataFee:         est.dataFee,
       smallOrderFee:   est.smallOrderFee,
@@ -5620,19 +6668,17 @@ function bindReviewActions(){
     save.dataset.bound = '1';
     save.addEventListener('click', () => {
       try{
-        const snap = {
-          ts: new Date().toISOString(),
-          state: {
-            lines: state.lines,
-            deadline: state.deadline,
-            customer: state.customer, shipping: state.shipping, delivery: state.delivery
-          }
+        // ★ 2026-04-30 _serializeState を使って 後で復元できる正規フォーマットで書き出し
+        const snap = (typeof _serializeState === 'function') ? _serializeState() : {
+          ts: Date.now(),
+          state: { lines: state.lines, deadline: state.deadline, customer: state.customer, shipping: state.shipping, delivery: state.delivery }
         };
         const blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `cocoro_quote_${snap.ts.slice(0,10)}.json`;
+        const dateStr = new Date().toISOString().slice(0,10);
+        a.download = `cocoro_quote_${dateStr}.json`;
         a.click();
         URL.revokeObjectURL(url);
       }catch(e){ alert('保存に失敗しました: ' + e.message); }
@@ -5644,13 +6690,20 @@ function bindReviewActions(){
     share.addEventListener('click', async () => {
       const est = calcEstimate();
       const firstLine = state.lines[0];
-      const text = `ココロ工房 お見積り\n${firstLine?.product?.name || ''}${state.lines.length>1?` 他${state.lines.length-1}商品`:''} / 合計 ¥${est.taxIncluded.toLocaleString()} (${est.qty}枚)`;
+      // ★ 2026-04-30 シェアURL: state を URL に埋め込んで送ると、 受け取った側で全項目入力済みで開く
+      const shareUrl = (typeof generateShareUrl === 'function') ? generateShareUrl() : location.href;
+      const isFile = location.protocol === 'file:';
+      const text = `ココロ工房 お見積り\n${firstLine?.product?.name || ''}${state.lines.length>1?` 他${state.lines.length-1}商品`:''} / 合計 ¥${est.taxIncluded.toLocaleString()} (${est.qty}枚)\n下のURLを開くと、すべて入力済みの状態で確認・編集できます。`;
+      // ★ file:// は別ブラウザでは開けないので注意メッセージを出す
+      const warnMsg = isFile
+        ? '\n\n⚠️ 注意: 現在 file:// で開いています。 シェアURLは「同じPCの同じブラウザ」でしか開けません。\nlocalhost:8765 などサーバー経由で開いていれば、 別の人にも送れます。'
+        : '';
       try{
-        if(navigator.share){
-          await navigator.share({ title:'ココロ工房 お見積り', text, url: location.href });
+        if(navigator.share && !isFile){
+          await navigator.share({ title:'ココロ工房 お見積り', text, url: shareUrl });
         } else {
-          await navigator.clipboard.writeText(text + '\n' + location.href);
-          alert('クリップボードにコピーしました。');
+          await navigator.clipboard.writeText(shareUrl);
+          alert('シェアURLをクリップボードにコピーしました。' + warnMsg);
         }
       }catch(e){ /* キャンセル時は無視 */ }
     });
@@ -5888,9 +6941,24 @@ ${productHtml}
   ${isEst ? '※本見積書は概算です。確定金額は別途正式見積書をお送りいたします。<br>※本見積書の有効期限は発行日より1週間です。' : '※本仕様書は仮版です。送信後正式版をご案内します。'}
 </div>
 
-<div style="margin-top:12px;text-align:center;">
+<div style="margin-top:12px;text-align:center;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+  <button onclick="_docBack()" style="padding:9px 24px;background:#fff;color:#2d5a3d;border:1.5px solid #2d5a3d;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600;">← お見積りフォームに戻る</button>
   <button onclick="window.print()" style="padding:9px 24px;background:#2d5a3d;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;">🖨 印刷 / PDF保存</button>
 </div>
+<script>
+// ★ 2026-04-30 戻るボタン: 別タブで開かれた場合は閉じる、 そうでなければ history.back
+function _docBack(){
+  try {
+    if(window.opener && !window.opener.closed){
+      window.close();
+      setTimeout(() => { try{ window.opener.focus(); }catch(_){} }, 100);
+      return;
+    }
+  } catch(_){}
+  if(history.length > 1){ history.back(); return; }
+  location.href = 'print-order-form-v13-porsche.html';
+}
+<\/script>
 </body></html>`;
 }
 
@@ -5950,7 +7018,12 @@ function gotoStep(n){
   }
   showPane(state.step);
   if(state.step === 1) renderCategoryGrid();
-  if(state.step === 2) renderProductList();
+  if(state.step === 2){
+    // ★ 2026-04-29 STEP 2 入る時はフィルタを再表示 (前回 collapsed のまま入らないように)
+    const _pfb = document.getElementById('productFilterBar');
+    if(_pfb) _pfb.classList.remove('is-collapsed');
+    renderProductList();
+  }
   if(state.step === 3) renderColorGrid();
   if(state.step === 4) renderSizeGrid();
   if(state.step === 5) renderPrintGrid();
@@ -6058,19 +7131,330 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ========================================================================
+   ★ 2026-04-30 SAVE / RESTORE + WELCOME SCREEN
+   ======================================================================== */
+const SAVE_KEY  = 'cocoro_v13_save';
+const SAVE_VER  = 1;
+const SAVE_DEBOUNCE_MS = 800;
+let _saveTimer = null;
+
+// state を localStorage に保存 (デバウンス)
+function saveState(){
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try {
+      const snap = _serializeState();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(snap));
+    } catch(e){ console.warn('saveState failed', e); }
+  }, SAVE_DEBOUNCE_MS);
+}
+
+// 保存用 state スナップショット (PRODUCT_MASTER 参照は SKU で持ち回す)
+function _serializeState(){
+  return {
+    v: SAVE_VER,
+    ts: Date.now(),
+    step: state.step,
+    catIndex: state.catIndex,
+    deadline: state.deadline,
+    customer: state.customer,
+    shipping: state.shipping,
+    delivery: state.delivery,
+    options: state.options,
+    productFilter: state.productFilter,
+    lineIdx: state.lineIdx,
+    // 各ライン: category.key / product.sku / color.name で参照、ほかはコピー
+    lines: state.lines.map(l => ({
+      categoryKey: l.category ? l.category.key : null,
+      productSku:  l.product  ? l.product.sku  : null,
+      color:       l.color || null,
+      qtyBySize:   l.qtyBySize || {},
+      prints:      l.prints || [],
+      printDesigns: l.printDesigns || {},
+      printSource: l.printSource || '',
+      inkOverrides: l.inkOverrides || {},
+    })),
+  };
+}
+
+// 保存内容を state に復元
+function _restoreFromSnap(snap){
+  if(!snap || snap.v !== SAVE_VER) return false;
+  try {
+    state.step      = snap.step      || 1;
+    state.catIndex  = snap.catIndex  || 0;
+    state.deadline  = snap.deadline  || '10';
+    state.customer  = Object.assign({}, state.customer,  snap.customer  || {});
+    state.shipping  = Object.assign({}, state.shipping,  snap.shipping  || {});
+    state.delivery  = Object.assign({}, state.delivery,  snap.delivery  || {});
+    state.options   = Object.assign({}, state.options,   snap.options   || {});
+    state.productFilter = Object.assign({maker:'',material:''}, snap.productFilter || {});
+    state.lineIdx   = snap.lineIdx   || 0;
+    if(Array.isArray(snap.lines) && snap.lines.length){
+      state.lines = snap.lines.map(rawL => {
+        const l = newLine();
+        if(rawL.categoryKey) l.category = CATEGORIES.find(c => c.key === rawL.categoryKey) || null;
+        if(rawL.productSku && l.category) l.product = l.category.items.find(p => p.sku === rawL.productSku) || null;
+        l.color        = rawL.color || null;
+        l.qtyBySize    = rawL.qtyBySize || {};
+        l.prints       = rawL.prints || [];
+        l.printDesigns = rawL.printDesigns || {};
+        l.printSource  = rawL.printSource || '';
+        l.inkOverrides = rawL.inkOverrides || {};
+        return l;
+      });
+    }
+    // 既存のラインに新規プロパティが無いと困るので fix-up
+    state.lines.forEach(l => { if(!l.qtyBySize) l.qtyBySize = {}; if(!l.prints) l.prints = []; if(!l.printDesigns) l.printDesigns = {}; });
+    if(state.lineIdx >= state.lines.length) state.lineIdx = 0;
+    return true;
+  } catch(e){ console.warn('_restoreFromSnap failed', e); return false; }
+}
+
+// 保存内容のメタ情報を取得 (ない場合 null)
+function getSavedSummary(){
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    const snap = JSON.parse(raw);
+    if(!snap || snap.v !== SAVE_VER) return null;
+    const ageMs = Date.now() - (snap.ts || 0);
+    const ageMin = Math.floor(ageMs / 60000);
+    const ageHr  = Math.floor(ageMs / 3600000);
+    const ageDay = Math.floor(ageMs / 86400000);
+    let ageLabel;
+    if(ageDay >= 1) ageLabel = `${ageDay}日前`;
+    else if(ageHr >= 1) ageLabel = `${ageHr}時間前`;
+    else if(ageMin >= 1) ageLabel = `${ageMin}分前`;
+    else ageLabel = 'たった今';
+    const firstLine = (snap.lines && snap.lines[0]) || null;
+    const cat = firstLine && firstLine.categoryKey ? CATEGORIES.find(c => c.key === firstLine.categoryKey) : null;
+    const prod = (cat && firstLine && firstLine.productSku) ? cat.items.find(p => p.sku === firstLine.productSku) : null;
+    const detail = (prod ? prod.name : (cat ? cat.label : '未選択')) + ` ・ STEP ${snap.step || 1}`;
+    return { snap, ageLabel, detail };
+  } catch(e){ return null; }
+}
+
+function _wrapSaveOnRefresh(){
+  if(typeof refreshChrome !== 'function') return;
+  if(refreshChrome._saveWrapped) return;
+  const _orig = refreshChrome;
+  window.refreshChrome = function(...args){
+    const r = _orig.apply(this, args);
+    saveState();
+    return r;
+  };
+  window.refreshChrome._saveWrapped = true;
+}
+
+function showWelcomeScreen(){
+  const sum = getSavedSummary();
+  const $resume = document.getElementById('btnResume');
+  const $clear  = document.getElementById('btnClearSaved');
+  if(sum && $resume){
+    $resume.hidden = false;
+    document.getElementById('wbResumeEyebrow').textContent = `SAVED ・ ${sum.ageLabel}`;
+    document.getElementById('wbResumeDetail').textContent  = sum.detail;
+    if($clear) $clear.hidden = false;
+  } else {
+    if($resume) $resume.hidden = true;
+    if($clear)  $clear.hidden  = true;
+  }
+}
+
+function hideWelcomeScreen(){
+  const ws = document.getElementById('welcomeScreen');
+  if(ws) ws.classList.add('is-out');
+  setTimeout(() => { if(ws && ws.parentNode) ws.parentNode.removeChild(ws); }, 700);
+}
+
+function setupWelcomeButtons(){
+  const $new    = document.getElementById('btnNewStart');
+  const $resume = document.getElementById('btnResume');
+  const $clear  = document.getElementById('btnClearSaved');
+  if($new)    $new.addEventListener('click', () => {
+    hideWelcomeScreen();
+  });
+  if($resume) $resume.addEventListener('click', () => {
+    const sum = getSavedSummary();
+    if(sum && _restoreFromSnap(sum.snap)){
+      _onStateRestored();
+    }
+    hideWelcomeScreen();
+  });
+  if($clear)  $clear.addEventListener('click', () => {
+    if(confirm('保存データを削除して新規で始めますか？')){
+      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      hideWelcomeScreen();
+    }
+  });
+  // JSONファイルから復元
+  const $loadBtn = document.getElementById('btnLoadJson');
+  const $loadInp = document.getElementById('loadJsonFile');
+  if($loadBtn && $loadInp){
+    $loadBtn.addEventListener('click', () => $loadInp.click());
+    $loadInp.addEventListener('change', async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      try{
+        await loadStateFromFile(f);
+        hideWelcomeScreen();
+      }catch(err){
+        alert('ファイル復元に失敗しました: ' + err.message);
+      }
+      $loadInp.value = '';
+    });
+  }
+}
+
+function _onStateRestored(){
+  state.introMode = false;
+  document.getElementById('app').classList.remove('intro-mode');
+  const l0 = state.lines[0];
+  if(l0 && l0.category && l0.category.supported && l0.category.model3d){
+    state.catIndex = CATEGORIES.findIndex(c => c.key === l0.category.key);
+    if(state.catIndex < 0) state.catIndex = 0;
+    loadViewer(l0.category.model3d);
+  }
+  if(state.step >= 1) renderCategoryGrid();
+  if(state.step >= 2) renderProductList();
+  if(state.step >= 3) renderColorGrid();
+  if(state.step >= 4) renderSizeGrid();
+  if(state.step >= 5) renderPrintGrid();
+  if(state.step >= 6) renderDeadline();
+  if(state.step >= 7) renderCustomerForm();
+  if(state.step >= 8) renderReview();
+  showPane(state.step);
+  refreshChrome();
+}
+
+function _tryRestoreFromUrl(){
+  try {
+    let s = '';
+    const u = new URL(location.href);
+    if(location.hash && location.hash.length > 1){
+      const hash = location.hash.slice(1);
+      const m = hash.match(/^state=(.+)$/);
+      if(m) s = m[1];
+    }
+    if(!s) s = u.searchParams.get('state') || '';
+    if(!s) return false;
+    const b64 = s.replace(/-/g,'+').replace(/_/g,'/');
+    const json = decodeURIComponent(escape(atob(b64)));
+    const snap = JSON.parse(json);
+    if(!snap || snap.v !== SAVE_VER) return false;
+    if(_restoreFromSnap(snap)){
+      try { history.replaceState({}, '', u.pathname); } catch(e){}
+      _onStateRestored();
+      return true;
+    }
+    return false;
+  } catch(e){ console.warn('_tryRestoreFromUrl failed', e); return false; }
+}
+
+function generateShareUrl(){
+  try {
+    const snap = _serializeState();
+    const json = JSON.stringify(snap);
+    const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    let baseUrl;
+    try {
+      const decoded = decodeURI(location.pathname);
+      const encodedPath = encodeURI(decoded);
+      baseUrl = location.protocol + '//' + (location.host || '') + encodedPath;
+    } catch(e){
+      baseUrl = location.href.replace(/[?#].*$/, '');
+    }
+    return baseUrl + '#state=' + b64;
+  } catch(e){ console.warn('generateShareUrl failed', e); return location.href; }
+}
+
+function loadStateFromFile(file){
+  return new Promise((resolve, reject) => {
+    if(!file){ reject(new Error('ファイルが指定されていません')); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const text = e.target.result;
+        const raw = JSON.parse(text);
+        let wrapped = null;
+        if(raw && raw.v === SAVE_VER){
+          wrapped = raw;
+        }
+        else if(raw && raw.state && raw.state.lines){
+          wrapped = _adaptLegacyState(raw.state);
+          wrapped.v = SAVE_VER;
+        }
+        else if(raw && raw.lines){
+          wrapped = _adaptLegacyState(raw);
+          wrapped.v = SAVE_VER;
+        }
+        if(!wrapped){
+          reject(new Error('対応していないデータ形式です\n(JSONに lines が見つかりません)'));
+          return;
+        }
+        if(_restoreFromSnap(wrapped)){
+          _onStateRestored();
+          resolve();
+        } else {
+          reject(new Error('復元に失敗しました'));
+        }
+      } catch(err){ reject(err); }
+    };
+    reader.onerror = () => reject(new Error('ファイル読み込みに失敗しました'));
+    reader.readAsText(file);
+  });
+}
+
+function _adaptLegacyState(s){
+  const out = Object.assign({}, s);
+  out.lines = (s.lines || []).map(l => {
+    const categoryKey = l.categoryKey || (l.category && l.category.key) || null;
+    const productSku  = l.productSku  || (l.product  && l.product.sku)  || null;
+    return {
+      categoryKey,
+      productSku,
+      color:        l.color        || null,
+      qtyBySize:    l.qtyBySize    || {},
+      prints:       l.prints       || [],
+      printDesigns: l.printDesigns || {},
+      printSource:  l.printSource  || '',
+      inkOverrides: l.inkOverrides || {},
+    };
+  });
+  out.step      = out.step      || 8;
+  out.catIndex  = out.catIndex  || 0;
+  out.deadline  = out.deadline  || '10';
+  out.customer  = out.customer  || {};
+  out.shipping  = out.shipping  || {};
+  out.delivery  = out.delivery  || {};
+  out.options   = out.options   || {};
+  out.productFilter = out.productFilter || { maker:'', material:'' };
+  out.lineIdx   = out.lineIdx   || 0;
+  return out;
+}
+
+/* ========================================================================
    INIT
    ======================================================================== */
 function init(){
-  // INTRO MODE で起動 — Tシャツから始まる（初回はスライド遷移なしで即表示）
   state.catIndex = 0;
   loadViewerInitial(CATEGORIES[0].model3d);
   renderHero();
   setupStageSwipe();
-  // パネル側も予め描画しておく（CTA後にすぐ見える状態にするため）
   renderCategoryGrid();
   renderProductList();
   renderColorGrid();
   refreshChrome();
+  setupProductFilterChips();
+  setupProductFilterAutoHide();
+  setupWelcomeButtons();
+  if(_tryRestoreFromUrl()){
+    hideWelcomeScreen();
+  } else {
+    showWelcomeScreen();
+  }
+  _wrapSaveOnRefresh();
   // インク色ピッカーモーダル: 閉じる動作
   const inkClose = document.getElementById('inkPickerClose');
   const inkOverlay = document.getElementById('inkPickerOverlay');
@@ -6085,13 +7469,10 @@ function init(){
       closeInkPicker();
     }
   });
-  // デザインスタジオから戻ってきた時の自動受信
   window.addEventListener('focus', () => {
     checkDesignToolData();
   });
-  // 起動時にも一度チェック (ページリロード後)
   setTimeout(() => checkDesignToolData(), 500);
-  // viewer.html から位置調整の offset 通知を受信
   window.addEventListener('message', e => {
     if(!e.data || e.data.type !== 'tshirt3d-offset') return;
     const { area, offsetX, offsetY } = e.data;
@@ -6100,14 +7481,13 @@ function init(){
     const d = ensurePrintDesign(line, area);
     d.offsetX = offsetX;
     d.offsetY = offsetY;
-    // 詳細パネルの「(調整済)」ラベル更新のため再描画
-    // ただし viewer 内で apply 中なので setTimeout で次フレームへ
     setTimeout(() => renderPrintGrid(), 0);
   });
 }
 
 window.addEventListener('DOMContentLoaded', init);
 </script>
+
 
 <!-- ===== インク色ピッカーモーダル (D-1d) ===== -->
 <div class="ink-picker-overlay" id="inkPickerOverlay">
@@ -6116,8 +7496,9 @@ window.addEventListener('DOMContentLoaded', init);
       <div class="ink-picker-ttl">インク色を選択</div>
       <button class="ink-picker-close" id="inkPickerClose" type="button" aria-label="閉じる">✕</button>
     </div>
-    <div class="ink-picker-grid" id="inkPickerGrid"></div>
+    <div class="ink-picker-grid" id="inkPickerGrid"><!-- populated --></div>
   </div>
 </div>
+
 </body>
 </html>
