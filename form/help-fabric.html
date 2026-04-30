@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>素材・厚み 選び方ガイド｜ココロ工房</title>
+<style>
+:root{
+  --bg:#fafaf8; --fg:#1a1a1a; --fg-muted:#6c6c6c;
+  --line:#e5e5e2; --line-strong:#bcbcb6;
+  --accent:#d5001c; --accent-soft:#fde8eb;
+  --panel:#ffffff;
+  --easing:cubic-bezier(.2,.7,.2,1);
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; background:var(--bg); color:var(--fg);
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height:1.75; font-size:15px; -webkit-text-size-adjust:100%;
+}
+.wrap{ max-width:880px; margin:0 auto; padding:32px 22px 80px; }
+.crumbs{ font-size:12px; color:var(--fg-muted); margin-bottom:8px; letter-spacing:.04em; }
+.crumbs a{ color:var(--fg-muted); text-decoration:none; }
+.crumbs a:hover{ color:var(--accent); }
+h1{ font-size:28px; font-weight:600; letter-spacing:.02em; margin:0 0 6px; }
+.lead{ font-size:14px; color:var(--fg-muted); margin:0 0 28px; }
+h2{ font-size:18px; font-weight:600; margin:36px 0 14px; padding-left:14px; border-left:3px solid var(--accent); letter-spacing:.02em; }
+h3{ font-size:15px; font-weight:600; margin:18px 0 6px; }
+.tag{ display:inline-block; background:var(--accent); color:#fff; font-size:10px; padding:3px 8px; border-radius:3px; letter-spacing:.08em; margin-right:8px; vertical-align:middle; font-weight:600; }
+.tag-light{ background:#f0f0ec; color:var(--fg); }
+.summary{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:18px 22px; margin:14px 0 24px; }
+.summary .ttl{ font-size:11px; letter-spacing:.18em; color:var(--accent); font-weight:600; margin-bottom:8px; }
+.summary ul{ margin:0; padding-left:20px; font-size:13.5px; }
+.summary ul li{ margin:4px 0; }
+.cards{ display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin:18px 0; }
+.card{ background:var(--panel); border:1px solid var(--line); padding:18px 18px 14px; border-radius:6px; transition:.2s var(--easing); }
+.card:hover{ border-color:var(--line-strong); transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.04); }
+.card .ttl{ font-weight:600; font-size:15px; margin-bottom:8px; }
+.card .meta{ font-size:11px; color:var(--fg-muted); margin-bottom:10px; letter-spacing:.04em; }
+.card p{ font-size:13px; margin:8px 0; line-height:1.7; }
+.card ul{ font-size:12.5px; padding-left:18px; margin:6px 0 0; color:#444; }
+.card ul li{ margin-bottom:4px; }
+.scale{ display:flex; align-items:center; gap:10px; font-size:12px; margin-top:10px; }
+.scale .bar{ flex:1; height:6px; background:linear-gradient(90deg, #f5e9c8, #e9b04a); border-radius:3px; position:relative; }
+.scale .pin{ position:absolute; top:-3px; width:12px; height:12px; background:var(--accent); border-radius:50%; transform:translateX(-50%); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.scale .lbl{ font-size:10px; color:var(--fg-muted); }
+.tbl{ width:100%; border-collapse:collapse; margin:14px 0 8px; font-size:13px; }
+.tbl th,.tbl td{ border-bottom:1px solid var(--line); padding:10px 12px; text-align:left; }
+.tbl th{ background:#f4f4f0; font-weight:600; font-size:12px; color:var(--fg-muted); letter-spacing:.04em; }
+.tbl td.num{ text-align:center; font-feature-settings:"tnum"; font-variant-numeric:tabular-nums; }
+.note{ background:var(--accent-soft); border-left:3px solid var(--accent); padding:12px 16px; font-size:13px; margin:18px 0; border-radius:0 4px 4px 0; }
+.note strong{ color:var(--accent); }
+.cta{ display:inline-flex; align-items:center; gap:8px; background:var(--fg); color:#fff;
+  padding:12px 22px; border-radius:3px; text-decoration:none; font-size:13px; font-weight:600;
+  letter-spacing:.04em; margin-top:18px; transition:.2s var(--easing);
+}
+.cta:hover{ background:var(--accent); }
+.cta-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
+.cta-secondary{ background:transparent; color:var(--fg); border:1px solid var(--line-strong); }
+.cta-secondary:hover{ background:#f0f0ec; color:var(--fg); }
+.faq{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 18px; margin:8px 0; }
+.faq summary{ cursor:pointer; font-weight:600; font-size:14px; list-style:none; }
+.faq summary::before{ content:"Q "; color:var(--accent); font-weight:700; margin-right:6px; }
+.faq[open] summary{ margin-bottom:8px; }
+.faq p{ font-size:13px; margin:0 0 0 22px; color:#333; line-height:1.7; }
+.faq p::before{ content:"A "; color:#777; font-weight:700; margin-right:6px; }
+.callout{ background:#fff; border:1px solid var(--line); padding:14px 18px; border-radius:6px; font-size:13px; }
+.weight-bar{ display:grid; grid-template-columns: repeat(5, 1fr); gap:0; border:1px solid var(--line); border-radius:6px; overflow:hidden; margin:14px 0; }
+.weight-bar .seg{ padding:14px 10px; text-align:center; font-size:11px; line-height:1.4; border-right:1px solid var(--line); background:#fff; }
+.weight-bar .seg:last-child{ border-right:none; }
+.weight-bar .seg .num{ display:block; font-size:18px; font-weight:700; color:var(--accent); margin-bottom:4px; font-feature-settings:"tnum"; }
+.weight-bar .seg .lab{ display:block; color:var(--fg-muted); }
+.classify{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin:14px 0; font-size:13px; }
+.classify .col{ background:#fff; border:1px solid var(--line); border-radius:6px; padding:14px; }
+.classify .col h4{ margin:0 0 6px; font-size:13px; }
+.classify .col h4::before{ content:""; display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+.classify .col.natural h4::before{ background:#7caa6e; }
+.classify .col.synth h4::before{ background:#5a8fc4; }
+.classify .col.blend h4::before{ background:#c79a4a; }
+.classify .col p{ margin:6px 0 0; font-size:12px; color:#555; line-height:1.6; }
+@media (max-width:640px){
+  .wrap{ padding:24px 16px 60px; }
+  h1{ font-size:22px; }
+  h2{ font-size:16px; }
+  .weight-bar{ grid-template-columns: repeat(2, 1fr); }
+  .weight-bar .seg{ border-bottom:1px solid var(--line); }
+  .classify{ grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="crumbs"><a href="#" onclick="goBackToForm(event)">← お見積りフォームに戻る</a></div>
+<h1>素材・厚み 選び方ガイド</h1>
+<p class="lead">「綿？ポリ？オンスって何？」というお客様向けに、生地の重さ・素材ごとの個性・用途別のおすすめをまとめました。迷ったらこのページの結論部分（迷ったらコレ／迷ったら 5.6oz）だけ読めば大丈夫です。</p>
+
+<div class="summary">
+  <div class="ttl">30 SECOND TAKEAWAY</div>
+  <ul>
+    <li><strong>オンス(oz)</strong> は生地の重さ。数字が大きい＝厚地でしっかり、小さい＝薄手で涼しい</li>
+    <li>普段着・チームT で迷ったら <strong>綿100% / 5.6oz</strong> が外さない王道</li>
+    <li>夏のスポーツや汗をかく場面なら <strong>ドライ(ポリエステル)</strong></li>
+    <li>長く着る・冬寄り・記念には <strong>6.0oz以上の綿100%</strong></li>
+  </ul>
+</div>
+
+<h2>1. オンス (oz) ってなに？</h2>
+<div class="callout">
+オンスは「<strong>1平方ヤード（約0.84㎡）あたりの生地の重さ</strong>」を表す単位です。重さなので厳密には厚さそのものではありませんが、<strong>数字が大きいほど厚地でしっかりした生地</strong>になる傾向にあります。Tシャツでは 4.0oz〜7.4oz、パーカーやトレーナーになると 8.4oz〜12.0oz が一般的です。
+</div>
+
+<div class="weight-bar">
+  <div class="seg"><span class="num">4.0oz</span><span class="lab">≒136g/m²<br>軽量・薄手</span></div>
+  <div class="seg"><span class="num">5.6oz</span><span class="lab">≒190g/m²<br>定番・通年</span></div>
+  <div class="seg"><span class="num">6.2oz</span><span class="lab">≒210g/m²<br>厚地寄り</span></div>
+  <div class="seg"><span class="num">7.4oz</span><span class="lab">≒250g/m²<br>しっかり厚地</span></div>
+  <div class="seg"><span class="num">9.1oz+</span><span class="lab">≒310g/m²<br>超厚地</span></div>
+</div>
+
+<table class="tbl">
+  <thead><tr><th>厚み目安</th><th>着心地・特徴</th><th>こんな用途に</th></tr></thead>
+  <tbody>
+    <tr><td class="num">4.0〜4.4oz</td><td>軽くて柔らかい。透け感が出やすい</td><td>夏イベント配布・販促・インナー使い</td></tr>
+    <tr><td class="num">5.0〜5.6oz</td><td>定番。程よい厚みで透けにくい</td><td>普段着・チームT・ユニフォーム</td></tr>
+    <tr><td class="num">6.0〜6.2oz</td><td>厚地寄り。生地に存在感</td><td>記念T・販売用・春秋向け</td></tr>
+    <tr><td class="num">7.0〜7.4oz</td><td>はっきり厚地。しっかり着られる</td><td>長期使用・作業着・アウトドア</td></tr>
+    <tr><td class="num">8.4〜10.0oz</td><td>パーカー・トレーナー級の厚さ</td><td>パーカー / スウェット / 防寒</td></tr>
+    <tr><td class="num">12.0oz</td><td>裏起毛のヘビーウェイト</td><td>真冬・本格スウェット・販売向け</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>注意：</strong> 同じオンスでも編み方や織り方で見た目の厚みや手触りは変わります。たとえば高密度に編まれた4.5ozは普通の5.0ozより重く感じることも。<strong>数字はあくまで目安</strong>として、実物の風合いはサンプルやレビューでご確認ください。
+</div>
+
+<h3>用途別おすすめ早見表</h3>
+<table class="tbl">
+  <thead><tr><th>シーン</th><th>おすすめオンス</th><th>素材</th></tr></thead>
+  <tbody>
+    <tr><td>イベント配布・販促</td><td class="num">4.0〜5.0oz</td><td>綿100% or ドライ</td></tr>
+    <tr><td>普段着・スタッフユニ</td><td class="num">5.0〜5.9oz</td><td>綿100%</td></tr>
+    <tr><td>運動会・部活</td><td class="num">4.1〜4.7oz</td><td>ドライ (ポリ100%)</td></tr>
+    <tr><td>記念・長く着てほしい</td><td class="num">6.0oz以上</td><td>綿100%</td></tr>
+    <tr><td>秋冬のスウェット</td><td class="num">8.4〜10.0oz</td><td>綿100% or 綿混</td></tr>
+    <tr><td>本格的な真冬パーカー</td><td class="num">12.0oz</td><td>綿100% (裏起毛)</td></tr>
+  </tbody>
+</table>
+
+<h2>2. 素材は「3タイプ」に分けて考えると分かりやすい</h2>
+<p>世の中のTシャツ生地は大きく <strong>天然繊維 / 化学繊維（合成繊維）/ 混紡（ブレンド）</strong> の3つに分かれます。それぞれ得意・不得意があります。</p>
+
+<div class="classify">
+  <div class="col natural">
+    <h4>天然繊維</h4>
+    <p>綿(コットン)・麻・リネン・ヘンプ・ウール など。<br>肌触りが優しく、吸湿性が高い。シワや縮みが出やすい。</p>
+  </div>
+  <div class="col synth">
+    <h4>化学繊維</h4>
+    <p>ポリエステル・ナイロン・レーヨン など。<br>軽くて丈夫、速乾性◎。肌触りはやや硬め、熱に弱い性質も。</p>
+  </div>
+  <div class="col blend">
+    <h4>混紡素材</h4>
+    <p>綿×ポリ(T/C・CVC) など。<br>天然と合成の長所を併せ持つ。シワ・縮みに強く、価格バランス◎。</p>
+  </div>
+</div>
+
+<h2>3. 主要素材ごとの違い</h2>
+
+<div class="cards">
+
+  <div class="card">
+    <div class="ttl"><span class="tag">綿</span>コットン100%</div>
+    <div class="meta">柔らかい / 吸湿◎ / シワ縮みあり</div>
+    <p>天然繊維の代表格。肌当たりが優しく汗もよく吸います。プリントの発色も最も綺麗に乗る素材。乾きが遅い・洗濯で多少縮むのが弱点。</p>
+    <ul>
+      <li>○ 着心地・通気性が抜群</li>
+      <li>○ シルク・転写・刺繍 すべて対応</li>
+      <li>△ 乾きが遅く汗ジミが目立ちやすい</li>
+      <li>△ 縮みやすい / 色落ちしやすい</li>
+    </ul>
+    <div class="scale">
+      <span class="lbl">薄</span>
+      <div class="bar"><span class="pin" style="left:60%;"></span></div>
+      <span class="lbl">厚</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ttl"><span class="tag">ドライ</span>ポリエステル100%</div>
+    <div class="meta">速乾 / 軽量 / 蛍光色OK</div>
+    <p>スポーツウェアの定番。汗をかいても乾きが早く、軽くて型崩れしにくい。蛍光色やビビッドカラーが豊富。プリントは転写・昇華転写と相性◎。</p>
+    <ul>
+      <li>○ 速乾・軽量・型崩れしにくい</li>
+      <li>○ 蛍光色など鮮やかな色多数</li>
+      <li>△ 綿のような肌当たりではない</li>
+      <li>△ 熱に弱い・静電気が起きやすい</li>
+    </ul>
+    <div class="scale">
+      <span class="lbl">薄</span>
+      <div class="bar"><span class="pin" style="left:30%;"></span></div>
+      <span class="lbl">厚</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ttl"><span class="tag">綿ポリ</span>混紡 (T/C)</div>
+    <div class="meta">バランス型 / シワ・縮みに強い</div>
+    <p>綿の風合いとポリエステルの強さの「いいとこ取り」。トレーナーやパーカーに多用される素材で、洗濯耐久にも優れます。価格と機能のバランスが良いのが魅力。</p>
+    <ul>
+      <li>○ シワ・縮みに強い</li>
+      <li>○ 厚地アイテムでもしっかり</li>
+      <li>○ プリント方法を選びにくい</li>
+      <li>△ 速乾性は綿100%より上、ポリ100%より下</li>
+    </ul>
+    <div class="scale">
+      <span class="lbl">薄</span>
+      <div class="bar"><span class="pin" style="left:55%;"></span></div>
+      <span class="lbl">厚</span>
+    </div>
+  </div>
+
+</div>
+
+<h2>4. プリント方法との相性</h2>
+<table class="tbl">
+  <thead><tr><th>素材</th><th>シルクスクリーン</th><th>転写 (単色/フルカラー)</th><th>インクジェット</th><th>刺繍</th></tr></thead>
+  <tbody>
+    <tr><td>綿100%</td><td>◎</td><td>◎</td><td>◎</td><td>◎</td></tr>
+    <tr><td>ドライ (ポリ100%)</td><td>○ ※白引き要</td><td>◎</td><td>△</td><td>○</td></tr>
+    <tr><td>綿ポリ混紡</td><td>◎</td><td>◎</td><td>○</td><td>◎</td></tr>
+  </tbody>
+</table>
+<p style="font-size:12px; color:var(--fg-muted); margin-top:6px;">※ プリント方法ごとの詳しい違いはプリント方法ガイドをご覧ください。</p>
+
+<h2>5. よくあるご質問</h2>
+
+<details class="faq">
+  <summary>結局、迷ったらどれ？</summary>
+  <p>普段着・チームT なら <strong>綿100% / 5.6oz</strong> が長年の定番です（Printstar 00085 / United Athle 5001 など）。価格と着心地のバランスがよく、プリントも一番きれいに乗ります。初めてのご注文ならまずこちらから。</p>
+</details>
+
+<details class="faq">
+  <summary>「綿100%」と「綿/ポリ混紡」って、どう違うんですか？</summary>
+  <p>綿100% は天然繊維で肌ざわり◎、その代わり洗濯でシワや縮みは出ます。混紡は化学繊維が入ることで、シワになりにくく洗濯後の縮みも控えめ。長く綺麗に着たいなら混紡、肌触り重視なら綿100%がおすすめです。</p>
+</details>
+
+<details class="faq">
+  <summary>蛍光色のドライTにシルクスクリーンプリントはできますか？</summary>
+  <p>はい、可能です。ただし蛍光色の生地は染料が強いため、淡い色のインクは下色が透けて見えることがあります。濃いインク色を選ぶか、白インクの下版（白引き）を入れて仕上げると鮮やかに発色します。</p>
+</details>
+
+<details class="faq">
+  <summary>洗濯でヨレにくいのは何oz？</summary>
+  <p>6.0oz以上の厚手タイプ（7.4oz・10.0ozなど）は首リブもしっかりしており、繰り返し洗濯しても型崩れしにくい傾向です。販売用や長く愛用するTシャツには厚地が向いています。</p>
+</details>
+
+<details class="faq">
+  <summary>サイズが選べる商品とXXLまでしかない商品があるのはなぜ？</summary>
+  <p>メーカーや品番ごとに展開サイズが異なります。お子様向けが必要なら 100cm〜150cm の展開がある品番、レディース寄りなら WM/WL 展開を持つ品番をお選びください。お見積りフォームのフィルタ「すべて」で全商品を見比べられます。</p>
+</details>
+
+<div class="cta-row">
+  <a href="#" onclick="goBackToForm(event)" class="cta">← お見積りフォームに戻る</a>
+  <a href="help-print.html" class="cta cta-secondary">プリント方法ガイドを見る</a>
+</div>
+
+<p style="font-size:11px; color:var(--fg-muted); margin-top:36px; text-align:center;">
+  © ココロ工房 — オリジナルプリント受注フォーム
+</p>
+
+</div>
+<script>
+// ★ 2026-04-30 戻るボタン: target=_blank で開かれた場合は close、 そうでなければ history.back
+function goBackToForm(e){
+  if(e) e.preventDefault();
+  // window.opener が存在 = 別タブで開いた → 自タブを閉じて元に戻る
+  try {
+    if(window.opener && !window.opener.closed){
+      window.close();
+      // close できなかった場合 (Chrome の制限) は opener にフォーカスして自分は閉じる試行
+      setTimeout(() => { try{ window.opener.focus(); }catch(_){} }, 100);
+      return false;
+    }
+  } catch(_){}
+  // 履歴があれば戻る
+  if(history.length > 1){
+    history.back();
+    return false;
+  }
+  // 最後の手段: ファイル名でフォームを直接開く
+  location.href = 'print-order-form-v13-porsche.html';
+  return false;
+}
+</script>
+</body>
+</html>

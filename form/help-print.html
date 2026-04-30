@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>プリント方法 選び方ガイド｜ココロ工房</title>
+<style>
+:root{
+  --bg:#fafaf8; --fg:#1a1a1a; --fg-muted:#6c6c6c;
+  --line:#e5e5e2; --line-strong:#bcbcb6;
+  --accent:#d5001c; --accent-soft:#fde8eb;
+  --panel:#ffffff;
+  --easing:cubic-bezier(.2,.7,.2,1);
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; background:var(--bg); color:var(--fg);
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height:1.75; font-size:15px; -webkit-text-size-adjust:100%;
+}
+.wrap{ max-width:880px; margin:0 auto; padding:32px 22px 80px; }
+.crumbs{ font-size:12px; color:var(--fg-muted); margin-bottom:8px; letter-spacing:.04em; }
+.crumbs a{ color:var(--fg-muted); text-decoration:none; }
+.crumbs a:hover{ color:var(--accent); }
+h1{ font-size:28px; font-weight:600; letter-spacing:.02em; margin:0 0 6px; }
+.lead{ font-size:14px; color:var(--fg-muted); margin:0 0 28px; }
+h2{ font-size:18px; font-weight:600; margin:36px 0 14px; padding-left:14px; border-left:3px solid var(--accent); letter-spacing:.02em; }
+h3{ font-size:15px; font-weight:600; margin:18px 0 6px; }
+.tag{ display:inline-block; background:var(--accent); color:#fff; font-size:10px; padding:3px 8px; border-radius:3px; letter-spacing:.08em; margin-right:8px; vertical-align:middle; font-weight:600; }
+.tag-light{ background:#f0f0ec; color:var(--fg); }
+.summary{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:18px 22px; margin:14px 0 24px; }
+.summary .ttl{ font-size:11px; letter-spacing:.18em; color:var(--accent); font-weight:600; margin-bottom:8px; }
+.summary ul{ margin:0; padding-left:20px; font-size:13.5px; }
+.summary ul li{ margin:4px 0; }
+.method{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:20px 22px; margin:14px 0; transition:.2s var(--easing); }
+.method:hover{ border-color:var(--line-strong); box-shadow:0 4px 14px rgba(0,0,0,.04); }
+.method .head{ display:flex; align-items:baseline; flex-wrap:wrap; gap:10px; margin-bottom:6px; }
+.method .ttl{ font-weight:600; font-size:18px; }
+.method .sub{ font-size:11px; color:var(--fg-muted); letter-spacing:.06em; text-transform:uppercase; }
+.method p{ font-size:13.5px; margin:8px 0; line-height:1.75; }
+.method .row{ display:grid; grid-template-columns: 90px 1fr; gap:10px; font-size:13px; padding:6px 0; border-top:1px dashed var(--line); }
+.method .row:first-of-type{ border-top:none; }
+.method .row .lbl{ font-weight:600; color:var(--fg-muted); font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding-top:2px; }
+.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:5px; }
+.dot.good{ background:#2bb673; }
+.dot.ok{ background:#ffb84a; }
+.dot.bad{ background:#bbb; }
+.compare-tbl{ width:100%; border-collapse:collapse; margin:14px 0 8px; font-size:12.5px; }
+.compare-tbl th,.compare-tbl td{ border:1px solid var(--line); padding:9px 10px; text-align:center; }
+.compare-tbl th{ background:#f4f4f0; font-weight:600; font-size:11px; color:var(--fg-muted); letter-spacing:.04em; }
+.compare-tbl td.method-name{ text-align:left; font-weight:600; background:#faf9f6; }
+.compare-tbl .v-good{ color:#1d8e5a; font-weight:700; }
+.compare-tbl .v-ok{ color:#cb7d18; }
+.compare-tbl .v-bad{ color:#a3a3a3; }
+.flow{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:14px 0; }
+.flow .step{ background:#fff; border:1px solid var(--line); padding:14px; border-radius:6px; position:relative; }
+.flow .step .num{ display:inline-block; background:var(--accent); color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:3px; margin-bottom:6px; }
+.flow .step .ttl{ font-weight:600; font-size:13px; margin-bottom:4px; }
+.flow .step .desc{ font-size:11.5px; color:#555; line-height:1.6; }
+.note{ background:var(--accent-soft); border-left:3px solid var(--accent); padding:12px 16px; font-size:13px; margin:18px 0; border-radius:0 4px 4px 0; }
+.note strong{ color:var(--accent); }
+.cta{ display:inline-flex; align-items:center; gap:8px; background:var(--fg); color:#fff;
+  padding:12px 22px; border-radius:3px; text-decoration:none; font-size:13px; font-weight:600;
+  letter-spacing:.04em; margin-top:18px; transition:.2s var(--easing);
+}
+.cta:hover{ background:var(--accent); }
+.cta-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
+.cta-secondary{ background:transparent; color:var(--fg); border:1px solid var(--line-strong); }
+.cta-secondary:hover{ background:#f0f0ec; color:var(--fg); }
+.faq{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 18px; margin:8px 0; }
+.faq summary{ cursor:pointer; font-weight:600; font-size:14px; list-style:none; }
+.faq summary::before{ content:"Q "; color:var(--accent); font-weight:700; margin-right:6px; }
+.faq[open] summary{ margin-bottom:8px; }
+.faq p{ font-size:13px; margin:0 0 0 22px; color:#333; line-height:1.7; }
+.faq p::before{ content:"A "; color:#777; font-weight:700; margin-right:6px; }
+.callout{ background:#fff; border:1px solid var(--line); padding:14px 18px; border-radius:6px; font-size:13px; }
+.points{ display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin:14px 0; }
+.points .pt{ background:#fff; border:1px solid var(--line); padding:12px 14px; border-radius:6px; font-size:12.5px; line-height:1.6; }
+.points .pt .n{ display:inline-block; width:22px; height:22px; line-height:22px; text-align:center; background:var(--accent); color:#fff; border-radius:50%; font-weight:700; font-size:12px; margin-right:6px; vertical-align:middle; }
+.points .pt strong{ font-size:13px; }
+@media (max-width:640px){
+  .wrap{ padding:24px 16px 60px; }
+  h1{ font-size:22px; }
+  h2{ font-size:16px; }
+  .method{ padding:16px 14px; }
+  .method .row{ grid-template-columns: 70px 1fr; font-size:12px; }
+  .compare-tbl{ font-size:11px; }
+  .compare-tbl th,.compare-tbl td{ padding:6px 4px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="crumbs"><a href="#" onclick="goBackToForm(event)">← お見積りフォームに戻る</a></div>
+<h1>プリント方法 選び方ガイド</h1>
+<p class="lead">「シルクと転写、結局どっちがいいの？」というお客様向けに、ココロ工房で対応している主なプリント技法を比較しながらまとめました。デザインの内容・色数・枚数で最適解は変わるので、まずは下の「30秒の要点」だけ読んでみてください。</p>
+
+<div class="summary">
+  <div class="ttl">30 SECOND TAKEAWAY</div>
+  <ul>
+    <li>大量に同じデザインなら <strong>シルクスクリーン</strong>（20枚以上で割安）</li>
+    <li>少量・写真・グラデなら <strong>フルカラー転写</strong>（1枚から OK）</li>
+    <li>名前・背番号など人別違いには <strong>カッティング転写 (単色)</strong></li>
+    <li>ポロや上着のロゴワンポイントには <strong>刺繍</strong> が高級感◎</li>
+    <li>柔らかい風合いで写真を載せるなら <strong>インクジェット (DTG)</strong></li>
+  </ul>
+</div>
+
+<h2>1. 主なプリント方法</h2>
+
+<div class="method">
+  <div class="head">
+    <div class="ttl"><span class="tag">シルク</span>シルクスクリーンプリント</div>
+    <div class="sub">SILK SCREEN — 大ロット・色数少なめ向き</div>
+  </div>
+  <p>1色ごとに「版（スクリーン）」を作り、その版越しにインクを生地へ押し出すプリント方法です。版を作るので最初の費用はかかりますが、刷り始めれば1枚あたりの単価がぐっと下がるため、<strong>同じデザインを大量に作る場面で最強</strong>のコスパを発揮します。</p>
+  <div class="row"><div class="lbl">向いてる</div><div>20枚以上 / 1〜4色 / 同じデザイン</div></div>
+  <div class="row"><div class="lbl">枚数</div><div>多いほど安くなる（版代を割れる）</div></div>
+  <div class="row"><div class="lbl">色数</div><div>1色〜6色程度。色を増やすほど料金UP</div></div>
+  <div class="row"><div class="lbl">仕上がり</div><div><span class="dot good"></span>発色◎ / 厚みのある立体感 / 耐久性◎</div></div>
+  <div class="row"><div class="lbl">注意点</div><div>グラデーションや写真は表現できない / 少数だと割高</div></div>
+</div>
+
+<div class="method">
+  <div class="head">
+    <div class="ttl"><span class="tag">転写 単色</span>カッティング転写 / 単色転写</div>
+    <div class="sub">CUTTING TRANSFER — 名前入れ・少数 OK</div>
+  </div>
+  <p>シート状の素材や単色フィルムをデザインの形にカットし、熱でTシャツに圧着します。版を作らないので<strong>1枚から OK</strong>。チームの背番号・お名前のような「人ごとに違う部分」を入れたい時に大活躍。シルクと組み合わせて使うのが定番。</p>
+  <div class="row"><div class="lbl">向いてる</div><div>1〜10枚 / 名前・背番号 / 単色ロゴ</div></div>
+  <div class="row"><div class="lbl">枚数</div><div>1枚から OK</div></div>
+  <div class="row"><div class="lbl">色数</div><div>単色 (色を変えるごとにシート別)</div></div>
+  <div class="row"><div class="lbl">仕上がり</div><div><span class="dot good"></span>くっきり / シャープ / 耐久性◎</div></div>
+  <div class="row"><div class="lbl">注意点</div><div>フィルムの質感が乗る / 大面積はゴワつきが出やすい</div></div>
+</div>
+
+<div class="method">
+  <div class="head">
+    <div class="ttl"><span class="tag">転写 フルカラー</span>フルカラー転写 / オンデマンド転写 (DTF)</div>
+    <div class="sub">FULL COLOR TRANSFER — 写真・グラデ OK</div>
+  </div>
+  <p>専用のフィルムにインクジェットでデザインを印刷し、それを熱で生地に圧着する方式。<strong>色数が増えても料金は一律</strong>なのが強みで、写真や細かいイラスト・グラデーションも自由自在。1枚から作れるので、ご自身の写真Tや少数の記念品にも最適です。伸縮性のある素材にも対応します。</p>
+  <div class="row"><div class="lbl">向いてる</div><div>1〜30枚 / 写真・イラスト・グラデ</div></div>
+  <div class="row"><div class="lbl">枚数</div><div>1枚から OK (中ロットまで)</div></div>
+  <div class="row"><div class="lbl">色数</div><div>何色でも料金一律</div></div>
+  <div class="row"><div class="lbl">仕上がり</div><div><span class="dot good"></span>細かい絵◎ / グラデ◎ / 耐久性○</div></div>
+  <div class="row"><div class="lbl">注意点</div><div>大ロットだとシルクの方が単価安い / 風合いはシルク有利</div></div>
+</div>
+
+<div class="method">
+  <div class="head">
+    <div class="ttl"><span class="tag">インクジェット</span>インクジェットプリント (DTG)</div>
+    <div class="sub">DIGITAL DIRECT — 綿100% / 小ロットの写真表現</div>
+  </div>
+  <p>専用のプリンターでインクを<strong>生地に直接吹き付ける</strong>方法。製版が不要なのでフルカラーの写真イラストも1枚から OK、しかもインクが生地に染み込むため<strong>柔らかい風合い</strong>に仕上がります。綿100%の白〜淡色生地が最も得意分野。</p>
+  <div class="row"><div class="lbl">向いてる</div><div>1〜20枚 / 写真・色数の多いイラスト / 綿生地</div></div>
+  <div class="row"><div class="lbl">枚数</div><div>1枚から OK</div></div>
+  <div class="row"><div class="lbl">色数</div><div>何色でも料金一律</div></div>
+  <div class="row"><div class="lbl">仕上がり</div><div><span class="dot good"></span>柔らかい風合い / 写真も滑らか</div></div>
+  <div class="row"><div class="lbl">注意点</div><div>ポリ/ナイロン素材は不可 / 濃色生地は事前下地が必要</div></div>
+</div>
+
+<div class="method">
+  <div class="head">
+    <div class="ttl"><span class="tag">刺繍</span>刺繍 (エンブロイダリー)</div>
+    <div class="sub">EMBROIDERY — ワンランク上の質感</div>
+  </div>
+  <p>糸でデザインを縫い込んでいくプリント方法。<strong>立体感と高級感が抜群</strong>で、洗濯による劣化にも極めて強いのが魅力。ポロシャツやジャンパーなど、上品な仕上がりが必要なシーンで活躍します。</p>
+  <div class="row"><div class="lbl">向いてる</div><div>ロゴワンポイント / ネーム入れ / ポロ・上着</div></div>
+  <div class="row"><div class="lbl">枚数</div><div>1枚から OK</div></div>
+  <div class="row"><div class="lbl">色数</div><div>糸色は豊富 / 細かいデザインは簡略化が前提</div></div>
+  <div class="row"><div class="lbl">仕上がり</div><div><span class="dot good"></span>高級感◎ / 立体感あり / 耐久性◎◎</div></div>
+  <div class="row"><div class="lbl">注意点</div><div>細い線・小さい文字は再現が難しい / プリントより単価高め</div></div>
+</div>
+
+<h2>2. ひと目で分かる比較表</h2>
+<table class="compare-tbl">
+  <thead>
+    <tr>
+      <th>方法</th>
+      <th>少数 (1〜10枚)</th>
+      <th>大ロット (50枚〜)</th>
+      <th>写真・グラデ</th>
+      <th>耐久性</th>
+      <th>風合い</th>
+      <th>濃色生地</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="method-name">シルク</td><td class="v-bad">×</td><td class="v-good">◎</td><td class="v-bad">×</td><td class="v-good">◎</td><td class="v-good">◎</td><td class="v-good">◎</td></tr>
+    <tr><td class="method-name">転写 単色</td><td class="v-good">◎</td><td class="v-ok">○</td><td class="v-bad">×</td><td class="v-good">◎</td><td class="v-ok">○</td><td class="v-good">◎</td></tr>
+    <tr><td class="method-name">フルカラー転写</td><td class="v-good">◎</td><td class="v-ok">○</td><td class="v-good">◎</td><td class="v-ok">○</td><td class="v-ok">○</td><td class="v-good">◎</td></tr>
+    <tr><td class="method-name">インクジェット (DTG)</td><td class="v-good">◎</td><td class="v-ok">○</td><td class="v-good">◎</td><td class="v-ok">○</td><td class="v-good">◎</td><td class="v-ok">△</td></tr>
+    <tr><td class="method-name">刺繍</td><td class="v-good">◎</td><td class="v-ok">○</td><td class="v-bad">×</td><td class="v-good">◎</td><td class="v-good">◎</td><td class="v-good">◎</td></tr>
+  </tbody>
+</table>
+
+<h2>3. プリント方法を選ぶ4つの観点</h2>
+<div class="points">
+  <div class="pt"><span class="n">1</span><strong>素材</strong><br>綿はすべて対応 / ポリはシルク(白引き要)・転写 / 綿混は基本何でも OK</div>
+  <div class="pt"><span class="n">2</span><strong>枚数</strong><br>少数→転写 / 中ロット→転写 or シルク / 大量→シルク</div>
+  <div class="pt"><span class="n">3</span><strong>デザイン</strong><br>ベタ塗り→シルク / 写真→フルカラー転写 or DTG / ロゴ→刺繍</div>
+  <div class="pt"><span class="n">4</span><strong>仕上がり</strong><br>立体感ならシルク・刺繍 / 風合い重視ならインクジェット (DTG)</div>
+</div>
+
+<h2>4. こんなときはコレ</h2>
+
+<div class="flow">
+  <div class="step">
+    <div class="num">CASE 1</div>
+    <div class="ttl">部活・チームT 30枚</div>
+    <div class="desc">同じデザインを多人数 → <strong>シルク</strong>。版代を割れて単価が下がる定番パターン</div>
+  </div>
+  <div class="step">
+    <div class="num">CASE 2</div>
+    <div class="ttl">名前・背番号入り 10枚</div>
+    <div class="desc">人別に違う文字 → <strong>転写 単色</strong>。シルクと組み合わせて入れるのが定番</div>
+  </div>
+  <div class="step">
+    <div class="num">CASE 3</div>
+    <div class="ttl">愛犬の写真Tシャツ</div>
+    <div class="desc">写真・色数多い → <strong>フルカラー転写 または DTG</strong>。1枚から OK</div>
+  </div>
+  <div class="step">
+    <div class="num">CASE 4</div>
+    <div class="ttl">会社のポロシャツに胸ロゴ</div>
+    <div class="desc">高級感・長持ち → <strong>刺繍</strong>。ワンポイントなら手頃</div>
+  </div>
+  <div class="step">
+    <div class="num">CASE 5</div>
+    <div class="ttl">綿100%の白Tに写真をきれいに</div>
+    <div class="desc">柔らかい風合いで写真 → <strong>インクジェット (DTG)</strong>。生地に染み込むので軽い仕上がり</div>
+  </div>
+</div>
+
+<h2>5. 料金の決まり方</h2>
+<div class="callout">
+プリント代は <strong>「方法 × 色数 × プリントサイズ × 枚数」</strong> の組み合わせで決まります。<br>
+さらに初回は<strong>版代/データ代</strong>が必要で、リピート時は版を流用すれば版代が安くなる仕組みです。<br>
+ココロ工房お見積りフォームでは、選択に応じて単価が自動計算されますので、まずは色々試してみてください。
+</div>
+
+<h2>6. よくあるご質問</h2>
+
+<details class="faq">
+  <summary>シルクと転写、結局どっちが安いんですか？</summary>
+  <p>枚数によります。版代がかかるシルクは <strong>20枚を超えたあたりから</strong> シルクの方がお得になることが多いです。10枚以下なら転写、30枚以上ならシルクが目安。色数が多い(5色以上)場合や写真は転写一択です。</p>
+</details>
+
+<details class="faq">
+  <summary>蛍光色や金銀でプリントしたいのですが？</summary>
+  <p>シルクスクリーンなら蛍光・金銀インクとも対応可能（特殊色は割増）。フルカラー転写では<strong>金銀は表現可能</strong>ですが、蛍光色は再現が難しいため別途ご相談ください。</p>
+</details>
+
+<details class="faq">
+  <summary>「版代」「データ代」って何ですか？</summary>
+  <p>版代はシルク用の網目スクリーン製作費（色数分必要、リピート流用可）。データ代はデザインを印刷データに整える初期費用です。一度作ればリピート時は無料で使えます。</p>
+</details>
+
+<details class="faq">
+  <summary>同じTシャツに複数の方法は混ぜられますか？</summary>
+  <p>はい。たとえば「胸はシルク、背中の名前は転写」のような組み合わせは大歓迎です。お見積りフォームで「プリント箇所」を複数選んで、箇所ごとに方法を指定してください。</p>
+</details>
+
+<details class="faq">
+  <summary>ポリエステルのドライTでもシルク印刷できますか？</summary>
+  <p>はい、可能ですが<strong>白引き（白い下版）</strong>を入れる必要があり、コストや工程が増えます。ポリ素材は転写プリントの方が相性が良く、推奨です。</p>
+</details>
+
+<details class="faq">
+  <summary>結局、迷ったら？</summary>
+  <p>20枚以上で同じデザインなら <strong>シルク</strong>、それ以下や写真込みなら <strong>フルカラー転写</strong> から検討してみてください。決めかねるときはチャットでサンプル写真を送っていただければ、最適な方法をご提案します。</p>
+</details>
+
+<div class="cta-row">
+  <a href="#" onclick="goBackToForm(event)" class="cta">← お見積りフォームに戻る</a>
+  <a href="help-fabric.html" class="cta cta-secondary">素材・厚みガイドを見る</a>
+</div>
+
+<p style="font-size:11px; color:var(--fg-muted); margin-top:36px; text-align:center;">
+  © ココロ工房 — オリジナルプリント受注フォーム
+</p>
+
+</div>
+<script>
+// ★ 2026-04-30 戻るボタン: target=_blank で開かれた場合は close、 そうでなければ history.back
+function goBackToForm(e){
+  if(e) e.preventDefault();
+  try {
+    if(window.opener && !window.opener.closed){
+      window.close();
+      setTimeout(() => { try{ window.opener.focus(); }catch(_){} }, 100);
+      return false;
+    }
+  } catch(_){}
+  if(history.length > 1){
+    history.back();
+    return false;
+  }
+  location.href = 'print-order-form-v13-porsche.html';
+  return false;
+}
+</script>
+</body>
+</html>
