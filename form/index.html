@@ -950,34 +950,33 @@ img{ display:block; max-width:100%; }
 }
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
-/* Stage overlay (top-left): product name + meta
-   ★ 2026-04-30 H1: iframe (z-index:2) より下に配置 → 3Dモデルが文字の上に被る
-   embed mode の viewer は alpha:true で描画しているため、 モデル外の透過部分から
-   この overlay の文字がうっすら見える。 モデルが拡大したらモデルが文字を隠す。 */
+/* Stage overlay (top-left): product name + meta */
 .stage-overlay{
   position:absolute; top:22px; left:26px; right:26px;
   display:flex; justify-content:space-between; align-items:flex-start;
   gap:24px; pointer-events:none;
-  z-index:1;     /* ← 3D iframe より下 */
+  z-index:2;
 }
 .ov-block{
+  /* ★ 枠なし・濃グレー文字版 (スクショ準拠) */
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border: none;
-  padding: 2px 0 2px 14px;
+  border-radius: 0;
+  padding: 2px 0;
   box-shadow: none;
-  border-left:1px solid rgba(140,140,140,.30);
 }
 .ov-name{
-  font-size:14px; font-weight:500; letter-spacing:.04em;
-  color:#5a5a5a;       /* 濃いめのグレー */
+  font-size:18px; font-weight:300; letter-spacing:.02em;
+  color:#5a5a5a;             /* 濃いめのグレー */
   text-shadow: none;
+  line-height:1.25;
 }
 .ov-meta{
-  font-size:9px; letter-spacing:.26em;
-  color:rgba(110,110,110,.85);
-  text-transform:uppercase; margin-top:4px; font-weight:500;
+  font-size:10px; letter-spacing:.26em;
+  color:#7a7a7a;
+  text-transform:uppercase; margin-top:6px; font-weight:400;
   text-shadow: none;
 }
 .ov-tag{
@@ -4415,7 +4414,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '55';
+const VIEWER_VERSION = '58';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
