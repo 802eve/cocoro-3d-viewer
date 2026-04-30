@@ -337,6 +337,296 @@ img{ display:block; max-width:100%; }
 }
 
 /* ------------------------------------------------------------------------
+   SUBMIT LOADER (送信中ロード画面 — ゲージ・オシャレ・ポップ)
+   ------------------------------------------------------------------------ */
+.submit-loader{
+  position:fixed; inset:0; z-index:30000;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.submit-loader[hidden]{ display:none !important; }
+.submit-loader .sl-bg{
+  position:absolute; inset:0;
+  background: radial-gradient(circle at 30% 20%, rgba(207,35,53,.18), transparent 50%),
+              radial-gradient(circle at 75% 80%, rgba(96,165,250,.18), transparent 50%),
+              rgba(8,10,14,.92);
+  backdrop-filter: blur(12px);
+  animation: slBgShift 8s ease-in-out infinite;
+}
+@keyframes slBgShift{
+  0%,100%{ background-position: 0% 0%, 0% 0%, 0 0; }
+  50%{ background-position: 30% 20%, -20% 30%, 0 0; }
+}
+.sl-card{
+  position:relative;
+  width:min(440px, 100%);
+  background: linear-gradient(180deg, #1d2028 0%, #14161c 100%);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:24px;
+  padding:36px 30px 28px;
+  text-align:center;
+  color:#e8eaee;
+  box-shadow: 0 30px 90px rgba(0,0,0,.6), 0 0 80px rgba(207,35,53,.15);
+  animation: slPop .5s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes slPop{
+  from{ opacity:0; transform: scale(.85) translateY(20px); }
+  to  { opacity:1; transform: none; }
+}
+.sl-box{
+  position:relative;
+  width:96px; height:80px;
+  margin: 0 auto 22px;
+}
+.sl-box-body{
+  position:absolute; bottom:0; left:0; right:0;
+  height:60px;
+  background:linear-gradient(180deg,#cf2335,#8a1a23);
+  border-radius:6px;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.25), 0 8px 20px rgba(207,35,53,.4);
+}
+.sl-box-body::before,
+.sl-box-body::after{
+  content:""; position:absolute; left:50%; transform:translateX(-50%);
+  background:#fbd84a;
+}
+.sl-box-body::before{ top:0; bottom:0; width:8px; }
+.sl-box-body::after{ top:14px; left:0; right:0; transform:none; height:8px; }
+.sl-box-lid{
+  position:absolute; top:0; left:-4px; right:-4px;
+  height:18px;
+  background:linear-gradient(180deg,#e63946,#a01b29);
+  border-radius:6px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
+  animation: slLid 1.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+@keyframes slLid{
+  0%,100%{ transform: translateY(0) rotate(0); }
+  40%{ transform: translateY(-12px) rotate(-8deg); }
+  60%{ transform: translateY(-12px) rotate(-8deg); }
+}
+.sl-confetti{
+  position:absolute; inset:0;
+  pointer-events:none;
+}
+.sl-confetti span{
+  position:absolute; top:18px; left:50%;
+  font-size:14px;
+  color:var(--c, #fbd84a);
+  opacity:0;
+  animation: slConfetti 1.6s ease-out infinite;
+  animation-delay: var(--d, 0s);
+}
+.sl-confetti span:nth-child(1){ --tx:-40px; --ty:-50px; }
+.sl-confetti span:nth-child(2){ --tx:35px;  --ty:-55px; }
+.sl-confetti span:nth-child(3){ --tx:-55px; --ty:-30px; }
+.sl-confetti span:nth-child(4){ --tx:50px;  --ty:-30px; }
+.sl-confetti span:nth-child(5){ --tx:-25px; --ty:-65px; }
+.sl-confetti span:nth-child(6){ --tx:25px;  --ty:-65px; }
+.sl-confetti span:nth-child(7){ --tx:-60px; --ty:-10px; }
+.sl-confetti span:nth-child(8){ --tx:60px;  --ty:-10px; }
+@keyframes slConfetti{
+  0%,30%{ opacity:0; transform: translate(-50%,0) scale(.5); }
+  50%{ opacity:1; }
+  100%{ opacity:0; transform: translate(calc(-50% + var(--tx,0)), var(--ty,-50px)) scale(1.2) rotate(360deg); }
+}
+.sl-eyebrow{
+  font-size:10px; letter-spacing:.4em;
+  color:#cf2335; font-weight:700;
+  margin-bottom:6px;
+}
+.sl-title{
+  font-size:22px; font-weight:700;
+  margin:0 0 8px;
+  letter-spacing:.02em;
+}
+.sl-msg{
+  font-size:13px; color:#a8aab2;
+  margin:0 0 22px;
+}
+.sl-bar{
+  position:relative;
+  height:8px; border-radius:99px;
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+  margin-bottom:8px;
+}
+.sl-bar-fill{
+  position:absolute; top:0; left:0; bottom:0;
+  width:0%;
+  background:linear-gradient(90deg, #cf2335, #fbd84a, #cf2335);
+  background-size:200% 100%;
+  border-radius:99px;
+  transition: width .35s ease;
+  animation: slShine 2s linear infinite;
+}
+@keyframes slShine{
+  0%  { background-position: 0% 0%; }
+  100%{ background-position: 200% 0%; }
+}
+.sl-pct{
+  font-size:11px; letter-spacing:.2em;
+  color:#fbd84a; font-weight:700;
+  margin-bottom:18px;
+}
+.sl-steps{
+  list-style:none; padding:0; margin:18px 0 0;
+  text-align:left;
+  border-top:1px solid rgba(255,255,255,.06);
+  padding-top:14px;
+}
+.sl-steps li{
+  display:flex; align-items:center; gap:10px;
+  font-size:12px; color:#7c7f86;
+  padding:5px 0;
+  transition: color .3s ease;
+}
+.sl-steps li.is-active{ color:#fff; font-weight:600; }
+.sl-steps li.is-done{ color:#34d399; }
+.sl-steps li.is-done .sls-icon{ color:#34d399; }
+.sl-steps li.is-done::before{
+  content:"✓"; color:#34d399; font-weight:bold; margin-left:-2px;
+}
+.sl-steps li.is-active .sls-icon{
+  animation: slBounce .8s ease-in-out infinite;
+}
+@keyframes slBounce{
+  0%,100%{ transform: translateY(0); }
+  50%   { transform: translateY(-3px); }
+}
+.sl-steps .sls-icon{ font-size:16px; }
+/* 完了モード */
+.submit-loader.is-done .sl-eyebrow{ color:#34d399; }
+.submit-loader.is-done .sl-title::after{ content:" 🎉"; }
+.submit-loader.is-done .sl-bar-fill{ background:linear-gradient(90deg, #34d399, #10b981); }
+
+/* ------------------------------------------------------------------------
+   REPEAT ORDER MODAL
+   ------------------------------------------------------------------------ */
+.repeat-modal{
+  position:fixed; inset:0; z-index:20000;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+  animation: rmFade .25s ease forwards;
+}
+.repeat-modal[hidden]{ display:none !important; }
+@keyframes rmFade{ from{opacity:0} to{opacity:1} }
+.repeat-modal-bg{
+  position:absolute; inset:0;
+  background:rgba(8,10,14,.78);
+  backdrop-filter: blur(8px);
+}
+.repeat-modal-card{
+  position:relative;
+  width:min(560px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow:auto;
+  background: linear-gradient(180deg, #1a1d24 0%, #14161c 100%);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  padding:36px 32px 28px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03) inset;
+  color:#e8eaee;
+  animation: rmCard .35s var(--easing,cubic-bezier(.2,.7,.2,1)) forwards;
+}
+@keyframes rmCard{ from{opacity:0; transform:translateY(20px) scale(.98)} to{opacity:1; transform:none} }
+.repeat-modal-close{
+  position:absolute; top:14px; right:14px;
+  width:34px; height:34px; border-radius:50%;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+  color:#a8aab2; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; line-height:1;
+  transition: all .18s ease;
+}
+.repeat-modal-close:hover{ background:rgba(255,255,255,.12); color:#fff; transform:rotate(90deg); }
+.repeat-modal-eyebrow{
+  font-size:10px; letter-spacing:.32em; text-transform:uppercase;
+  color:#cf2335; font-weight:700;
+  margin-bottom:6px;
+}
+.repeat-modal-title{
+  font-size:24px; font-weight:700; margin:0 0 14px;
+  letter-spacing:.02em;
+}
+.repeat-modal-lead{
+  font-size:13px; line-height:1.7; color:#b8babf; margin:0 0 22px;
+}
+.repeat-modal-lead strong{ color:#fff; font-weight:700; }
+.repeat-form .rf-field{
+  display:flex; flex-direction:column; gap:6px;
+  margin-bottom:14px;
+}
+.repeat-form .rf-row{
+  display:grid; grid-template-columns:1fr 1fr; gap:12px;
+}
+@media (max-width:560px){
+  .repeat-form .rf-row{ grid-template-columns:1fr; gap:0; }
+}
+.repeat-form .rf-lbl{
+  font-size:11px; letter-spacing:.12em; color:#9ca0a8;
+  text-transform:uppercase; font-weight:600;
+}
+.repeat-form .rf-lbl em{
+  color:#cf2335; font-style:normal; font-size:10px; margin-left:6px;
+}
+.repeat-form input,
+.repeat-form textarea{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:8px;
+  color:#fff;
+  padding:11px 13px;
+  font-size:14px;
+  font-family:inherit;
+  transition: border-color .18s ease, background .18s ease;
+}
+.repeat-form input:focus,
+.repeat-form textarea:focus{
+  outline:none;
+  border-color:#cf2335;
+  background:rgba(255,255,255,.06);
+}
+.repeat-form textarea{ resize:vertical; min-height:90px; }
+.repeat-form .rf-actions{
+  display:flex; gap:10px; margin-top:18px;
+}
+.repeat-form .rf-btn{
+  flex:1;
+  padding:14px 18px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:14px;
+  letter-spacing:.05em;
+  cursor:pointer;
+  transition: all .18s ease;
+}
+.repeat-form .rf-btn-back{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.15);
+  color:#b8babf;
+}
+.repeat-form .rf-btn-back:hover{ background:rgba(255,255,255,.06); color:#fff; }
+.repeat-form .rf-btn-send{
+  background:linear-gradient(180deg, #cf2335, #a01b29);
+  border:1px solid rgba(255,255,255,.10);
+  color:#fff;
+  box-shadow: 0 6px 20px rgba(207,35,53,.35);
+}
+.repeat-form .rf-btn-send:hover{ filter: brightness(1.1); transform: translateY(-1px); }
+.repeat-form .rf-btn-send:disabled{ opacity:.6; cursor:wait; transform:none; }
+.repeat-modal-hint{
+  margin-top:20px; padding-top:18px;
+  border-top:1px solid rgba(255,255,255,.06);
+  font-size:11px; color:#8a8d94; line-height:1.6;
+}
+.repeat-modal-hint .rm-link{
+  color:#e8eaee; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.2);
+}
+.repeat-modal-hint .rm-link:hover{ color:#cf2335; border-color:#cf2335; }
+
+/* ------------------------------------------------------------------------
    HEADER
    ------------------------------------------------------------------------ */
 .header{
@@ -411,8 +701,11 @@ img{ display:block; max-width:100%; }
 @media (max-width:768px){
   .header{ grid-template-columns: auto 1fr auto; padding:0 14px; gap:10px; }
   .brand .b-sub{ display:none; }
-  /* モバイルではステップバーを非表示。パネルheaderの「STEP 0X / 06」で十分案内できるため */
-  .steps{ display:none; }
+}
+/* PC以外（タブレット含む）はステップバー非表示（パネルheaderの「STEP 0X / 06」で代用） */
+@media (max-width:1199px), (pointer:coarse){
+  .steps{ display:none !important; }
+  .header > .steps{ flex:0; }
 }
 @media (max-width:380px){
   .header{ padding:0 10px; gap:6px; }
@@ -596,18 +889,26 @@ img{ display:block; max-width:100%; }
   z-index:2;
 }
 .ov-block{
-  /* おしゃれなグレーで控えめに表示 */
-  border-left:1px solid rgba(180,180,180,.35);
-  padding:2px 0 2px 14px;
+  /* ★ F3 視認性UP: 白ボディ・暗ボディどちらでも読めるグラス調プレート */
+  background: rgba(15,17,22,.55);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  border:1px solid rgba(255,255,255,.10);
+  border-left:2px solid rgba(255,255,255,.55);
+  border-radius:8px;
+  padding:9px 14px 9px 13px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
 }
 .ov-name{
-  font-size:14px; font-weight:300; letter-spacing:.04em;
-  color:#c8c8c8;
-  text-shadow:0 1px 4px rgba(0,0,0,.45);
+  font-size:14px; font-weight:500; letter-spacing:.04em;
+  color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.6);
 }
 .ov-meta{
-  font-size:9px; letter-spacing:.28em; color:rgba(180,180,180,.6);
-  text-transform:uppercase; margin-top:4px; font-weight:400;
+  font-size:9px; letter-spacing:.26em;
+  color:rgba(255,255,255,.78);
+  text-transform:uppercase; margin-top:4px; font-weight:500;
+  text-shadow:0 1px 2px rgba(0,0,0,.5);
 }
 .ov-tag{
   font-size:9px; letter-spacing:.4em; color:var(--accent);
@@ -2423,6 +2724,15 @@ img{ display:block; max-width:100%; }
         </span>
       </button>
       <input type="file" id="loadJsonFile" accept=".json,application/json" hidden>
+      <!-- リピート注文 -->
+      <button class="welcome-btn welcome-btn-tertiary" id="btnRepeatOrder" type="button">
+        <span class="wb-arrow">🔁</span>
+        <span class="wb-content">
+          <span class="wb-eyebrow">REPEAT</span>
+          <span class="wb-label">リピート注文のお客様はこちら</span>
+          <span class="wb-detail">前回の受注番号で簡単にお見積もり</span>
+        </span>
+      </button>
     </div>
     <button class="welcome-clear" id="btnClearSaved" type="button" hidden>保存データを削除して新規で始める</button>
     <div class="welcome-corner-meta">
@@ -2431,6 +2741,90 @@ img{ display:block; max-width:100%; }
       <span>2026</span>
       <span class="wcm-dot">·</span>
       <span>© COCORO-KOBO</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============= SUBMIT LOADER (ゲージ・ポップ) ============= -->
+<div class="submit-loader" id="submitLoader" hidden aria-hidden="true">
+  <div class="sl-bg"></div>
+  <div class="sl-card" role="status" aria-live="polite">
+    <!-- アニメ箱 -->
+    <div class="sl-box">
+      <div class="sl-box-lid"></div>
+      <div class="sl-box-body"></div>
+      <div class="sl-confetti">
+        <span style="--c:#ff6b6b;--d:0">●</span>
+        <span style="--c:#fbd84a;--d:.15s">●</span>
+        <span style="--c:#34d399;--d:.30s">●</span>
+        <span style="--c:#60a5fa;--d:.45s">●</span>
+        <span style="--c:#a78bfa;--d:.60s">●</span>
+        <span style="--c:#f97316;--d:.75s">●</span>
+        <span style="--c:#ec4899;--d:.90s">●</span>
+        <span style="--c:#22d3ee;--d:1.05s">●</span>
+      </div>
+    </div>
+    <div class="sl-eyebrow" id="slEyebrow">SENDING</div>
+    <h2 class="sl-title" id="slTitle">お見積りを送信中…</h2>
+    <p class="sl-msg" id="slMsg">わくわくしながら準備しています</p>
+    <div class="sl-bar" aria-hidden="true">
+      <div class="sl-bar-fill" id="slBarFill"></div>
+    </div>
+    <div class="sl-pct" id="slPct">0%</div>
+    <ul class="sl-steps" id="slSteps">
+      <li data-step="1"><span class="sls-icon">📋</span><span class="sls-text">注文情報をまとめています</span></li>
+      <li data-step="2"><span class="sls-icon">📸</span><span class="sls-text">デザイン画像を準備しています</span></li>
+      <li data-step="3"><span class="sls-icon">🚀</span><span class="sls-text">サーバーへ送信しています</span></li>
+      <li data-step="4"><span class="sls-icon">✨</span><span class="sls-text">仕上げ中…</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============= REPEAT ORDER MODAL ============= -->
+<div class="repeat-modal" id="repeatModal" hidden aria-hidden="true">
+  <div class="repeat-modal-bg"></div>
+  <div class="repeat-modal-card" role="dialog" aria-labelledby="repeatModalTitle">
+    <button class="repeat-modal-close" id="repeatModalClose" type="button" aria-label="閉じる">×</button>
+    <div class="repeat-modal-eyebrow">REPEAT ORDER</div>
+    <h2 class="repeat-modal-title" id="repeatModalTitle">リピート注文のお客様</h2>
+    <p class="repeat-modal-lead">
+      前回と<strong>同じデザイン</strong>で再注文の方は、こちらからご連絡ください。<br>
+      版・データを流用してお安くご提案できます。
+    </p>
+    <form class="repeat-form" id="repeatForm" autocomplete="on" novalidate>
+      <label class="rf-field">
+        <span class="rf-lbl">過去の受注番号 <em>必須</em></span>
+        <input type="text" id="rvOrderNo" placeholder="CK-20260420-103045" required>
+      </label>
+      <label class="rf-field">
+        <span class="rf-lbl">ご担当者名 <em>必須</em></span>
+        <input type="text" id="rvName" placeholder="山田 太郎" required>
+      </label>
+      <div class="rf-row">
+        <label class="rf-field">
+          <span class="rf-lbl">メールアドレス <em>必須</em></span>
+          <input type="email" id="rvEmail" placeholder="example@email.com" inputmode="email" required>
+        </label>
+        <label class="rf-field">
+          <span class="rf-lbl">お電話番号 <em>必須</em></span>
+          <input type="tel" id="rvPhone" placeholder="090-1234-5678" inputmode="tel" required>
+        </label>
+      </div>
+      <label class="rf-field">
+        <span class="rf-lbl">変更内容（同じ内容なら「同じ」と記載）</span>
+        <textarea id="rvChange" rows="4" placeholder="例: 枚数を50枚→80枚に増やしたい / サイズを M→L に変更 / 同じ内容で再注文 など"></textarea>
+      </label>
+      <label class="rf-field">
+        <span class="rf-lbl">希望納期（任意）</span>
+        <input type="date" id="rvDelivery" inputmode="numeric">
+      </label>
+      <div class="rf-actions">
+        <button type="button" class="rf-btn rf-btn-back" id="rvBack">← 戻る</button>
+        <button type="submit" class="rf-btn rf-btn-send" id="rvSend">リピート注文を送信</button>
+      </div>
+    </form>
+    <div class="repeat-modal-hint">
+      💡 ご注文番号がわからない場合は <a href="mailto:802eve.shop@gmail.com" class="rm-link">802eve.shop@gmail.com</a> までお問い合わせください。
     </div>
   </div>
 </div>
@@ -2635,11 +3029,6 @@ img{ display:block; max-width:100%; }
               <label class="ff"><span class="ff-lbl">電話 <em>必須</em></span><input type="tel" data-cust="phone" placeholder="090-1234-5678" inputmode="tel" required></label>
               <label class="ff ff-zip"><span class="ff-lbl">郵便番号 <em>必須</em> <span class="zip-status" id="zipStatusCust"></span></span><input type="text" data-cust="zipcode" placeholder="1500001" inputmode="numeric" maxlength="8" required></label>
               <label class="ff ff-addr"><span class="ff-lbl">ご住所 <em>必須</em></span><input type="text" data-cust="address" placeholder="郵便番号入力で自動補完" required></label>
-              <label class="ff ff-repeat"><span class="ff-lbl">過去の受注番号（任意）<span class="ff-hint">リピート注文の方</span></span><input type="text" data-cust="repeatOrderNo" placeholder="CK-20260420-103045" autocomplete="off"></label>
-            </div>
-            <div class="ff-note">
-              <span class="ff-note-icon">💡</span>
-              <span>同じデザインで再注文の方は、 前回の受注番号 (CK-XXXXXXXX-XXXXXX) をご記入いただくと、 <strong>版・データを流用してお安く</strong> ご提案できます。</span>
             </div>
           </div>
 
@@ -2758,7 +3147,7 @@ img{ display:block; max-width:100%; }
             </button>
           </div>
 
-          <div class="review-tip">送信後、担当者より1営業日以内にご連絡いたします。<br>金額は概算です。最終見積は別途ご案内します。</div>
+          <div class="review-tip">送信後、担当者より3営業日以内にご連絡いたします。<br>金額は概算です。最終見積は別途ご案内します。</div>
           <div class="review-foot">
             <div class="rf-brand">COCORO-KOBO <span class="rf-dot">·</span> Configurator v13</div>
             <div class="rf-copy">© 2026 802Eve. All Rights Reserved.</div>
@@ -3448,7 +3837,7 @@ const state = {
   lineIdx: 0,                // 編集中ラインの index
   // 見積全体に共通する設定
   deadline: '10',
-  customer: { company:'', name:'', email:'', phone:'', zipcode:'', address:'', repeatOrderNo:'' },
+  customer: { company:'', name:'', email:'', phone:'', zipcode:'', address:'' },
   shipping: { sameAsCustomer:true, recipient:'', zipcode:'', address:'' },
   delivery: {
     method: 'shipping',     // 'shipping' | 'pickup' (★ 2026-04-28 追加)
@@ -3913,7 +4302,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '50';
+const VIEWER_VERSION = '52';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -4474,7 +4863,8 @@ function selectCategory(key){
   line.category = cat;
   if(cat.supported && cat.model3d){
     if(isSameCat){
-      pushConfigToViewer({ spinOnce:true });
+      // ★ F4: 選択ごとの回転は廃止。 NEXT STEP 押下時のみ1周回転
+      pushConfigToViewer({});
     } else {
       loadViewer(_resolveModel3d(cat, line.product));
     }
@@ -4504,15 +4894,15 @@ function _detectMaterial(material){
 }
 
 // ★ 2026-04-29 メーカー名の正規化（フォーム表記揺れ吸収）
+// ★ F2 2026-04-30: glimmer も TOMS 系として扱う (Printstar/glimmer はどちらも TOMS グループ)
 function _normalizeMaker(maker){
   if(!maker) return '';
-  const m = String(maker).trim();
+  const m = String(maker).trim().toLowerCase();
   // United Athle 系
-  if(m === 'UnitedAthle' || m === 'United Athle' || m === 'CAB' || m === 'cab') return 'UnitedAthle';
-  // Printstar 系（TOMS と表記する場合あり）
-  if(m === 'Printstar' || m === 'TOMS' || m === 'toms') return 'Printstar';
-  // glimmer はそのまま（ドライ系で素材フィルタには引っかかる）
-  return m;
+  if(m === 'unitedathle' || m === 'united athle' || m === 'cab') return 'UnitedAthle';
+  // TOMS グループ (Printstar / glimmer / lifemax / fundamental ... )
+  if(m === 'printstar' || m === 'toms' || m === 'glimmer' || m === 'lifemax' || m === 'fundamental') return 'Printstar';
+  return String(maker).trim();
 }
 
 function renderProductList(){
@@ -4620,23 +5010,47 @@ function setupProductFilterChips(){
 }
 
 // ★ 2026-04-29 STEP 2 にいる時だけ panel-body のスクロール量に応じてフィルタを隠す
+// ★ F1 2026-04-30: ちらつき修正 — ヒステリシス + 累積デルタ + クールダウン
 function setupProductFilterAutoHide(){
   const panelBody = document.querySelector('.panel-body');
   const bar = document.getElementById('productFilterBar');
   if(!panelBody || !bar || panelBody._pfbWired) return;
   panelBody._pfbWired = true;
   let lastY = 0;
+  let accDown = 0;       // 下方向累積
+  let accUp = 0;         // 上方向累積
+  let lastToggleAt = 0;  // 最後にトグルした時刻
+  const HIDE_THRESH = 60;       // 60px連続して下スクロールしたら隠す
+  const SHOW_THRESH = 40;       // 40px連続して上スクロールしたら出す
+  const COOLDOWN_MS = 350;      // この時間内は再トグルしない
   panelBody.addEventListener('scroll', () => {
-    if(state.step !== 2) return;          // STEP 2 以外は何もしない
+    if(state.step !== 2) return;
     const y = panelBody.scrollTop;
     const dy = y - lastY;
-    // 一定量下にスクロール → 隠す / 上に戻る or トップ近く → 戻す
-    if(y < 24){
-      bar.classList.remove('is-collapsed');
-    } else if(dy > 4){
-      bar.classList.add('is-collapsed');
-    } else if(dy < -4){
-      bar.classList.remove('is-collapsed');
+    const now = Date.now();
+    // 方向が変わったらカウンターをリセット
+    if(dy > 0){ accDown += dy; accUp = 0; }
+    else if(dy < 0){ accUp += -dy; accDown = 0; }
+    // トップ付近は常に表示（強制）
+    if(y < 20){
+      if(bar.classList.contains('is-collapsed')){
+        bar.classList.remove('is-collapsed');
+        lastToggleAt = now;
+      }
+      accDown = 0; accUp = 0;
+    } else if(now - lastToggleAt > COOLDOWN_MS){
+      // 下スクロール累積が閾値超え & 現在表示中 → 隠す
+      if(accDown > HIDE_THRESH && !bar.classList.contains('is-collapsed')){
+        bar.classList.add('is-collapsed');
+        lastToggleAt = now;
+        accDown = 0;
+      }
+      // 上スクロール累積が閾値超え & 現在隠れてる → 出す
+      else if(accUp > SHOW_THRESH && bar.classList.contains('is-collapsed')){
+        bar.classList.remove('is-collapsed');
+        lastToggleAt = now;
+        accUp = 0;
+      }
     }
     lastY = y;
   }, { passive:true });
@@ -4654,7 +5068,8 @@ function selectProduct(sku){
   if(newModel && newModel !== prevModel && line.category.supported){
     loadViewer(newModel);  // モデル種別変わったので iframe 再ロード
   } else {
-    pushConfigToViewer({ spinOnce:true });   // 同じモデルなら spinOnce のみ
+    // ★ F4: 商品変更時の自動回転は廃止。 NEXT STEP 時のみ回転
+    pushConfigToViewer({});
   }
   renderProductList();
   refreshChrome();
@@ -4727,7 +5142,8 @@ function selectColor(name){
   if(!hex) return;
   cur().color = { name, hex };
   renderColorGrid();
-  pushConfigToViewer({ spinOnce:true });
+  // ★ F4: カラー変更時の自動回転は廃止 (色は反映されるが回転しない)
+  pushConfigToViewer({});
   refreshChrome();
 }
 
@@ -5930,27 +6346,39 @@ function _estimatedShipDateISO(){
 }
 
 // ★ 2026-04-30 STEP 7 の発送日・受取日カレンダーの min を出荷予定日に揃える
+// ★ 2026-04-30 F6: iOS Safari/Chrome で min 属性が効かない問題に対処
 function _applyDeliveryMinDate(){
   const min = _estimatedShipDateISO();
   const pane = document.getElementById('pane-7');
   if(!pane) return;
-  const dateEl = pane.querySelector('[data-deliv="date"]');
-  if(dateEl){
-    dateEl.setAttribute('min', min);
-    // 既存の値が min より前なら空にする (再選択を促す)
-    if(dateEl.value && dateEl.value < min){
-      dateEl.value = '';
-      state.delivery.date = '';
+  const _bindIosCheck = (el, key) => {
+    if(!el) return;
+    el.setAttribute('min', min);
+    el.min = min; // property として明示設定 (一部 WebKit で必要)
+    if(el.value && el.value < min){
+      el.value = '';
+      if(state.delivery && key) state.delivery[key] = '';
     }
-  }
-  const pickEl = pane.querySelector('[data-pickup="pickupDate"]');
-  if(pickEl){
-    pickEl.setAttribute('min', min);
-    if(pickEl.value && pickEl.value < min){
-      pickEl.value = '';
-      state.delivery.pickupDate = '';
+    // iOS フォールバック: change/blur で min 未満ならアラートして空にする
+    if(!el._iosMinBound){
+      el._iosMinBound = true;
+      const checker = (ev) => {
+        const cur = el.value;
+        const lim = el.getAttribute('min');
+        if(cur && lim && cur < lim){
+          alert('「希望日」は出荷予定日 (' + lim + ') 以降からお選びください。');
+          el.value = '';
+          if(state.delivery && key) state.delivery[key] = '';
+          // フォーカスし直して再選択を促す
+          setTimeout(()=>{ try{ el.focus(); el.click(); }catch(e){} }, 0);
+        }
+      };
+      el.addEventListener('change', checker);
+      el.addEventListener('blur', checker);
     }
-  }
+  };
+  _bindIosCheck(pane.querySelector('[data-deliv="date"]'), 'date');
+  _bindIosCheck(pane.querySelector('[data-pickup="pickupDate"]'), 'pickupDate');
 }
 
 function renderDeadline(){
@@ -6717,12 +7145,88 @@ function buildSubmitPayload(est){
   };
 }
 
+// ★ F9 送信ローダー制御
+function _showSubmitLoader(){
+  const ld = document.getElementById('submitLoader');
+  if(!ld) return;
+  ld.hidden = false;
+  ld.setAttribute('aria-hidden','false');
+  ld.classList.remove('is-done');
+  // 進捗UI初期化
+  const fill = document.getElementById('slBarFill');
+  const pct = document.getElementById('slPct');
+  if(fill) fill.style.width = '0%';
+  if(pct) pct.textContent = '0%';
+  document.querySelectorAll('#slSteps li').forEach(li => li.classList.remove('is-active','is-done'));
+  // 段階アニメ
+  const steps = [
+    { pct: 22, step: 1, msg: '注文情報をまとめています…' },
+    { pct: 50, step: 2, msg: 'デザイン画像を準備しています…' },
+    { pct: 78, step: 3, msg: 'サーバーへ送信しています…' },
+    { pct: 95, step: 4, msg: '仕上げ中…' },
+  ];
+  let i = 0;
+  function advance(){
+    if(i >= steps.length) return;
+    const cur = steps[i];
+    if(fill) fill.style.width = cur.pct + '%';
+    if(pct) pct.textContent = cur.pct + '%';
+    document.querySelectorAll('#slSteps li').forEach(li => {
+      const sn = parseInt(li.dataset.step, 10);
+      if(sn < cur.step) { li.classList.add('is-done'); li.classList.remove('is-active'); }
+      else if(sn === cur.step) { li.classList.add('is-active'); li.classList.remove('is-done'); }
+      else { li.classList.remove('is-active','is-done'); }
+    });
+    const slMsg = document.getElementById('slMsg');
+    if(slMsg) slMsg.textContent = cur.msg;
+    i++;
+  }
+  advance();
+  ld._timers = [];
+  ld._timers.push(setTimeout(advance, 600));
+  ld._timers.push(setTimeout(advance, 1500));
+  ld._timers.push(setTimeout(advance, 2700));
+}
+function _completeSubmitLoader(orderId){
+  const ld = document.getElementById('submitLoader');
+  if(!ld) return;
+  // 残タイマーをクリア
+  if(ld._timers) ld._timers.forEach(t => clearTimeout(t));
+  const fill = document.getElementById('slBarFill');
+  const pct = document.getElementById('slPct');
+  if(fill) fill.style.width = '100%';
+  if(pct) pct.textContent = '100%';
+  ld.classList.add('is-done');
+  document.querySelectorAll('#slSteps li').forEach(li => { li.classList.add('is-done'); li.classList.remove('is-active'); });
+  const slEy = document.getElementById('slEyebrow');
+  const slTit = document.getElementById('slTitle');
+  const slMsg = document.getElementById('slMsg');
+  if(slEy) slEy.textContent = 'COMPLETE';
+  if(slTit) slTit.textContent = 'お見積りを送信しました！';
+  if(slMsg) slMsg.innerHTML = '受注番号: <strong style="color:#fbd84a">' + (orderId||'-') + '</strong><br>3営業日以内にご連絡いたします';
+}
+function _hideSubmitLoader(immediate){
+  const ld = document.getElementById('submitLoader');
+  if(!ld) return;
+  if(ld._timers) ld._timers.forEach(t => clearTimeout(t));
+  if(immediate){
+    ld.hidden = true;
+    ld.setAttribute('aria-hidden','true');
+  } else {
+    setTimeout(() => {
+      ld.hidden = true;
+      ld.setAttribute('aria-hidden','true');
+    }, 2200);  // 完了画面を2.2秒見せてから閉じる
+  }
+}
+
 // 送信処理本体
 async function doSubmit(){
   const cta = document.getElementById('rvCta');
   const origText = cta ? cta.textContent : '';
   try {
     if(cta){ cta.disabled = true; cta.textContent = '送信中...'; cta.style.opacity = '.7'; }
+    _showSubmitLoader();
     const est = calcEstimate();
     const data = buildSubmitPayload(est);
     const res = await fetch(GAS_SUBMIT_ENDPOINT, {
@@ -6745,13 +7249,16 @@ async function doSubmit(){
         }
       } catch(e){ /* ignore */ }
       // 完了メッセージ
-      alert('✅ お見積りを送信しました\n\n受注番号: ' + json.orderId + '\n\n担当者から1営業日以内にご連絡いたします。\nご登録メールにも確認メールをお送りしました。\n社内プラットフォームにも反映されました。');
+      _completeSubmitLoader(json.orderId);
+      _hideSubmitLoader(false);
       // 任意: 保存スナップショットも自動 DL
     } else {
+      _hideSubmitLoader(true);
       alert('❌ 送信に失敗しました\n\n' + JSON.stringify(json || {}));
     }
   } catch(e){
     console.error('doSubmit failed', e);
+    _hideSubmitLoader(true);
     alert('❌ 送信エラー: ' + (e.message || e));
   } finally {
     if(cta){ cta.disabled = false; cta.textContent = origText || 'この内容で見積を送信 ▶'; cta.style.opacity = ''; }
@@ -7165,6 +7672,10 @@ document.getElementById('btnNext').addEventListener('click', () => {
     state.lineIdx = 0;
   }
   gotoStep(state.step + 1);
+  // ★ F4: NEXT STEP 押下時に1周回転 (gotoStep 完了後に発動)
+  setTimeout(() => {
+    try { pushConfigToViewer({ spinOnce: true }); } catch(e){}
+  }, 100);
 });
 // + 別の商品も追加 (STEP 05)
 const btnAddLine = document.getElementById('btnAddLine');
@@ -7404,6 +7915,91 @@ function setupWelcomeButtons(){
         alert('ファイル復元に失敗しました: ' + err.message);
       }
       $loadInp.value = '';
+    });
+  }
+  // リピート注文モーダル
+  const $repeatBtn = document.getElementById('btnRepeatOrder');
+  const $repeatModal = document.getElementById('repeatModal');
+  const $repeatClose = document.getElementById('repeatModalClose');
+  const $repeatBack = document.getElementById('rvBack');
+  const $repeatForm = document.getElementById('repeatForm');
+  function openRepeatModal(){
+    if(!$repeatModal) return;
+    $repeatModal.hidden = false;
+    $repeatModal.setAttribute('aria-hidden','false');
+    setTimeout(()=>{ const f=document.getElementById('rvOrderNo'); if(f) f.focus(); }, 100);
+  }
+  function closeRepeatModal(){
+    if(!$repeatModal) return;
+    $repeatModal.hidden = true;
+    $repeatModal.setAttribute('aria-hidden','true');
+  }
+  if($repeatBtn) $repeatBtn.addEventListener('click', openRepeatModal);
+  if($repeatClose) $repeatClose.addEventListener('click', closeRepeatModal);
+  if($repeatBack) $repeatBack.addEventListener('click', closeRepeatModal);
+  if($repeatModal){
+    const bg = $repeatModal.querySelector('.repeat-modal-bg');
+    if(bg) bg.addEventListener('click', closeRepeatModal);
+  }
+  if($repeatForm){
+    $repeatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const sendBtn = document.getElementById('rvSend');
+      const data = {
+        orderNo: document.getElementById('rvOrderNo').value.trim(),
+        name: document.getElementById('rvName').value.trim(),
+        email: document.getElementById('rvEmail').value.trim(),
+        phone: document.getElementById('rvPhone').value.trim(),
+        change: document.getElementById('rvChange').value.trim(),
+        delivery: document.getElementById('rvDelivery').value.trim(),
+      };
+      if(!data.orderNo || !data.name || !data.email || !data.phone){
+        alert('必須項目をご入力ください');
+        return;
+      }
+      if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = '送信中…'; }
+      // フォーム送信GAS にリピート専用フィールドで送る
+      try {
+        const SUBMIT_URL = (typeof FORM_SUBMIT_URL !== 'undefined' && FORM_SUBMIT_URL) ||
+          'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ6ZhCySKZWRQCngOb8ZYd-JtavuBDLyq6eQ8Kqs5I_WH-_0jqNS_MYTHJVw/exec';
+        const payload = {
+          isRepeatOrder: true,
+          repeatOrderNo: data.orderNo,
+          customer: { name: data.name, email: data.email, phone: data.phone, company:'', zipcode:'', address:'' },
+          repeatChange: data.change,
+          delivery: data.delivery,
+          submittedAt: new Date().toISOString(),
+        };
+        // text/plain で CORS preflight 回避
+        await fetch(SUBMIT_URL, {
+          method:'POST',
+          headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify(payload),
+        }).catch(()=>{});
+      } catch(err) { console.warn('repeat submit failed', err); }
+      // mailto フォールバック (確実に届く)
+      const subj = `[リピート注文] ${data.orderNo} / ${data.name} 様`;
+      const body = [
+        '【リピート注文のお問い合わせ】',
+        '',
+        `■ 過去の受注番号: ${data.orderNo}`,
+        `■ ご担当者名: ${data.name}`,
+        `■ メール: ${data.email}`,
+        `■ お電話: ${data.phone}`,
+        `■ 希望納期: ${data.delivery || '指定なし'}`,
+        '',
+        '■ 変更内容:',
+        data.change || '(同じ内容で再注文)',
+      ].join('\n');
+      const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+        '&to=802eve.shop@gmail.com' +
+        '&su=' + encodeURIComponent(subj) +
+        '&body=' + encodeURIComponent(body);
+      window.open(gmailUrl, '_blank');
+      alert('✅ リピート注文を送信しました\n\n3営業日以内にご連絡いたします。');
+      closeRepeatModal();
+      if(sendBtn){ sendBtn.disabled = false; sendBtn.textContent = 'リピート注文を送信'; }
+      $repeatForm.reset();
     });
   }
 }
