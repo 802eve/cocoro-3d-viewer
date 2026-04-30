@@ -15,7 +15,9 @@
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); font-family: -apple-system, "Segoe UI", "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", sans-serif; color:var(--text); }
   /* ★ 2026-04-30 embed mode: 透過レンダリング (親フォーム側のテキスト/枠が透けて見える) */
-  body.embed-transparent, body.embed-transparent #app { background: transparent !important; }
+  html.embed-transparent,
+  html.embed-transparent body,
+  html.embed-transparent #app { background: transparent !important; }
   #app { position:fixed; inset:0; }
 
   #progress { position:fixed; top:0; left:0; right:0; height:3px; background:transparent; z-index:50; }
@@ -627,6 +629,7 @@ try {
 }
 if(_isEmbedMode){
   renderer.setClearColor(0x000000, 0);   // ★ 透過: 親のテキスト/枠が透けて見えるように
+  try { document.documentElement.classList.add('embed-transparent'); } catch(e){}
   try { document.body.classList.add('embed-transparent'); } catch(e){}
 }
 const _MAX_DPR = _isMobile ? 1.5 : 2;
@@ -671,9 +674,12 @@ renderer.toneMappingExposure = 1.0;
 document.getElementById('app').appendChild(renderer.domElement);
 
 // 環境光（IBL）
-const pmrem = new THREE.PMREMGenerator(renderer);
-pmrem.compileEquirectangularShader();
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+// ★ H2 2026-04-30: iOS では PMREM をスキップ (環境マップ生成は重い + intensity=0なので影響なし)
+if(!_isIOS){
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+}
 scene.environmentIntensity = 0.00;  // ユーザー確定値
 
 // ライト構成（2026-04-22 綿マット版・拡散光メイン）
@@ -1006,7 +1012,8 @@ function initTextureCompose() {
   const origW = origTexImage.width || origTexImage.naturalWidth;
   const origH = origTexImage.height || origTexImage.naturalHeight;
   const ar = origW / origH;
-  const TARGET_CANVAS_MIN = 4096;  // 3072 → 4096 に拡張（33%UP、実効2倍）
+  // ★ H2 2026-04-30: iOS では canvas を半分のサイズで合成 (メモリ削減 4096²×4byte = 64MB → 16MB)
+  const TARGET_CANVAS_MIN = _isIOS ? 2048 : 4096;
   const w = Math.max(origW, TARGET_CANVAS_MIN);
   const h = Math.max(origH, Math.round(w / ar));
 
