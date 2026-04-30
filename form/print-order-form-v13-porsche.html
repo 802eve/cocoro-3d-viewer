@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   ====================================================================
-   ココロ工房 Configurator (v13 / Porsche-Inspired Prototype)
+   ココロ工房 Configurator (v13 / Premium Dark Theme)
    © 2026 802Eve. All Rights Reserved.
   ====================================================================
 
@@ -41,7 +41,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,500;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
 <style>
 /* ========================================================================
-   DESIGN TOKENS — Porsche-inspired dark theme
+   DESIGN TOKENS — Minimal dark theme (high-contrast)
    ======================================================================== */
 :root{
   --bg:               #000000;
@@ -59,7 +59,7 @@
   --line-strong:      rgba(255,255,255,.18);
   --line-vivid:       rgba(255,255,255,.32);
 
-  --accent:           #d5001c;          /* Porsche Red */
+  --accent:           #d5001c;          /* Brand Accent Red */
   --accent-hover:     #b80018;
   --accent-soft:      rgba(213,0,28,.10);
 
@@ -74,7 +74,7 @@
   --font-num:         "Helvetica Neue", "Inter", "SF Pro Display", system-ui, sans-serif;
   --font-display:     "Bodoni Moda", "Bodoni 72", "Didot", "Playfair Display", "Times New Roman", serif;
 
-  /* Panel width — Porsche風に画面幅に応じてスケール */
+  /* Panel width — 画面幅に応じてスケール */
   --panel-w:          clamp(420px, 30vw, 560px);
 }
 
@@ -441,7 +441,7 @@ img{ display:block; max-width:100%; }
   }
 }
 @media (max-width:768px) and (orientation:portrait){
-  /* スマホ縦: Porsche風の上3.5割 / 下6.5割で選択肢にゆとり */
+  /* スマホ縦: 上3.5割 / 下6.5割で選択肢にゆとり */
   .main{ grid-template-rows: 35vh 1fr; }
 }
 
@@ -2095,7 +2095,7 @@ img{ display:block; max-width:100%; }
   margin-top:6px; letter-spacing:.05em;
 }
 
-/* ----- STEP 6: Review (Porsche風) ----- */
+/* ----- STEP 6: Review (Premium minimal) ----- */
 .review-hero{
   position:relative;
   background:linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
@@ -2214,7 +2214,7 @@ img{ display:block; max-width:100%; }
   display:inline-block; transform:translateY(-1px);
 }
 
-/* Downloads — Porsche風 minimal text links */
+/* Downloads — Minimal text links */
 .review-downloads{
   margin-bottom:16px;
   display:flex; flex-direction:column; gap:8px;
@@ -2248,6 +2248,30 @@ img{ display:block; max-width:100%; }
   letter-spacing:.05em; text-align:center;
   line-height:1.5;
   margin-top:12px;
+}
+
+/* ★ 2026-04-30 確認画面下部 著作権フッター (おしゃれ・控えめ) */
+.review-foot{
+  margin-top:32px; padding-top:18px;
+  border-top:1px solid rgba(255,255,255,.08);
+  text-align:center;
+  display:flex; flex-direction:column; gap:4px;
+}
+.review-foot .rf-brand{
+  font-size:10px;
+  letter-spacing:.24em;
+  color:var(--fg-muted);
+  text-transform:uppercase;
+  font-weight:500;
+  font-family:var(--font-num);
+}
+.review-foot .rf-brand .rf-dot{ opacity:.4; margin:0 4px; }
+.review-foot .rf-copy{
+  font-size:9px;
+  letter-spacing:.12em;
+  color:var(--fg-dim);
+  opacity:.7;
+  font-family:var(--font-num);
 }
 
 /* ========================================================================
@@ -2402,9 +2426,11 @@ img{ display:block; max-width:100%; }
     </div>
     <button class="welcome-clear" id="btnClearSaved" type="button" hidden>保存データを削除して新規で始める</button>
     <div class="welcome-corner-meta">
-      <span>v13 PROTO</span>
+      <span>v13</span>
       <span class="wcm-dot">·</span>
-      <span>2026 SPRING</span>
+      <span>2026</span>
+      <span class="wcm-dot">·</span>
+      <span>© COCORO-KOBO</span>
     </div>
   </div>
 </div>
@@ -2733,6 +2759,10 @@ img{ display:block; max-width:100%; }
           </div>
 
           <div class="review-tip">送信後、担当者より1営業日以内にご連絡いたします。<br>金額は概算です。最終見積は別途ご案内します。</div>
+          <div class="review-foot">
+            <div class="rf-brand">COCORO-KOBO <span class="rf-dot">·</span> Configurator v13</div>
+            <div class="rf-copy">© 2026 802Eve. All Rights Reserved.</div>
+          </div>
         </div>
       </div>
 
