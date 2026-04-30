@@ -987,21 +987,21 @@ img{ display:block; max-width:100%; }
   display:inline-block;
 }
 
-/* Stage bottom: tip / hint — ★ 2026-04-30 H1: 3D前面+細枠+透過バックグラウンド+blur
-   服がアップして被ってきた時、 ピル背後のモデル部分は backdrop-filter で軽くボケる。
-   iframe(z-index:2) より上の z-index:5 に置くことで、モデルの上に重ねる。 */
+/* Stage bottom: tip / hint — ★ H2 2026-04-30: 細枠+背景同色+blur
+   ピル内部は backdrop-filter で背後を強くぼかし、 stage bg と一体化させる。
+   服がアップしても枠内に被った部分はボケるので、 「枠だけ浮いた」ような見た目に。 */
 .stage-tip{
-  position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
-  font-size:9px; letter-spacing:.28em;
+  position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
+  font-size:8px; letter-spacing:.24em;
   color:#5a5a5a;                                  /* 濃いめのグレー文字 */
   text-transform:uppercase; font-weight:600;
   pointer-events:none; z-index:5;                 /* ← 3D iframe より上 */
-  padding:5px 11px;
-  background: rgba(10,10,10,.18);                 /* 軽い黒被せ → 服の白が来てもボケる材料に */
-  backdrop-filter: blur(3px) saturate(1.05);
-  -webkit-backdrop-filter: blur(3px) saturate(1.05);
+  padding:4px 10px;                               /* 小さめ */
+  background: transparent;                        /* 内部完全透過 (背後ボケがbgに) */
+  backdrop-filter: blur(8px) saturate(1.2);       /* 強めのblurで「霞(かすみ)」 */
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
   border-radius:999px;
-  border:1px solid rgba(80,80,80,.55);            /* 濃い目グレー細枠 */
+  border:1px solid rgba(70,70,70,.55);            /* 濃い目グレー細枠 */
   text-shadow:none;
 }
 @media (max-width:1024px){
@@ -4415,7 +4415,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '54';
+const VIEWER_VERSION = '55';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
