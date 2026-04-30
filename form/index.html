@@ -625,6 +625,75 @@ img{ display:block; max-width:100%; }
   color:#e8eaee; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.2);
 }
 .repeat-modal-hint .rm-link:hover{ color:#cf2335; border-color:#cf2335; }
+/* リピートモード選択カード */
+.rf-mode-pick{
+  display:flex; flex-direction:column; gap:8px;
+  margin: 4px 0 14px;
+}
+.rf-mode-label{
+  font-size:11px; letter-spacing:.12em; color:#9ca0a8;
+  text-transform:uppercase; font-weight:600;
+  margin-bottom:4px;
+}
+.rf-mode-card{
+  position:relative;
+  display:block;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;
+  padding:12px 14px;
+  cursor:pointer;
+  transition: all .18s ease;
+}
+.rf-mode-card:hover{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.18); }
+.rf-mode-card input[type="radio"]{
+  position:absolute; opacity:0; pointer-events:none;
+}
+.rf-mode-card:has(input[type="radio"]:checked){
+  background: rgba(207,35,53,.10);
+  border-color: #cf2335;
+  box-shadow: 0 0 0 1px #cf2335 inset;
+}
+.rf-mode-body{
+  display:flex; align-items:center; gap:12px;
+}
+.rf-mode-icon{
+  font-size:24px; flex-shrink:0;
+}
+.rf-mode-title{
+  font-size:13px; font-weight:600; color:#fff;
+  margin-bottom:3px;
+}
+.rf-mode-desc{
+  font-size:11px; color:#a0a3aa; line-height:1.4;
+}
+.rf-mode-card:has(input[type="radio"]:checked) .rf-mode-title{ color:#fff; }
+
+/* STEP5 リピートマーク (前回と同じプリント) */
+.repeat-mark{
+  display:inline-flex; align-items:center; gap:6px;
+  background: linear-gradient(180deg, rgba(207,35,53,.20), rgba(207,35,53,.08));
+  border:1px solid rgba(207,35,53,.4);
+  color:#ff5670;
+  padding:5px 12px;
+  border-radius:99px;
+  font-size:11px; font-weight:700;
+  letter-spacing:.08em;
+  margin-bottom:8px;
+}
+.repeat-mark .rm-icn{ font-size:13px; }
+.repeat-banner{
+  background: linear-gradient(180deg, rgba(207,35,53,.15), rgba(207,35,53,.05));
+  border:1px solid rgba(207,35,53,.3);
+  border-radius:10px;
+  padding:14px 16px;
+  margin-bottom:14px;
+  display:flex; align-items:center; gap:12px;
+}
+.repeat-banner-icn{ font-size:24px; }
+.repeat-banner-text{ flex:1; }
+.repeat-banner-title{ font-size:13px; font-weight:700; color:var(--fg); margin-bottom:2px; }
+.repeat-banner-sub{ font-size:11px; color:var(--fg-muted); line-height:1.5; }
 
 /* ------------------------------------------------------------------------
    HEADER
@@ -1944,10 +2013,11 @@ img{ display:block; max-width:100%; }
   box-shadow:0 1px 2px rgba(0,0,0,.4);
   border:1px solid rgba(255,215,0,.5);
 }
+/* ★ 2026-04-30: 白系スウォッチでも上枠の色は他と統一 (色がバラバラに見えないように) */
 .ink-pick-cell.is-light .ink-pick-upcharge{
-  background:#fff;
-  color:#c00;
-  border-color:#c00;
+  background:#000;
+  color:#ffd700;
+  border-color:rgba(255,215,0,.5);
 }
 @media (max-width:480px){
   .ink-picker-grid{ grid-template-columns: repeat(5, 1fr); gap:4px; }
@@ -2788,8 +2858,8 @@ img{ display:block; max-width:100%; }
     <div class="repeat-modal-eyebrow">REPEAT ORDER</div>
     <h2 class="repeat-modal-title" id="repeatModalTitle">リピート注文のお客様</h2>
     <p class="repeat-modal-lead">
-      前回と<strong>同じデザイン</strong>で再注文の方は、こちらからご連絡ください。<br>
-      版・データを流用してお安くご提案できます。
+      前回ご注文いただいた内容を流用して、お得にご注文いただけます。<br>
+      まずは前回のご注文情報をお知らせください。
     </p>
     <form class="repeat-form" id="repeatForm" autocomplete="on" novalidate>
       <label class="rf-field">
@@ -2810,9 +2880,32 @@ img{ display:block; max-width:100%; }
           <input type="tel" id="rvPhone" placeholder="090-1234-5678" inputmode="tel" required>
         </label>
       </div>
-      <label class="rf-field">
-        <span class="rf-lbl">変更内容（同じ内容なら「同じ」と記載）</span>
-        <textarea id="rvChange" rows="4" placeholder="例: 枚数を50枚→80枚に増やしたい / サイズを M→L に変更 / 同じ内容で再注文 など"></textarea>
+      <div class="rf-mode-pick">
+        <div class="rf-mode-label">前回の内容から…</div>
+        <label class="rf-mode-card">
+          <input type="radio" name="rvMode" value="same" checked>
+          <div class="rf-mode-body">
+            <div class="rf-mode-icon">🟰</div>
+            <div class="rf-mode-text">
+              <div class="rf-mode-title">変更なし（同じ内容で再注文）</div>
+              <div class="rf-mode-desc">サイズ・枚数・カラー・プリント、すべて前回と同じです</div>
+            </div>
+          </div>
+        </label>
+        <label class="rf-mode-card">
+          <input type="radio" name="rvMode" value="resize">
+          <div class="rf-mode-body">
+            <div class="rf-mode-icon">📏</div>
+            <div class="rf-mode-text">
+              <div class="rf-mode-title">サイズ・枚数を変更したい</div>
+              <div class="rf-mode-desc">商品とプリントは前回と同じ。 サイズ・枚数だけ調整します</div>
+            </div>
+          </div>
+        </label>
+      </div>
+      <label class="rf-field" id="rvChangeWrap">
+        <span class="rf-lbl">変更内容・備考（任意）</span>
+        <textarea id="rvChange" rows="3" placeholder="例: 同じ内容で再注文 / 納期を急ぎでお願いしたい など"></textarea>
       </label>
       <label class="rf-field">
         <span class="rf-lbl">希望納期（任意）</span>
@@ -2820,7 +2913,7 @@ img{ display:block; max-width:100%; }
       </label>
       <div class="rf-actions">
         <button type="button" class="rf-btn rf-btn-back" id="rvBack">← 戻る</button>
-        <button type="submit" class="rf-btn rf-btn-send" id="rvSend">リピート注文を送信</button>
+        <button type="submit" class="rf-btn rf-btn-send" id="rvSend">次へ進む ▶</button>
       </div>
     </form>
     <div class="repeat-modal-hint">
@@ -2948,6 +3041,13 @@ img{ display:block; max-width:100%; }
 
         <!-- ========== STEP 3: Body Color ========== -->
         <div class="step-pane" id="pane-3">
+          <div class="repeat-banner" id="repeatBanner3" style="display:none">
+            <div class="repeat-banner-icn">🔁</div>
+            <div class="repeat-banner-text">
+              <div class="repeat-banner-title">リピート注文（サイズ・枚数変更モード）</div>
+              <div class="repeat-banner-sub">前回ご注文番号: <strong id="repeatOrderNoDisplay3">-</strong>　※ カラーや商品も変更可能です</div>
+            </div>
+          </div>
           <div class="color-summary" id="colorSummary">
             <div class="color-chip is-empty" id="colorChip"></div>
             <div class="color-info">
@@ -2975,6 +3075,13 @@ img{ display:block; max-width:100%; }
 
         <!-- ========== STEP 5: Print Locations ========== -->
         <div class="step-pane" id="pane-5">
+          <div class="repeat-banner" id="repeatBanner5" style="display:none">
+            <div class="repeat-banner-icn">🎨</div>
+            <div class="repeat-banner-text">
+              <div class="repeat-banner-title">リピート注文 — プリント内容について</div>
+              <div class="repeat-banner-sub">前回ご注文番号: <strong id="repeatOrderNoDisplay5">-</strong>　<br>「他の商品と同じ内容を使う」を選ぶか、 各箇所で <strong style="color:#ff5670">🔁 前回と同じ</strong> ボタンが出ます。</div>
+            </div>
+          </div>
           <!-- ─ この商品のプリント内容 ─ -->
           <div class="print-source-choose" id="printSourceChoose" hidden>
             <div class="section-label">この商品のプリント内容</div>
@@ -3838,6 +3945,8 @@ const state = {
   // 見積全体に共通する設定
   deadline: '10',
   customer: { company:'', name:'', email:'', phone:'', zipcode:'', address:'' },
+  isRepeatOrder: false,
+  repeatInfo: null,
   shipping: { sameAsCustomer:true, recipient:'', zipcode:'', address:'' },
   delivery: {
     method: 'shipping',     // 'shipping' | 'pickup' (★ 2026-04-28 追加)
@@ -4302,7 +4411,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '52';
+const VIEWER_VERSION = '53';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -4443,6 +4552,13 @@ window.addEventListener('message', (e) => {
       oldActive.classList.remove('is-leaving-left','is-leaving-right');
       void oldActive.offsetWidth;
       oldActive.style.transition = '';
+
+      // ★ G2 2026-04-30: iOS メモリ対策 — 旧iframe の WebGL コンテキストを解放
+      //   src を空にすることで GLB / texture / WebGL リソースをすべて解放
+      try {
+        oldActive.src = 'about:blank';
+        oldActive.dataset.model = '';
+      } catch(e){ /* ignore */ }
 
       // 新iframe に spin 発動（モデルが画面に出てから = スライド完了後 = ベスト）
       if(newActive.dataset.pendingSpin === '1'){
@@ -7625,6 +7741,18 @@ function gotoStep(n){
     }
   }
   showPane(state.step);
+  // ★ G1 2026-04-30: リピート注文バナー表示
+  if(state.isRepeatOrder && state.repeatInfo){
+    const orderNo = state.repeatInfo.orderNo || '-';
+    const b3 = document.getElementById('repeatBanner3');
+    const b5 = document.getElementById('repeatBanner5');
+    const d3 = document.getElementById('repeatOrderNoDisplay3');
+    const d5 = document.getElementById('repeatOrderNoDisplay5');
+    if(b3) b3.style.display = '';
+    if(b5) b5.style.display = '';
+    if(d3) d3.textContent = orderNo;
+    if(d5) d5.textContent = orderNo;
+  }
   if(state.step === 1) renderCategoryGrid();
   if(state.step === 2){
     // ★ 2026-04-29 STEP 2 入る時はフィルタを再表示 (前回 collapsed のまま入らないように)
@@ -7941,6 +8069,15 @@ function setupWelcomeButtons(){
     const bg = $repeatModal.querySelector('.repeat-modal-bg');
     if(bg) bg.addEventListener('click', closeRepeatModal);
   }
+  // モード変更時にボタン文言を更新
+  const $rvModeRadios = document.querySelectorAll('input[name="rvMode"]');
+  const $rvSendBtn = document.getElementById('rvSend');
+  function updateRvSendBtn(){
+    const mode = (document.querySelector('input[name="rvMode"]:checked') || {}).value || 'same';
+    if($rvSendBtn) $rvSendBtn.textContent = (mode === 'same') ? 'この内容で送信 ✓' : 'サイズ・枚数を選ぶ ▶';
+  }
+  $rvModeRadios.forEach(r => r.addEventListener('change', updateRvSendBtn));
+  updateRvSendBtn();
   if($repeatForm){
     $repeatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -7952,11 +8089,55 @@ function setupWelcomeButtons(){
         phone: document.getElementById('rvPhone').value.trim(),
         change: document.getElementById('rvChange').value.trim(),
         delivery: document.getElementById('rvDelivery').value.trim(),
+        mode: (document.querySelector('input[name="rvMode"]:checked') || {}).value || 'same',
       };
       if(!data.orderNo || !data.name || !data.email || !data.phone){
         alert('必須項目をご入力ください');
         return;
       }
+      // ★ サイズ・枚数のみ変更モード → 通常フォーム動線に切替
+      if(data.mode === 'resize'){
+        // state にリピート情報を保存してフォームへ
+        state.isRepeatOrder = true;
+        state.repeatInfo = {
+          orderNo: data.orderNo,
+          mode: 'resize',
+          change: data.change || '',
+        };
+        // 顧客情報をプリフィル
+        state.customer = state.customer || {};
+        state.customer.name = data.name;
+        state.customer.email = data.email;
+        state.customer.phone = data.phone;
+        // 納期希望日もプリフィル
+        if(data.delivery && state.delivery){
+          state.delivery.date = data.delivery;
+        }
+        // ウェルカム画面を閉じてフォーム本体へ
+        closeRepeatModal();
+        try { hideWelcomeScreen(); } catch(e){}
+        state.introMode = false;
+        document.getElementById('app').classList.remove('intro-mode');
+        // STEP 1 (カテゴリ) と STEP 2 (商品) は前回と同じ前提でスキップ → STEP 3 から始める
+        // ただし category/product が空だとフォームが進まないので、 デフォルトで Tシャツ + 1番安い商品を選択
+        if(!state.lines[0].category){
+          state.lines[0].category = CATEGORIES[0];
+          state.catIndex = 0;
+        }
+        if(!state.lines[0].product){
+          const items = state.lines[0].category.items || [];
+          if(items.length) state.lines[0].product = items[0];
+        }
+        // 3D を読み込み
+        if(state.lines[0].category && state.lines[0].category.supported && state.lines[0].category.model3d){
+          loadViewerInitial(_resolveModel3d(state.lines[0].category, state.lines[0].product));
+        }
+        // STEP 3 (カラー) からスタート
+        gotoStep(3);
+        $repeatForm.reset();
+        return;
+      }
+      // ★ 内容変更なし: 即送信モード
       if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = '送信中…'; }
       // フォーム送信GAS にリピート専用フィールドで送る
       try {
@@ -7980,7 +8161,7 @@ function setupWelcomeButtons(){
       // mailto フォールバック (確実に届く)
       const subj = `[リピート注文] ${data.orderNo} / ${data.name} 様`;
       const body = [
-        '【リピート注文のお問い合わせ】',
+        '【リピート注文のお問い合わせ — 内容変更なし】',
         '',
         `■ 過去の受注番号: ${data.orderNo}`,
         `■ ご担当者名: ${data.name}`,
@@ -7988,8 +8169,8 @@ function setupWelcomeButtons(){
         `■ お電話: ${data.phone}`,
         `■ 希望納期: ${data.delivery || '指定なし'}`,
         '',
-        '■ 変更内容:',
-        data.change || '(同じ内容で再注文)',
+        '■ ご要望:',
+        data.change || '(前回と完全に同じ内容で再注文)',
       ].join('\n');
       const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
         '&to=802eve.shop@gmail.com' +
@@ -7998,7 +8179,8 @@ function setupWelcomeButtons(){
       window.open(gmailUrl, '_blank');
       alert('✅ リピート注文を送信しました\n\n3営業日以内にご連絡いたします。');
       closeRepeatModal();
-      if(sendBtn){ sendBtn.disabled = false; sendBtn.textContent = 'リピート注文を送信'; }
+      if(sendBtn){ sendBtn.disabled = false; }
+      updateRvSendBtn();
       $repeatForm.reset();
     });
   }
