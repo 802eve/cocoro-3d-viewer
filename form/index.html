@@ -4348,6 +4348,24 @@ const PRINT_LOCATIONS = [
   { name:'その他',         area:'other',        icon:'⊕', sub:'要相談' },
 ];
 
+// ★ K2 2026-05-01: モデル別「対応不可エリア」マップ
+//   viewer.html の MODELS で areaKey 未定義の箇所をここに列挙 → UIで disabled 表示
+const UNSUPPORTED_AREAS_BY_MODEL = {
+  tshirt:      [],                                 // 全部対応
+  long_sleeve: [],                                 // 全部対応
+  polo:        ['front_center'],                   // 前面はボタン干渉でNG
+  hoodie:      ['front_hem'],                      // パーカー前裾無し
+  hoodie_zip:  ['front_center', 'front_hem'],     // ZIP割れで前面NG / 前裾無し
+  sweat:       [],                                 // 全部対応
+};
+function getUnsupportedAreas(line){
+  if(!line || !line.category) return [];
+  const cat = line.category;
+  // model3d を優先 (パーカーはジップかどうかで切替)
+  const modelKey = (typeof _resolveModel3d === 'function') ? _resolveModel3d(cat, line.product) : cat.model3d;
+  return UNSUPPORTED_AREAS_BY_MODEL[modelKey] || [];
+}
+
 // プリント方法（v12 互換）
 const METHODS_WITH_SIZE = ['シルクスクリーン','転写'];
 const METHODS_CONSULT   = ['インクジェット','DTF','刺繍','その他'];
@@ -4681,7 +4699,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '74';
+const VIEWER_VERSION = '75';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -5795,9 +5813,25 @@ function renderPrintGrid(){
   }
 
   const allowedSizesMemo = {};   // {meth: [keys]}  per-render cache
+  const _unsupportedAreas = getUnsupportedAreas(line);
 
   grid.innerHTML = PRINT_LOCATIONS.map(p => {
     const on = line.prints.includes(p.name);
+    // ★ K2 2026-05-01: 対応不可エリアは disabled 表示 (other は除外しない)
+    const isUnsupported = _unsupportedAreas.includes(p.area);
+    if(isUnsupported){
+      return `
+        <div class="print-cell is-disabled" data-name="${p.name}" data-area="${p.area}" data-disabled="1" title="この商品ではこの位置にプリントできません">
+          <div class="pc-toggle" style="opacity:0.4;cursor:not-allowed;">
+            <div class="pc-icon">${p.icon}</div>
+            <div class="pc-meta">
+              <div class="pc-name">${p.name}</div>
+              <div class="pc-sub" style="color:#999;">この商品では選択不可</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
     if(!on){
       // 未選択: コンパクトカード
       return `
@@ -5837,12 +5871,15 @@ function renderPrintGrid(){
   grid.querySelectorAll('.pc-toggle').forEach(el => {
     el.addEventListener('click', () => {
       const cell = el.closest('.print-cell');
+      // ★ K2: 対応不可エリアはクリック無効
+      if(cell.dataset.disabled === '1') return;
       togglePrint(cell.dataset.name, cell.dataset.area);
     });
     el.addEventListener('keydown', e => {
       if(e.key === 'Enter' || e.key === ' '){
         e.preventDefault();
         const cell = el.closest('.print-cell');
+        if(cell.dataset.disabled === '1') return;
         togglePrint(cell.dataset.name, cell.dataset.area);
       }
     });
