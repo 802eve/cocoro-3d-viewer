@@ -3062,8 +3062,13 @@ img{ display:block; max-width:100%; }
         <span>新しいお見積り</span>
       </button>
       <button type="button" class="sd-btn sd-btn-secondary" id="sdShare">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
-        <span>この内容をシェア</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2 H6 a2 2 0 0 0 -2 2 v16 a2 2 0 0 0 2 2 h12 a2 2 0 0 0 2 -2 V8 z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="9" y1="13" x2="15" y2="13"/>
+          <line x1="9" y1="17" x2="13" y2="17"/>
+        </svg>
+        <span>見積書・仕様書を保存</span>
       </button>
       <button type="button" class="sd-btn sd-btn-tertiary" id="sdClose">
         閉じる
@@ -4676,7 +4681,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '68';
+const VIEWER_VERSION = '69';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -7628,16 +7633,24 @@ function _showSubmitDone(orderId){
       location.reload();
     });
     document.getElementById('sdShare').addEventListener('click', () => {
-      // 既存のシェア機能 (rvShare) を流用
-      const shareBtn = document.getElementById('rvShare');
-      if(shareBtn){
-        shareBtn.click();
-      } else {
-        // フォールバック: 現在のURLをコピー
-        try {
+      // ★ J1 2026-05-01: 見積書 + 仕様書を新しいタブで開く (両方PDF保存可能)
+      try {
+        if(typeof openDocumentWindow === 'function'){
+          openDocumentWindow('estimate');
+          // 1秒後に仕様書 (popup blocker回避)
+          setTimeout(() => { openDocumentWindow('spec'); }, 600);
+          // 案内モーダル
+          setTimeout(() => {
+            alert('✅ 見積書 と 仕様書 を新しいタブで開きました。\n\n各画面右上の「🖨 印刷 / PDF保存」ボタンで PDFとして保存できます。\nお客様への送付や保管にご利用ください。');
+          }, 1300);
+        } else {
+          // フォールバック: URLをコピー
           navigator.clipboard.writeText(location.href);
           alert('URLをクリップボードにコピーしました');
-        } catch(e){ alert('シェア機能がご利用いただけません'); }
+        }
+      } catch(e){
+        console.warn('share failed', e);
+        alert('シェア機能がご利用いただけません');
       }
     });
     md.querySelector('.sd-bg').addEventListener('click', close);
