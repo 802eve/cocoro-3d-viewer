@@ -668,12 +668,12 @@ renderer.toneMappingExposure = 1.0;
 document.getElementById('app').appendChild(renderer.domElement);
 
 // 環境光（IBL）
-// ★ H2 2026-04-30: iOS では PMREM をスキップ (環境マップ生成は重い + intensity=0なので影響なし)
-if(!_isIOS){
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  pmrem.compileEquirectangularShader();
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-}
+// ★ K1 2026-05-01: iOS でも PMREM を有効化 (色のグレー化対策)
+//   intensity=0 でも、 scene.environment が設定されていないと PBR マテリアルの色再現が劣化する
+//   メモリ消費は ~2MB なので影響軽微
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.00;  // ユーザー確定値
 
 // ライト構成（2026-04-22 綿マット版・拡散光メイン）
