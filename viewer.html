@@ -680,6 +680,18 @@ scene.environmentIntensity = 0.00;  // ユーザー確定値
 // ★ L1: iOS でメモリ削減のため pmrem を即廃棄
 if(_isIOS && pmrem.dispose) try { pmrem.dispose(); } catch(e){}
 
+// ▼ ここに追加（M2 修正）
+// ★ M2 2026-05-02: iOS では環境マップテクスチャ自体も完全廃棄
+//   environmentIntensity=0 でも GPU にはテクスチャがバインドされ続け、
+//   PBR シェーダーの環境光サンプリングパスが走るため iOS で context lost の原因になる。
+//   MeshStandardMaterial 置換と組み合わせて初めて効果を発揮する。
+if (_isIOS) {
+  if (scene.environment && scene.environment.dispose) {
+    try { scene.environment.dispose(); } catch(e){}
+  }
+  scene.environment = null;
+}
+
 // ライト構成（2026-04-22 綿マット版・拡散光メイン）
 // ambient主体で全体を均一に照らし、方向光は立体感のアクセントに留める
 const hemi = new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.50);
