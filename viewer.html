@@ -417,6 +417,9 @@ const MODELS = {
       //   ユーザー感覚で「肩寄りすぎ」→ 二の腕～前腕中心寄りへ調整。
       left_sleeve:  { label: '左袖',           x: 1653.3896, y: 596.9383,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
       right_sleeve: { label: '右袖',           x: 400.4349,  y: 605.9440,  width: 167.5923, height: 604.9842, alignX: 'center', alignY: 'top',    max_cm: 15 },
+      // ★ L3 2026-05-02: 袖先(12cm) 専用エリア (手首側 6.5cm offset = 全体area底-115px)
+      left_sleeve_cuff:  { label: '左袖（袖先）', x: 1653, y: 783, width: 167, height: 167, alignX: 'center', alignY: 'center', max_cm: 12 },
+      right_sleeve_cuff: { label: '右袖（袖先）', x: 400,  y: 792, width: 167, height: 167, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:   { label: '襟下（背中）',   x: 383.6772,  y: 1211.6097, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'top',    max_cm: 15 },
       front_hem:    { label: '前裾',           x: 1644.3839, y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
       back_hem:     { label: '後ろ裾',         x: 383.6772,  y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
@@ -436,6 +439,9 @@ const MODELS = {
       right_sleeve:      { label: '右袖',                 x: 232,  y: 1413, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       left_sleeve_full:  { label: '左袖（袖いっぱい）',   x: 1224, y: 1468, width: 120, height: 340, alignX: 'center', alignY: 'center', max_cm: 34 },
       right_sleeve_full: { label: '右袖（袖いっぱい）',   x: 232,  y: 1500, width: 120, height: 340, alignX: 'center', alignY: 'center', max_cm: 34 },
+      // ★ L3 2026-05-02: 袖先(12cm) 専用エリア (手首から6.5cm = -115px)
+      left_sleeve_cuff:  { label: '左袖（袖先）',         x: 1224, y: 1523, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
+      right_sleeve_cuff: { label: '右袖（袖先）',         x: 232,  y: 1555, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:        { label: '襟下（背中）',         x: 1693, y: 1367, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_hem:          { label: '後ろ裾',               x: 1697, y: 1630, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30 },
     },
@@ -456,6 +462,9 @@ const MODELS = {
       // 袖いっぱい (34x12cm) 専用領域 — 縦長
       left_sleeve_full:  { label: '左袖（袖いっぱい）',   x: 1222, y: 1468, width: 120, height: 340, alignX: 'center', alignY: 'center', max_cm: 34 },
       right_sleeve_full: { label: '右袖（袖いっぱい）',   x: 233,  y: 1499, width: 120, height: 340, alignX: 'center', alignY: 'center', max_cm: 34 },
+      // ★ L3: 袖先(12cm) 専用エリア
+      left_sleeve_cuff:  { label: '左袖（袖先）',         x: 1222, y: 1523, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
+      right_sleeve_cuff: { label: '右袖（袖先）',         x: 233,  y: 1554, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:        { label: '襟下（背中）',         x: 1690, y: 1368, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_hem:          { label: '後ろ裾',               x: 1694, y: 1631, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30 },
     },
@@ -475,6 +484,9 @@ const MODELS = {
       right_sleeve:      { label: '右袖',                 x: 1759, y: 1043, width: 168, height: 168, alignX: 'center', alignY: 'center', max_cm: 12 },
       left_sleeve_full:  { label: '左袖（袖いっぱい）',   x: 1758, y: 1736, width: 146, height: 414, alignX: 'center', alignY: 'center', max_cm: 34 },
       right_sleeve_full: { label: '右袖（袖いっぱい）',   x: 1759, y: 1141, width: 146, height: 414, alignX: 'center', alignY: 'center', max_cm: 34 },
+      // ★ L3: 袖先(12cm) 専用エリア
+      left_sleeve_cuff:  { label: '左袖（袖先）',         x: 1758, y: 1828, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
+      right_sleeve_cuff: { label: '右袖（袖先）',         x: 1759, y: 1233, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:        { label: '襟下（背中）',         x: 1018, y: 1461, width: 168, height: 168, alignX: 'center', alignY: 'center', max_cm: 12 },
       front_hem:         { label: '前裾',                 x: 284,  y: 1811, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30 },
       back_hem:          { label: '後ろ裾',               x: 1020, y: 1811, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30 },
@@ -553,7 +565,8 @@ const SMALL_AREA_SIZE_SCALES = {
 //   実プリント幅が 7cm 程度に縮小されていた。SMALL_AREAS に追加して是正。
 //   同時に texture 上の占有面積が増えて画質も自動的に向上する。
 // ★ K2 2026-05-01: 袖いっぱい用 *_full 領域も SMALL_AREAS に含める (SIZE_SCALES の 0.95 ではなく 1.0 で配置)
-const SMALL_AREAS = ['left_chest', 'right_chest', 'left_sleeve', 'right_sleeve', 'back_upper', 'left_sleeve_full', 'right_sleeve_full'];
+// ★ L3 2026-05-02: 袖先用 *_cuff 領域も追加
+const SMALL_AREAS = ['left_chest', 'right_chest', 'left_sleeve', 'right_sleeve', 'back_upper', 'left_sleeve_full', 'right_sleeve_full', 'left_sleeve_cuff', 'right_sleeve_cuff'];
 
 function getSizesForArea(areaKey, method) {
   const table = SMALL_AREAS.includes(areaKey) ? SMALL_AREA_SIZE_SCALES : SIZE_SCALES;
@@ -1184,11 +1197,16 @@ function drawPrint(print, ctx) {
   if (!print.image) return;
   const targetCtx = ctx || baseCtx;
   // ★ K2 2026-05-01: 袖いっぱい(34x12cm) サイズ時は *_full 領域に自動切替
+  // ★ L3 2026-05-02: 袖先(12cm角内) サイズ時は *_cuff 領域に自動切替 (手首寄り)
   let areaKey = print.area;
   const isFullSleeve = print.size && (print.size.includes('34x12') || print.size.includes('34×12') || print.size.includes('袖いっぱい'));
+  const isCuff       = print.size && (print.size.includes('12cm角') || print.size.includes('袖先'));
   if (isFullSleeve){
     if (areaKey === 'left_sleeve' && scaledAreas['left_sleeve_full']) areaKey = 'left_sleeve_full';
     else if (areaKey === 'right_sleeve' && scaledAreas['right_sleeve_full']) areaKey = 'right_sleeve_full';
+  } else if (isCuff){
+    if (areaKey === 'left_sleeve' && scaledAreas['left_sleeve_cuff']) areaKey = 'left_sleeve_cuff';
+    else if (areaKey === 'right_sleeve' && scaledAreas['right_sleeve_cuff']) areaKey = 'right_sleeve_cuff';
   }
   const area = scaledAreas[areaKey];
   if (!area) { console.warn('Unknown area:', areaKey); return; }
