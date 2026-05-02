@@ -613,7 +613,8 @@ if(_isEmbedMode){
   renderer.setClearColor(0x000000, 0);   // 透過クリア
 }
 // embed mode 以外は body bg = var(--bg) #e8e8e8 (light) のまま
-const _MAX_DPR = _isMobile ? 1.5 : 2;
+// ★ L1 2026-05-02: iOS は DPR 1.0 まで下げる (メモリ削減を強化)
+const _MAX_DPR = _isIOS ? 1.0 : (_isMobile ? 1.5 : 2);
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, _MAX_DPR));
 renderer.setSize(innerWidth, innerHeight);
 
@@ -657,11 +658,14 @@ document.getElementById('app').appendChild(renderer.domElement);
 // 環境光（IBL）
 // ★ K1 2026-05-01: iOS でも PMREM を有効化 (色のグレー化対策)
 //   intensity=0 でも、 scene.environment が設定されていないと PBR マテリアルの色再現が劣化する
-//   メモリ消費は ~2MB なので影響軽微
+// ★ L1 2026-05-02: iOS は sigma を 0.5 まで上げて生成解像度を下げる (メモリ削減)
 const pmrem = new THREE.PMREMGenerator(renderer);
 pmrem.compileEquirectangularShader();
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const _pmremSigma = _isIOS ? 0.5 : 0.04;  // iOS は粗めで十分 (intensity=0 なので見えない)
+scene.environment = pmrem.fromScene(new RoomEnvironment(), _pmremSigma).texture;
 scene.environmentIntensity = 0.00;  // ユーザー確定値
+// ★ L1: iOS でメモリ削減のため pmrem を即廃棄
+if(_isIOS && pmrem.dispose) try { pmrem.dispose(); } catch(e){}
 
 // ライト構成（2026-04-22 綿マット版・拡散光メイン）
 // ambient主体で全体を均一に照らし、方向光は立体感のアクセントに留める
@@ -993,8 +997,9 @@ function initTextureCompose() {
   const origW = origTexImage.width || origTexImage.naturalWidth;
   const origH = origTexImage.height || origTexImage.naturalHeight;
   const ar = origW / origH;
-  // ★ H2 2026-04-30: iOS では canvas を半分のサイズで合成 (メモリ削減 4096²×4byte = 64MB → 16MB)
-  const TARGET_CANVAS_MIN = _isIOS ? 2048 : 4096;
+  // ★ L1 2026-05-02: iOS は canvas 1024 まで下げる (ポロ以降のメモリ枯渇対策)
+  //   2048²×4byte = 16MB → 1024²×4byte = 4MB に削減 (画質は妥協・安定優先)
+  const TARGET_CANVAS_MIN = _isIOS ? 1024 : 4096;
   const w = Math.max(origW, TARGET_CANVAS_MIN);
   const h = Math.max(origH, Math.round(w / ar));
 
