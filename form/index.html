@@ -4598,11 +4598,14 @@ function _findNearestInkId(targetHex){
 const _PRINT_LOC_CHEST  = new Set(['左胸','右胸']);
 const _PRINT_LOC_SLEEVE = new Set(['左袖','右袖']);
 const _SLEEVE_ONLY_KEYS = new Set(['12cm角内','34x12cm']);
+// ★ L2 2026-05-02: 長袖カテゴリ (ロンT/パーカー/ジップパーカー/スウェット) は袖いっぱい(34x12cm) 選択可
+const _LONG_SLEEVE_CATEGORIES = new Set(['long','hoodie','hoodie_zip','sweat']);
 function getAllowedSizeKeys(meth, loc, categoryKey){
   const all = Object.keys(PRICING.methodSizes[meth] || {});
   if(!all.length) return [];
   const stripSleeveOnly = (keys) => keys.filter(k => !_SLEEVE_ONLY_KEYS.has(k));
-  const isLongSleeve = (categoryKey === 'long' || /long/i.test(String(categoryKey)));
+  // ★ L2: 長袖判定を拡張 (ロンT + パーカー + スウェットも袖いっぱい対応)
+  const isLongSleeve = _LONG_SLEEVE_CATEGORIES.has(String(categoryKey)) || /long|hoodie|sweat/i.test(String(categoryKey));
   if(_PRINT_LOC_CHEST.has(loc)){
     return all.filter(k => k === '15cm角内' || k === '5cm角内' || k === '10cm角内');
   }
@@ -4699,7 +4702,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '75';
+const VIEWER_VERSION = '76';
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
