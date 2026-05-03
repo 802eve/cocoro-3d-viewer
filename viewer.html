@@ -667,6 +667,11 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1.0;
 document.getElementById('app').appendChild(renderer.domElement);
+// ★ M7 ④ 2026-05-03: スマホでも canvas を touch でドラッグ回転可能に
+//   touch-action: none → ブラウザのスクロール・ピンチをキャンセル → OrbitControls が確実に gesture を受け取る
+renderer.domElement.style.touchAction = 'none';
+renderer.domElement.style.userSelect = 'none';
+renderer.domElement.style.webkitUserSelect = 'none';
 
 // 環境光（IBL）
 // ★ K1 2026-05-01: iOS でも PMREM を有効化 (色のグレー化対策)
@@ -679,18 +684,6 @@ scene.environment = pmrem.fromScene(new RoomEnvironment(), _pmremSigma).texture;
 scene.environmentIntensity = 0.00;  // ユーザー確定値
 // ★ L1: iOS でメモリ削減のため pmrem を即廃棄
 if(_isIOS && pmrem.dispose) try { pmrem.dispose(); } catch(e){}
-
-// ▼ ここに追加（M2 修正）
-// ★ M2 2026-05-02: iOS では環境マップテクスチャ自体も完全廃棄
-//   environmentIntensity=0 でも GPU にはテクスチャがバインドされ続け、
-//   PBR シェーダーの環境光サンプリングパスが走るため iOS で context lost の原因になる。
-//   MeshStandardMaterial 置換と組み合わせて初めて効果を発揮する。
-if (_isIOS) {
-  if (scene.environment && scene.environment.dispose) {
-    try { scene.environment.dispose(); } catch(e){}
-  }
-  scene.environment = null;
-}
 
 // ライト構成（2026-04-22 綿マット版・拡散光メイン）
 // ambient主体で全体を均一に照らし、方向光は立体感のアクセントに留める
@@ -791,6 +784,15 @@ controls.zoomSpeed = 0.2;
 controls.rotateSpeed = 0.7;
 controls.enableZoom = true;
 controls.zoomToCursor = false;  // 明示的に false (target 移動の副作用回避)
+// ★ M7 ④ 2026-05-03: タッチ操作明示設定 (1本指=回転, 2本指=ピンチズーム)
+controls.enableRotate = true;
+if(controls.touches){
+  controls.touches.ONE = THREE.TOUCH.ROTATE;
+  controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+}
+if(controls.mouseButtons){
+  controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+}
 // 2026-04-24 夜: 社内フォーム側の体感速度に統一（1.5 → 2.5）。
 //   デザインスタジオ/社内プラットフォーム/フォーム各所すべて同じ viewer.html を使用するため
 //   ここを変えれば全画面一斉に揃う。
@@ -1355,43 +1357,18 @@ function onLoaded(gltf) {
 
   model.traverse((obj) => {
     if (obj.isMesh && obj.material) {
-      const _oldMat = obj.material;
-      // ★ M1 2026-05-02: KHR_materials_sheen 拡張で MeshPhysicalMaterial に
-      //   昇格しているとiOSで描画失敗 (sheen+emissiveMap+環境マップのシェーダー組合せ NG)。
-      //   該当するのは新モデル4種 (hoodie/hoodie_zip/polo/sweat) のみ。
-      //   Tシャツ/ロンTは isMeshPhysicalMaterial=false なので else 分岐で従来通り処理。
-      const _hasSheenExt = _oldMat.isMeshPhysicalMaterial || ('sheen' in _oldMat);
-      if (_hasSheenExt) {
-        // sheen / clearcoat 等の重い拡張を全廃するため MeshStandardMaterial に置換
-        const _safe = new THREE.MeshStandardMaterial({
-          map: _oldMat.map || null,
-          color: 0xffffff,
-          roughness: 1.0,
-          metalness: 0,
-          side: THREE.FrontSide,
-          transparent: false,
-        });
-        // 滑らかさ改善: 頂点法線再計算 + flatShading 無効化
-        //   Decimate で粗くなったメッシュ表面を smooth shading で見栄えUP
-        try { if (obj.geometry) obj.geometry.computeVertexNormals(); } catch(e){}
-        _safe.flatShading = false;
-        obj.material = _safe;
-        try { _oldMat.dispose(); } catch(e){}
-      } else {
-        // ▼ 既存ロジック (Tシャツ/ロンT 用) — 一切変更なし
-        obj.material = _oldMat.clone();
-        if ('metalness' in obj.material) obj.material.metalness = 0;
-        // 完全マット仕上げ（バックライトの反射ハイライトを抑える・モデル間で見た目統一）
-        if ('roughness' in obj.material) obj.material.roughness = 1.0;
-        // 余計なテクスチャマップを全て無効化（V1モデルの metalness/normal/AO等が悪さするのを防ぐ）
-        ['metalnessMap','roughnessMap','normalMap','aoMap','emissiveMap','alphaMap','bumpMap','displacementMap','envMap','lightMap']
-          .forEach(k => { if (obj.material[k]) obj.material[k] = null; });
-        if (obj.material.color) obj.material.color.set(0xffffff);
-        // 透過・両面描画を切る（裏面が見えると表に漏れて見えるため）
-        obj.material.transparent = false;
-        obj.material.alphaTest = 0;
-        obj.material.side = THREE.FrontSide;
-      }
+      obj.material = obj.material.clone();
+      if ('metalness' in obj.material) obj.material.metalness = 0;
+      // 完全マット仕上げ（バックライトの反射ハイライトを抑える・モデル間で見た目統一）
+      if ('roughness' in obj.material) obj.material.roughness = 1.0;
+      // 余計なテクスチャマップを全て無効化（V1モデルの metalness/normal/AO等が悪さするのを防ぐ）
+      ['metalnessMap','roughnessMap','normalMap','aoMap','emissiveMap','alphaMap','bumpMap','displacementMap','envMap','lightMap']
+        .forEach(k => { if (obj.material[k]) obj.material[k] = null; });
+      if (obj.material.color) obj.material.color.set(0xffffff);
+      // 透過・両面描画を切る（裏面が見えると表に漏れて見えるため）
+      obj.material.transparent = false;
+      obj.material.alphaTest = 0;
+      obj.material.side = THREE.FrontSide;
       obj.material.depthWrite = true;
       obj.material.depthTest = true;
       obj.material.needsUpdate = true;
@@ -1452,12 +1429,6 @@ function _loadActiveModelGlb() {
 if (window[ACTIVE_MODEL.glbVar]) {
   // 既にロード済み（Tシャツの場合 <script src="./glb-data.js"> でロード済）
   setTimeout(_loadActiveModelGlb, 40);
-} else if (!ACTIVE_MODEL.glbScript) {
-  // ★ M1 2026-05-02: glbScript 未定義モデル (hoodie/hoodie_zip/polo/sweat) は
-  //   直接 fallbackGlb をロード。 従来は s.src = undefined で /undefined への
-  //   404 を踏んでから fallback に行くため、 iOS で 1〜2秒の余計な遅延が出ていた。
-  setProgress(40);
-  _loadActiveModelGlb();
 } else {
   setProgress(30);
   const s = document.createElement('script');
