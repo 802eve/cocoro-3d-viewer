@@ -1086,16 +1086,15 @@ function initTextureCompose() {
   printTexture.generateMipmaps = true;
 
   // ボディは map で通常ライティング、プリントは emissiveMap で自発光（色忠実）
-  // ★ 2026-05-07: emissiveIntensity 1.0 → 0.45 → 0.18 に段階下げ。
-  //   実機テスト: 0.45 でもピンク白飛び・緑が蛍光色化していたため、 さらに下げる。
-  //   map にプリントが焼き込み済みのため、 emissive はあくまで「白系インクの自発光感」 用の補助。
-  //   0.18 だと黒・紺は map 側で表示、 白系は微発光、 中間色 (緑/赤/黄) はナチュラルに見える。
+  // ★ 2026-05-07 (3rd revision): map のプリント焼き込みを 50% に薄めたので、 emissive を 0.5 に。
+  //   map (50% シェーディング受ける) + emissive (0.5 で補正発光) → 適度な発色 + 立体感両立。
+  //   緑が蛍光色化せず、 ピンク/黄も白飛びせず、 黒インクは map 側で見える。
   shirtMeshes.forEach(m => {
     if (m.material) {
       m.material.map = currentTexture;
       m.material.emissive = new THREE.Color(0xffffff);
       m.material.emissiveMap = printTexture;
-      m.material.emissiveIntensity = 0.18;
+      m.material.emissiveIntensity = 0.5;
       if (m.material.color) m.material.color.set(0xffffff);
       m.material.needsUpdate = true;
     }
@@ -1170,14 +1169,17 @@ function applyState() {
     drawPrint(p, printCtx);
   }
 
-  // === プリントをベースキャンバスにも描画（2026-04-22 デフォルト化）===
-  //   emissiveMap だけだと「黒インク = emissive 0 = ボディ色のまま＝見えない」となるため、
-  //   baseCanvas(=map) にもプリントを焼き込む。黒や暗い色もライティング付きで正しく表示される。
-  //   emissive 側は残してあるので白・蛍光系のインクには今まで通り自発光感が乗る。
+  // === プリントをベースキャンバスにも 50% で描画（2026-05-07 修正）===
+  //   理由: map (ライティング受ける) + emissive (発光) の二重描画で過剰露光・蛍光色化していた。
+  //         map 側を 50% 透明にすることで、 シェーディングの影響を半分に抑える。
+  //         + emissive 側は色補正用に弱く乗せる。
+  //         結果: ピンク/黄もちゃんと色が出て、 緑が蛍光化せず、 黒インクも見える。
   baseCtx.globalCompositeOperation = 'source-over';
+  baseCtx.globalAlpha = 0.55;
   for (const p of state.prints) {
     drawPrint(p, baseCtx);
   }
+  baseCtx.globalAlpha = 1.0;
 
   // ?showAreas=1 のとき、PRINT_AREAS 全箇所をカラー枠で可視化（位置デバッグ用）
   const showAreas = new URLSearchParams(location.search).get('showAreas') === '1';
