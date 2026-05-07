@@ -1104,9 +1104,11 @@ function initTextureCompose() {
     }
   });
   // overlay mesh の map に printTexture を割り当て (unlit プリント表示)
+  // ★ 2026-05-07: alphaMap を使わない (luminance ベースで緑/黄/ピンク等が半透明扱いになり薄く見える原因)。
+  //   map (RGBA) のアルファチャンネルから transparent + alphaTest で正しく抜く。
   shirtPrintOverlays.forEach(o => {
     o.material.map = printTexture;
-    o.material.alphaMap = printTexture;
+    o.material.alphaMap = null;
     o.material.needsUpdate = true;
   });
 
