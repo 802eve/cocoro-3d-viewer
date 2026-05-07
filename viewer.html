@@ -952,6 +952,11 @@ function _focusToArea(areaKey) {
 }
 
 let shirtMeshes = [];
+// ★ 2026-05-07: プリントだけ unlit (MeshBasicMaterial) で表示するための overlay mesh 配列
+//   既存の emissive 方式は色によってバランス取れず白飛び/蛍光化していたため、 抜本対応。
+//   ボディ mesh と同じジオメトリで MeshBasicMaterial の Mesh を上に重ねる。
+//   結果: プリント部分はライティング無関係、 「シールを貼ったような」 はっきりした色で表示される。
+let shirtPrintOverlays = [];
 
 // ============================================================
 // テクスチャ合成
@@ -1085,19 +1090,24 @@ function initTextureCompose() {
   printTexture.magFilter = THREE.LinearFilter;
   printTexture.generateMipmaps = true;
 
-  // ボディは map で通常ライティング、プリントは emissiveMap で自発光（色忠実）
-  // ★ 2026-05-07 (3rd revision): map のプリント焼き込みを 50% に薄めたので、 emissive を 0.5 に。
-  //   map (50% シェーディング受ける) + emissive (0.5 で補正発光) → 適度な発色 + 立体感両立。
-  //   緑が蛍光色化せず、 ピンク/黄も白飛びせず、 黒インクは map 側で見える。
+  // ★ 2026-05-07 (final): ボディは map で通常ライティング、 プリントは別 mesh (overlay, MeshBasicMaterial) で unlit 表示
+  //   emissive 方式は廃止 (色によって白飛び/蛍光化のバランスが取れなかった)。
+  //   結果: プリントは「シールを貼ったような」 はっきりした色で表示、 ライティング無関係。
   shirtMeshes.forEach(m => {
     if (m.material) {
       m.material.map = currentTexture;
-      m.material.emissive = new THREE.Color(0xffffff);
-      m.material.emissiveMap = printTexture;
-      m.material.emissiveIntensity = 0.5;
+      m.material.emissive = new THREE.Color(0x000000);
+      m.material.emissiveMap = null;
+      m.material.emissiveIntensity = 0;
       if (m.material.color) m.material.color.set(0xffffff);
       m.material.needsUpdate = true;
     }
+  });
+  // overlay mesh の map に printTexture を割り当て (unlit プリント表示)
+  shirtPrintOverlays.forEach(o => {
+    o.material.map = printTexture;
+    o.material.alphaMap = printTexture;
+    o.material.needsUpdate = true;
   });
 
   // 初回レンダリング（受け取った設定があれば適用、なければ白Tシャツ）
@@ -1169,17 +1179,12 @@ function applyState() {
     drawPrint(p, printCtx);
   }
 
-  // === プリントをベースキャンバスにも 50% で描画（2026-05-07 修正）===
-  //   理由: map (ライティング受ける) + emissive (発光) の二重描画で過剰露光・蛍光色化していた。
-  //         map 側を 50% 透明にすることで、 シェーディングの影響を半分に抑える。
-  //         + emissive 側は色補正用に弱く乗せる。
-  //         結果: ピンク/黄もちゃんと色が出て、 緑が蛍光化せず、 黒インクも見える。
-  baseCtx.globalCompositeOperation = 'source-over';
-  baseCtx.globalAlpha = 0.55;
-  for (const p of state.prints) {
-    drawPrint(p, baseCtx);
-  }
-  baseCtx.globalAlpha = 1.0;
+  // === ベースキャンバスへのプリント焼き込みは廃止（2026-05-07 final）===
+  //   プリントは別の overlay mesh (MeshBasicMaterial, unlit) で表示するようになったため、
+  //   ボディテクスチャにはボディ色のみ。 シェーディングはボディだけに効く。
+  //   printCanvas (= overlay material.map = alphaMap) は上で更新済み。
+  if (currentTexture) currentTexture.needsUpdate = true;
+  if (printTexture) printTexture.needsUpdate = true;
 
   // ?showAreas=1 のとき、PRINT_AREAS 全箇所をカラー枠で可視化（位置デバッグ用）
   const showAreas = new URLSearchParams(location.search).get('showAreas') === '1';
@@ -1379,6 +1384,22 @@ function onLoaded(gltf) {
       obj.material.depthTest = true;
       obj.material.needsUpdate = true;
       shirtMeshes.push(obj);
+      // ★ 2026-05-07: プリント専用 overlay mesh を追加 (unlit, 同じジオメトリ)
+      const overlayMat = new THREE.MeshBasicMaterial({
+        transparent: true,
+        alphaTest: 0.04,
+        depthWrite: false,
+        side: THREE.FrontSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+        toneMapped: false,
+      });
+      const overlay = new THREE.Mesh(obj.geometry, overlayMat);
+      overlay.userData._isPrintOverlay = true;
+      overlay.renderOrder = 1;
+      obj.add(overlay);
+      shirtPrintOverlays.push(overlay);
     }
   });
 
