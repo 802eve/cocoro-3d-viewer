@@ -1384,23 +1384,28 @@ function onLoaded(gltf) {
       obj.material.depthTest = true;
       obj.material.needsUpdate = true;
       shirtMeshes.push(obj);
-      // ★ 2026-05-07: プリント専用 overlay mesh を追加 (unlit, 同じジオメトリ)
-      const overlayMat = new THREE.MeshBasicMaterial({
-        transparent: true,
-        alphaTest: 0.04,
-        depthWrite: false,
-        side: THREE.FrontSide,
-        polygonOffset: true,
-        polygonOffsetFactor: -1,
-        polygonOffsetUnits: -1,
-        toneMapped: false,
-      });
-      const overlay = new THREE.Mesh(obj.geometry, overlayMat);
-      overlay.userData._isPrintOverlay = true;
-      overlay.renderOrder = 1;
-      obj.add(overlay);
-      shirtPrintOverlays.push(overlay);
     }
+  });
+
+  // ★ 2026-05-07: traverse 完了後に overlay mesh を作成 (再帰 traverse を回避)
+  //   traverse 中に obj.add(overlay) すると、 overlay 自身も Mesh なので再 traverse されて
+  //   "Maximum call stack size exceeded" 無限ループになる。
+  shirtMeshes.forEach((obj) => {
+    const overlayMat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      alphaTest: 0.04,
+      depthWrite: false,
+      side: THREE.FrontSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+      toneMapped: false,
+    });
+    const overlay = new THREE.Mesh(obj.geometry, overlayMat);
+    overlay.userData._isPrintOverlay = true;
+    overlay.renderOrder = 1;
+    obj.add(overlay);
+    shirtPrintOverlays.push(overlay);
   });
 
   doneProgress();
