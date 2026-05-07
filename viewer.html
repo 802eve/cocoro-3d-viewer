@@ -1086,12 +1086,16 @@ function initTextureCompose() {
   printTexture.generateMipmaps = true;
 
   // ボディは map で通常ライティング、プリントは emissiveMap で自発光（色忠実）
+  // ★ 2026-05-07: emissiveIntensity 1.0 → 0.45 → 0.18 に段階下げ。
+  //   実機テスト: 0.45 でもピンク白飛び・緑が蛍光色化していたため、 さらに下げる。
+  //   map にプリントが焼き込み済みのため、 emissive はあくまで「白系インクの自発光感」 用の補助。
+  //   0.18 だと黒・紺は map 側で表示、 白系は微発光、 中間色 (緑/赤/黄) はナチュラルに見える。
   shirtMeshes.forEach(m => {
     if (m.material) {
       m.material.map = currentTexture;
       m.material.emissive = new THREE.Color(0xffffff);
       m.material.emissiveMap = printTexture;
-      m.material.emissiveIntensity = 1.0;
+      m.material.emissiveIntensity = 0.18;
       if (m.material.color) m.material.color.set(0xffffff);
       m.material.needsUpdate = true;
     }
