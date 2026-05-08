@@ -2,15 +2,6 @@
   "templates": [],
   "cliparts": [
     {
-      "id": "test_1778246419524",
-      "name": "test_circle",
-      "cat": "test",
-      "thumb": "circle",
-      "updated": "2026-05-08T14:08:39.394Z",
-      "svgPath": "cliparts/test_1778246419524.svg",
-      "created": "2026-05-08T13:20:22.196Z"
-    },
-    {
       "id": "single_1778248278212",
       "name": "シングル1",
       "cat": "デモ",
@@ -269,5 +260,5 @@
       "ダンス"
     ]
   },
-  "updatedAt": "2026-05-08T14:20:42.437Z"
+  "updatedAt": "2026-05-08T14:27:39.123Z"
 }
