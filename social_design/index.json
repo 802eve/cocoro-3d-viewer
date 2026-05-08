@@ -405,6 +405,78 @@
       "created": "2026-05-08T14:41:18.204Z",
       "updated": "2026-05-08T14:41:18.204Z",
       "svgPath": "cliparts/clipA-1778251227703.svg"
+    },
+    {
+      "id": "clipA-1778251227702",
+      "name": "鳥02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251227702.svg"
+    },
+    {
+      "id": "clipA-1778251227701",
+      "name": "鳥01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251227701.svg"
+    },
+    {
+      "id": "clipA-1778251227700",
+      "name": "鳥03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251227700.svg"
+    },
+    {
+      "id": "clipA-1778251213076",
+      "name": "十字架10",
+      "cat": "十字架",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251213076.svg"
+    },
+    {
+      "id": "clipA-1778251213075",
+      "name": "十字架09",
+      "cat": "十字架",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251213075.svg"
+    },
+    {
+      "id": "clipA-1778251213074",
+      "name": "十字架07",
+      "cat": "十字架",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251213074.svg"
+    },
+    {
+      "id": "clipA-1778251213073",
+      "name": "十字架08",
+      "cat": "十字架",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251213073.svg"
+    },
+    {
+      "id": "clipA-1778251213072",
+      "name": "十字架06",
+      "cat": "十字架",
+      "thumb": "",
+      "created": "2026-05-08T14:41:29.411Z",
+      "updated": "2026-05-08T14:41:29.411Z",
+      "svgPath": "cliparts/clipA-1778251213072.svg"
     }
   ],
   "categories": {
@@ -413,5 +485,5 @@
       "ダンス"
     ]
   },
-  "updatedAt": "2026-05-08T14:41:18.207Z"
+  "updatedAt": "2026-05-08T14:41:29.412Z"
 }
