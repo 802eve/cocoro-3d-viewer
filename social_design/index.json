@@ -333,6 +333,78 @@
       "created": "2026-05-08T14:41:07.257Z",
       "updated": "2026-05-08T14:41:07.257Z",
       "svgPath": "cliparts/clipA-1778251249388.svg"
+    },
+    {
+      "id": "clipA-1778251249387",
+      "name": "矢印02",
+      "cat": "装飾",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251249387.svg"
+    },
+    {
+      "id": "clipA-1778251249386",
+      "name": "矢印01",
+      "cat": "装飾",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251249386.svg"
+    },
+    {
+      "id": "clipA-1778251227708",
+      "name": "鳥07",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251227708.svg"
+    },
+    {
+      "id": "clipA-1778251227707",
+      "name": "鳥08",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251227707.svg"
+    },
+    {
+      "id": "clipA-1778251227706",
+      "name": "鳥05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251227706.svg"
+    },
+    {
+      "id": "clipA-1778251227705",
+      "name": "鳥09",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251227705.svg"
+    },
+    {
+      "id": "clipA-1778251227704",
+      "name": "鳥06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251227704.svg"
+    },
+    {
+      "id": "clipA-1778251227703",
+      "name": "鳥04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-05-08T14:41:18.204Z",
+      "svgPath": "cliparts/clipA-1778251227703.svg"
     }
   ],
   "categories": {
@@ -341,5 +413,5 @@
       "ダンス"
     ]
   },
-  "updatedAt": "2026-05-08T14:41:07.258Z"
+  "updatedAt": "2026-05-08T14:41:18.207Z"
 }
