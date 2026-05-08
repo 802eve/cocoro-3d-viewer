@@ -117,6 +117,78 @@
       "updated": "2026-05-08T14:08:54.547Z",
       "svgPath": "cliparts/b8_1778248324182_8.svg",
       "created": "2026-05-08T13:52:19.896Z"
+    },
+    {
+      "id": "clipA-1778249987899",
+      "name": "バレエ01",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987899.svg"
+    },
+    {
+      "id": "clipA-1778249987898",
+      "name": "バレエ02",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987898.svg"
+    },
+    {
+      "id": "clipA-1778249987897",
+      "name": "バレエ03",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987897.svg"
+    },
+    {
+      "id": "clipA-1778249987896",
+      "name": "バレエ04",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987896.svg"
+    },
+    {
+      "id": "clipA-1778249987895",
+      "name": "バレエ05",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987895.svg"
+    },
+    {
+      "id": "clipA-1778249987894",
+      "name": "バレエ06",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987894.svg"
+    },
+    {
+      "id": "clipA-1778249987893",
+      "name": "バレエ07",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987893.svg"
+    },
+    {
+      "id": "clipA-1778249987892",
+      "name": "バレエ08",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:24.080Z",
+      "updated": "2026-05-08T14:20:24.080Z",
+      "svgPath": "cliparts/clipA-1778249987892.svg"
     }
   ],
   "categories": {
@@ -125,5 +197,5 @@
       "ダンス"
     ]
   },
-  "updatedAt": "2026-05-08T14:08:58.156Z"
+  "updatedAt": "2026-05-08T14:20:24.081Z"
 }
