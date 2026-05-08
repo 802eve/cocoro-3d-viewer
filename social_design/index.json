@@ -189,6 +189,78 @@
       "created": "2026-05-08T14:20:24.080Z",
       "updated": "2026-05-08T14:20:24.080Z",
       "svgPath": "cliparts/clipA-1778249987892.svg"
+    },
+    {
+      "id": "clipA-1778249987891",
+      "name": "バレエ09",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249987891.svg"
+    },
+    {
+      "id": "clipA-1778249987890",
+      "name": "バレエ10",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249987890.svg"
+    },
+    {
+      "id": "clipA-1778249987889",
+      "name": "バレエ11",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249987889.svg"
+    },
+    {
+      "id": "clipA-1778249987888",
+      "name": "バレエ12",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249987888.svg"
+    },
+    {
+      "id": "clipA-1778249305883",
+      "name": "ダンス01",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249305883.svg"
+    },
+    {
+      "id": "clipA-1778249305882",
+      "name": "ダンス02",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249305882.svg"
+    },
+    {
+      "id": "clipA-1778249305881",
+      "name": "ダンス03",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249305881.svg"
+    },
+    {
+      "id": "clipA-1778249305880",
+      "name": "ダンス04",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:20:39.005Z",
+      "updated": "2026-05-08T14:20:39.005Z",
+      "svgPath": "cliparts/clipA-1778249305880.svg"
     }
   ],
   "categories": {
@@ -197,5 +269,5 @@
       "ダンス"
     ]
   },
-  "updatedAt": "2026-05-08T14:20:24.081Z"
+  "updatedAt": "2026-05-08T14:20:39.006Z"
 }
