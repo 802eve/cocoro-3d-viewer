@@ -144,6 +144,78 @@
       "created": "2026-05-08T14:20:39.005Z",
       "updated": "2026-05-08T14:20:39.005Z",
       "svgPath": "cliparts/clipA-1778249305880.svg"
+    },
+    {
+      "id": "clipA-1778251174288",
+      "name": "フリーズ01",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174288.svg"
+    },
+    {
+      "id": "clipA-1778251174287",
+      "name": "フリーズ02",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174287.svg"
+    },
+    {
+      "id": "clipA-1778251174286",
+      "name": "フリーズ07",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174286.svg"
+    },
+    {
+      "id": "clipA-1778251174285",
+      "name": "フリーズ04",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174285.svg"
+    },
+    {
+      "id": "clipA-1778251174284",
+      "name": "フリーズ03",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174284.svg"
+    },
+    {
+      "id": "clipA-1778251174283",
+      "name": "フリーズ08",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174283.svg"
+    },
+    {
+      "id": "clipA-1778251174282",
+      "name": "フリーズ10",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174282.svg"
+    },
+    {
+      "id": "clipA-1778251174281",
+      "name": "フリーズ05",
+      "cat": "ダンス",
+      "thumb": "",
+      "created": "2026-05-08T14:39:54.359Z",
+      "updated": "2026-05-08T14:39:54.359Z",
+      "svgPath": "cliparts/clipA-1778251174281.svg"
     }
   ],
   "categories": {
@@ -152,5 +224,5 @@
       "ダンス"
     ]
   },
-  "updatedAt": "2026-05-08T14:28:32.734Z"
+  "updatedAt": "2026-05-08T14:39:54.361Z"
 }
