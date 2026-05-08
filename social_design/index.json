@@ -9,6 +9,15 @@
       "updated": "2026-05-08T13:49:43.202Z",
       "svgPath": "cliparts/test_1778246419524.svg",
       "created": "2026-05-08T13:20:22.196Z"
+    },
+    {
+      "id": "single_1778248278212",
+      "name": "シングル1",
+      "cat": "デモ",
+      "thumb": "",
+      "updated": "2026-05-08T13:51:21.030Z",
+      "svgPath": "cliparts/single_1778248278212.svg",
+      "created": "2026-05-08T13:51:21.030Z"
     }
   ],
   "categories": {
@@ -17,5 +26,5 @@
       "ダンス"
     ]
   },
-  "updatedAt": "2026-05-08T13:49:46.365Z"
+  "updatedAt": "2026-05-08T13:51:21.032Z"
 }
