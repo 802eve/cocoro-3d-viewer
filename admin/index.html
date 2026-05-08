@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ココロ工房 テンプレート管理 (社内専用)</title>
+<style>
+  :root {
+    --bg:#0e1116; --bg2:#161b22; --bg3:#1f242c; --bgI:#0a0d11;
+    --bd:#2a313b; --bdH:#3a414b;
+    --t:#e6edf3; --t2:#a8b3bf; --t3:#6e7681;
+    --ac:#f59e0b; --acH:#fbbf24; --acL:rgba(245,158,11,.16);
+    --rd:#ef4444; --gn:#10b981; --bl:#3b82f6;
+    --ff: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--t); font:14px/1.5 var(--ff); }
+  body { min-height:100vh; }
+  header {
+    background:var(--bg2); border-bottom:1px solid var(--bd);
+    padding:12px 20px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:50;
+  }
+  .h-title { font-size:16px; font-weight:700; }
+  .h-title .badge { display:inline-block; background:var(--rd); color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px; vertical-align:middle; }
+  .h-actions { display:flex; gap:8px; align-items:center; }
+  .btn {
+    background:var(--bg3); border:1px solid var(--bd); color:var(--t);
+    padding:8px 14px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:13px;
+  }
+  .btn:hover { background:var(--bdH); }
+  .btn.primary { background:var(--ac); color:#1a1a1a; border-color:var(--ac); font-weight:700; }
+  .btn.primary:hover { background:var(--acH); }
+  .btn.danger { color:var(--rd); border-color:rgba(239,68,68,.3); }
+  .btn.danger:hover { background:rgba(239,68,68,.12); }
+  .tabs { display:flex; gap:4px; padding:0 20px; background:var(--bg2); border-bottom:1px solid var(--bd); }
+  .tab {
+    background:transparent; border:none; color:var(--t2); padding:10px 18px; cursor:pointer;
+    font-family:inherit; font-size:13px; font-weight:600; border-bottom:3px solid transparent;
+  }
+  .tab.act { color:var(--ac); border-bottom-color:var(--ac); }
+  main { padding:20px; max-width:1200px; margin:0 auto; }
+  .panel { background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:16px; margin-bottom:16px; }
+  .panel-title { font-size:13px; font-weight:700; color:var(--t2); margin-bottom:10px; text-transform:uppercase; letter-spacing:.04em; }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width:900px){ .grid2 { grid-template-columns: 1fr; } }
+  .field { margin-bottom:12px; }
+  .field-lbl { display:block; font-size:11px; font-weight:600; color:var(--t3); margin-bottom:4px; }
+  .input, .select, .textarea {
+    width:100%; padding:8px 10px; background:var(--bgI); border:1px solid var(--bd);
+    border-radius:6px; color:var(--t); font-family:inherit; font-size:13px;
+  }
+  .input:focus, .select:focus, .textarea:focus { outline:none; border-color:var(--ac); }
+  .drop-zone {
+    border:2px dashed var(--bd); border-radius:8px; padding:30px;
+    text-align:center; color:var(--t2); cursor:pointer; transition:all .15s;
+  }
+  .drop-zone:hover { border-color:var(--ac); color:var(--ac); }
+  .drop-zone.over { border-color:var(--ac); background:var(--acL); }
+  .drop-zone .ic { font-size:32px; margin-bottom:6px; }
+  .preview-wrap { background:#fff; border-radius:6px; padding:8px; min-height:240px; display:flex; align-items:center; justify-content:center; position:relative; }
+  .preview-wrap canvas { max-width:100%; height:auto; }
+  .parts-list { max-height:380px; overflow-y:auto; padding-right:4px; }
+  .part-row {
+    display:flex; gap:8px; align-items:center;
+    padding:8px; background:var(--bg3); border:1px solid var(--bd); border-radius:6px;
+    margin-bottom:6px;
+  }
+  .part-row .ic { width:24px; text-align:center; flex-shrink:0; }
+  .part-row .info { flex:1; font-size:11px; color:var(--t3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .part-row .name-input {
+    flex:1.2; padding:6px 8px; background:var(--bgI); border:1px solid var(--bd);
+    border-radius:4px; color:var(--t); font-size:12px;
+  }
+  .part-row .focus-btn {
+    background:var(--bgI); border:1px solid var(--bd); color:var(--t2);
+    padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;
+  }
+  .part-row .focus-btn:hover { color:var(--ac); border-color:var(--ac); }
+  .part-row.highlight { box-shadow: inset 0 0 0 2px var(--ac); }
+  .saved-list { margin-top:16px; }
+  .saved-row {
+    display:flex; gap:10px; align-items:center;
+    padding:10px; background:var(--bg3); border:1px solid var(--bd); border-radius:6px;
+    margin-bottom:6px;
+  }
+  .saved-row .thumb { width:48px; height:48px; background:#fff; border-radius:4px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+  .saved-row .thumb img { max-width:100%; max-height:100%; }
+  .saved-row .meta { flex:1; min-width:0; }
+  .saved-row .meta .nm { font-weight:600; }
+  .saved-row .meta .sub { font-size:11px; color:var(--t3); }
+  .saved-row .acts { display:flex; gap:4px; }
+  .gate {
+    position:fixed; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; z-index:200;
+  }
+  .gate-box {
+    background:var(--bg2); border:1px solid var(--bd); border-radius:10px; padding:24px;
+    width:90%; max-width:340px; text-align:center;
+  }
+  .gate-box h2 { margin:0 0 16px 0; font-size:16px; }
+  .gate-box .input { margin-bottom:12px; }
+  .gate-box .err { color:var(--rd); font-size:11px; min-height:14px; }
+  .toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--gn); color:#fff; padding:10px 18px; border-radius:6px; font-size:13px;
+    z-index:300; opacity:0; transition:opacity .25s;
+  }
+  .toast.show { opacity:1; }
+  .toast.err { background:var(--rd); }
+  .empty { text-align:center; padding:30px; color:var(--t3); font-size:12px; }
+  .helper { font-size:11px; color:var(--t3); line-height:1.5; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .grow { flex:1; }
+  .pill { display:inline-block; background:var(--bg3); border:1px solid var(--bd); padding:2px 8px; border-radius:10px; font-size:10px; color:var(--t2); margin-right:4px; }
+  .preview-stat { font-size:10px; color:var(--t3); margin-top:6px; }
+  /* ★ 一括アップロード キュー */
+  .bulk-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px; }
+  .bulk-card {
+    background:var(--bg3); border:1px solid var(--bd); border-radius:8px; padding:8px;
+    display:flex; flex-direction:column; gap:6px; position:relative;
+  }
+  .bulk-card .pv {
+    aspect-ratio:1; background:#fff; border-radius:4px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .bulk-card .pv img { max-width:100%; max-height:100%; object-fit:contain; }
+  .bulk-card .name-in, .bulk-card .cat-in {
+    width:100%; padding:5px 8px; background:var(--bgI); border:1px solid var(--bd);
+    border-radius:4px; color:var(--t); font-family:inherit; font-size:11px;
+  }
+  .bulk-card .x-btn {
+    position:absolute; top:4px; right:4px;
+    width:22px; height:22px; border-radius:50%; background:rgba(239,68,68,.8); color:#fff;
+    border:none; cursor:pointer; font-size:13px; line-height:1;
+  }
+  .bulk-card .x-btn:hover { background:var(--rd); }
+  /* ★ 一覧の複数選択 */
+  .saved-row .sel-ck {
+    width:20px; height:20px; flex-shrink:0; cursor:pointer; accent-color:var(--ac);
+  }
+  .saved-row.sel { background:var(--acL); border-color:var(--ac); }
+  .multi-bar {
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    background:var(--bg3); border:1px solid var(--ac); border-radius:6px;
+    padding:8px 12px; margin-bottom:8px;
+  }
+  .multi-bar .lbl { color:var(--ac); font-weight:700; font-size:12px; }
+</style>
+</head>
+<body>
+
+<!-- パスワードゲート -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <h2>🔐 社内専用</h2>
+    <div class="helper" style="margin-bottom:14px">パスワードを入力してください</div>
+    <input type="password" class="input" id="gatePw" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkGate()">
+    <div class="err" id="gateErr"></div>
+    <button class="btn primary" style="width:100%;margin-top:8px" onclick="checkGate()">入る</button>
+  </div>
+</div>
+
+<header>
+  <div class="h-title">📂 ココロ工房 テンプレート管理 <span class="badge">社内専用</span></div>
+  <div class="h-actions">
+    <button class="btn" onclick="syncFromCloud(true)" title="GitHub から最新を取得 (上書き)">☁⬇ 取得</button>
+    <button class="btn" onclick="uploadAllToCloud()" title="ローカル全データを GitHub にアップロード" style="background:#7c3aed;color:#fff">☁⬆ アップロード</button>
+    <button class="btn" onclick="exportData()">⬇ エクスポート</button>
+    <button class="btn" onclick="document.getElementById('importFile').click()">⬆ インポート</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this.files[0])">
+    <button class="btn" onclick="window.open(_studioUrl(),'_blank')">🎨 スタジオを開く</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab act" data-tab="tpl" onclick="switchTab('tpl')">📐 テンプレート</button>
+  <button class="tab" data-tab="clip" onclick="switchTab('clip')">✨ クリップアート</button>
+  <button class="tab" data-tab="cat" onclick="switchTab('cat')">🏷 カテゴリ管理</button>
+</div>
+
+<main>
+  <!-- ============= テンプレート タブ ============= -->
+  <div id="tabTpl">
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <div class="panel-title">① SVG をアップロード</div>
+          <div class="drop-zone" id="dropTpl" onclick="document.getElementById('fileTpl').click()">
+            <div class="ic">📁</div>
+            <div>SVG ファイルをドロップ または クリックして選択</div>
+            <div class="helper" style="margin-top:6px">Adobe Illustrator から書き出した SVG を そのまま読み込めます</div>
+          </div>
+          <input type="file" id="fileTpl" accept=".svg,image/svg+xml" style="display:none" onchange="loadSvgFile(this.files[0],'tpl')">
+        </div>
+
+        <div class="panel" id="tplMetaPanel" style="display:none">
+          <div class="panel-title">② 基本情報</div>
+          <div class="field">
+            <label class="field-lbl">テンプレート名 (必須)</label>
+            <input type="text" class="input" id="tplName" placeholder="例: テニスクラブロゴ">
+          </div>
+          <div class="row">
+            <div class="field grow">
+              <label class="field-lbl">カテゴリ</label>
+              <input type="text" class="input" id="tplCat" placeholder="例: スポーツ" list="catList">
+              <datalist id="catList">
+                <option>スポーツ</option><option>企業・法人</option><option>学校</option>
+                <option>イベント</option><option>飲食</option><option>団体</option>
+                <option>カジュアル</option><option>ファッション</option><option>アウトドア</option>
+                <option>ウェルネス</option>
+              </datalist>
+            </div>
+            <div class="field grow">
+              <label class="field-lbl">スタイル</label>
+              <input type="text" class="input" id="tplStyle" placeholder="例: クラシック" list="styleList">
+              <datalist id="styleList">
+                <option>クラシック</option><option>モダン</option><option>ポップ</option><option>ヴィンテージ</option>
+                <option>ミニマル</option><option>ボールド</option><option>エンブレム</option><option>ナチュラル</option>
+              </datalist>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-lbl">タグ (カンマ区切り)</label>
+            <input type="text" class="input" id="tplTags" placeholder="例: ロゴ, テキスト">
+          </div>
+          <input type="hidden" id="tplThumb" value="">
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" id="tplPreviewPanel" style="display:none">
+          <div class="panel-title">プレビュー</div>
+          <div class="preview-wrap" id="tplPreviewWrap">
+            <canvas id="tplPreview" width="400" height="300"></canvas>
+          </div>
+          <div class="preview-stat" id="tplPreviewStat"></div>
+        </div>
+
+        <div class="panel" id="tplPartsPanel" style="display:none">
+          <div class="panel-title">③ パーツ名の設定 (お客様に分かりやすく)</div>
+          <div class="helper" style="margin-bottom:8px">各パーツに「店名」「メイン色」のような分かりやすい名前を付けてください。 空欄なら自動採番。</div>
+          <div class="parts-list" id="tplPartsList"></div>
+        </div>
+
+        <div class="panel" id="tplSavePanel" style="display:none">
+          <button class="btn primary" style="width:100%" onclick="saveTpl()">💾 このテンプレートを保存</button>
+          <button class="btn" style="width:100%;margin-top:6px" onclick="resetTplForm()">クリア</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">登録済みテンプレート (<span id="tplCount">0</span>件)</div>
+      <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">
+        <input type="text" class="input" id="tplSearch" placeholder="🔍 名前で検索" style="flex:1;min-width:140px" oninput="renderSavedTpl()">
+        <select class="select" id="tplCatFilter" style="flex:0 0 140px" onchange="renderSavedTpl()">
+          <option value="">すべてのカテゴリ</option>
+        </select>
+        <select class="select" id="tplSort" style="flex:0 0 140px" onchange="renderSavedTpl()">
+          <option value="newest">新着順</option>
+          <option value="oldest">古い順</option>
+          <option value="name">名前順 (あ→ん)</option>
+          <option value="cat">カテゴリ順</option>
+        </select>
+      </div>
+      <div id="tplSavedList"></div>
+    </div>
+  </div>
+
+  <!-- ============= クリップアート タブ ============= -->
+  <div id="tabClip" style="display:none">
+
+    <!-- ★ まとめてアップロード (複数ファイル) -->
+    <div class="panel" style="border-color:rgba(245,158,11,.4)">
+      <div class="panel-title">📦 まとめてアップロード (複数 SVG 一括登録)</div>
+      <div class="drop-zone" id="dropClipBulk" onclick="document.getElementById('fileClipBulk').click()" style="padding:18px">
+        <div class="ic">📦</div>
+        <div>複数の SVG をドロップ または クリックで一気に選択</div>
+        <div class="helper" style="margin-top:6px">複数選択でき、 後でカテゴリ・名前をまとめて編集・保存できます</div>
+      </div>
+      <input type="file" id="fileClipBulk" accept=".svg,image/svg+xml" multiple style="display:none" onchange="loadBulkClips(this.files)">
+
+      <div id="bulkClipPanel" style="display:none;margin-top:12px">
+        <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">
+          <div class="grow">
+            <label class="field-lbl" style="margin-bottom:2px">📁 一括設定: 全アイテムに適用するカテゴリ</label>
+            <input type="text" class="input" id="bulkClipDefCat" placeholder="例: ダンス" list="clipCatList">
+          </div>
+          <button class="btn" onclick="bulkApplyCat('clip')" style="margin-top:14px">↓ 全アイテムに適用</button>
+        </div>
+        <div id="bulkClipList"></div>
+        <div class="row" style="margin-top:12px;gap:6px">
+          <button class="btn primary grow" onclick="bulkSaveClips()">💾 全アイテムを一括保存 (<span id="bulkClipCount">0</span>)</button>
+          <button class="btn" onclick="bulkClearClips()">クリア</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <div class="panel-title">① 個別アップロード (1ファイルずつ詳細設定)</div>
+          <div class="drop-zone" id="dropClip" onclick="document.getElementById('fileClip').click()">
+            <div class="ic">✨</div>
+            <div>クリップアート SVG をドロップ または クリック</div>
+          </div>
+          <input type="file" id="fileClip" accept=".svg,image/svg+xml" style="display:none" onchange="loadSvgFile(this.files[0],'clip')">
+        </div>
+
+        <div class="panel" id="clipMetaPanel" style="display:none">
+          <div class="panel-title">② 情報</div>
+          <div class="field">
+            <label class="field-lbl">名前 (必須)</label>
+            <input type="text" class="input" id="clipName" placeholder="例: ライオン">
+          </div>
+          <div class="field">
+            <label class="field-lbl">カテゴリ</label>
+            <input type="text" class="input" id="clipCat" placeholder="例: 動物" list="clipCatList">
+            <datalist id="clipCatList">
+              <option>スポーツ</option><option>動物</option><option>装飾</option>
+              <option>季節</option><option>食べ物</option><option>乗り物</option>
+              <option>シンボル</option>
+            </datalist>
+          </div>
+          <input type="hidden" id="clipThumb" value="">
+        </div>
+
+        <div class="panel" id="clipSavePanel" style="display:none">
+          <button class="btn primary" style="width:100%" onclick="saveClip()">💾 このクリップアートを保存</button>
+          <button class="btn" style="width:100%;margin-top:6px" onclick="resetClipForm()">クリア</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" id="clipPreviewPanel" style="display:none">
+          <div class="panel-title">プレビュー</div>
+          <div class="preview-wrap" id="clipPreviewWrap">
+            <canvas id="clipPreview" width="400" height="300"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">登録済みクリップアート (<span id="clipCount">0</span>件)</div>
+      <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">
+        <input type="text" class="input" id="clipSearch" placeholder="🔍 名前で検索" style="flex:1;min-width:140px" oninput="renderSavedClip()">
+        <select class="select" id="clipCatFilter" style="flex:0 0 140px" onchange="renderSavedClip()">
+          <option value="">すべてのカテゴリ</option>
+        </select>
+        <select class="select" id="clipSort" style="flex:0 0 140px" onchange="renderSavedClip()">
+          <option value="newest">新着順</option>
+          <option value="oldest">古い順</option>
+          <option value="name">名前順 (あ→ん)</option>
+          <option value="cat">カテゴリ順</option>
+        </select>
+      </div>
+      <div id="clipSavedList"></div>
+    </div>
+  </div>
+
+  <!-- ============= カテゴリ管理 タブ ============= -->
+  <div id="tabCat" style="display:none">
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <div class="panel-title">📐 テンプレート カテゴリ</div>
+          <div class="row" style="margin-bottom:10px">
+            <input type="text" class="input grow" id="newTplCat" placeholder="新しいカテゴリ名" onkeydown="if(event.key==='Enter')addCat('tpl')">
+            <button class="btn primary" onclick="addCat('tpl')">＋ 追加</button>
+          </div>
+          <div id="catTplList"></div>
+          <div class="helper" style="margin-top:8px">使用中: 削除すると 該当テンプレートのカテゴリが「その他」 に変わります</div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-title">✨ クリップアート カテゴリ</div>
+          <div class="row" style="margin-bottom:10px">
+            <input type="text" class="input grow" id="newClipCat" placeholder="新しいカテゴリ名" onkeydown="if(event.key==='Enter')addCat('clip')">
+            <button class="btn primary" onclick="addCat('clip')">＋ 追加</button>
+          </div>
+          <div id="catClipList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- fabric.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script>
+'use strict';
+
+// ===== パスワードゲート =====
+const ADMIN_PASSWORD = 'cocoro2026';   // ★ 必要に応じて変更
+function checkGate(){
+  const pw = document.getElementById('gatePw').value;
+  if(pw === ADMIN_PASSWORD){
+    sessionStorage.setItem('cocoro_admin_ok', '1');
+    document.getElementById('gate').style.display = 'none';
+    initAdmin();
+  } else {
+    document.getElementById('gateErr').textContent = 'パスワードが違います';
+    document.getElementById('gatePw').value = '';
+  }
+}
+if(sessionStorage.getItem('cocoro_admin_ok') === '1'){
+  document.getElementById('gate').style.display = 'none';
+  setTimeout(initAdmin, 0);
+}
+
+// ===== 関連ページ URL (本番/ローカル切替) =====
+function _studioUrl(){
+  if(window.location.hostname === '802eve.github.io'){
+    return 'https://802eve.github.io/cocoro-3d-viewer/studio/';
+  }
+  return 'design-studio.html';
+}
+
+// ===== Phase 2 (2026-05-08): GitHub クラウド永続化 =====
+// GAS デプロイ後に下記 URL を更新してください。
+// 「Anyone」 アクセス可能にデプロイし、 Script Properties に GITHUB_PAT を登録
+const CLOUD_GAS_URL = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
+const GITHUB_PAGES_BASE = 'https://802eve.github.io/cocoro-3d-viewer/social_design';
+const CLOUD_TIMEOUT_MS = 300000;   // 5分 (大量アップロード対応)
+const CLOUD_BATCH_SIZE = 8;        // 1リクエストあたりの最大件数 (timeout 回避)
+let _cloudEnabled = true;   // GAS URL が設定されてれば true、 動作不可なら false
+
+// クラウド連携: fetch no-cors POST 方式 (CORS preflight 回避)
+// ★ 2026-05-08 fix: iframe + form submit が ブラウザで「File not found」 になる挙動を回避。
+//   no-cors mode で POST → response は読めないが GAS には確実に届く。
+//   完了確認は admin_list を再 fetch (JSONP, GET) で件数チェック。
+function _cloudSendJSON(action, payload, onResp) {
+  if (!_cloudEnabled) { if (onResp) onResp({ ok: false, error: 'cloud disabled' }); return; }
+  const start = Date.now();
+  fetch(CLOUD_GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: action, payload: payload || {} })
+  })
+  .then(() => {
+    // no-cors は response.body / status が読めない (status=0, type=opaque)
+    // ただし fetch 自体が成功 = サーバまで届いた
+    if (typeof onResp === 'function') onResp({ ok: true, elapsedMs: Date.now() - start });
+  })
+  .catch(e => {
+    if (typeof onResp === 'function') onResp({ ok: false, error: 'fetch failed: ' + e.message });
+  });
+  setTimeout(() => {
+    // タイムアウト後も Promise が未解決なら強制 onResp ⚠ ただし通常 fetch は network エラーで catch される
+  }, CLOUD_TIMEOUT_MS);
+}
+
+// クラウド: 一覧取得 (JSONP)
+function cloudFetchList(cb) {
+  if (!_cloudEnabled) { if (cb) cb({ ok: false, error: 'cloud disabled' }); return; }
+  const cbName = '_cocoroJsonpCb_' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+  let timer = null;
+  window[cbName] = function(resp) {
+    delete window[cbName];
+    if (timer) clearTimeout(timer);
+    if (s) { try { s.remove(); } catch(_){} }
+    if (typeof cb === 'function') cb(resp);
+  };
+  const s = document.createElement('script');
+  s.src = CLOUD_GAS_URL + '?action=admin_list&callback=' + cbName;
+  s.onerror = () => {
+    delete window[cbName];
+    try { s.remove(); } catch(_){}
+    if (typeof cb === 'function') cb({ ok: false, error: 'JSONP load error' });
+  };
+  document.body.appendChild(s);
+  timer = setTimeout(() => {
+    if (window[cbName]) {
+      delete window[cbName];
+      try { s.remove(); } catch(_){}
+      if (typeof cb === 'function') cb({ ok: false, error: 'timeout (' + (CLOUD_TIMEOUT_MS/1000) + 's)' });
+    }
+  }, CLOUD_TIMEOUT_MS);
+}
+
+// CRUD ヘルパー
+function cloudSaveItem(type, item, cb)     { _cloudSendJSON('admin_save_item', { type, item }, cb); }
+function cloudDeleteItem(type, id, cb)     { _cloudSendJSON('admin_delete_item', { type, id }, cb); }
+function cloudSaveCategories(cats, cb)     { _cloudSendJSON('admin_save_categories', { categories: cats }, cb); }
+function cloudBulkSave(type, items, cb)    { _cloudSendJSON('admin_bulk_save', { type, items }, cb); }
+
+// SVG content を GitHub Pages から fetch して dataUri 化 (起動時の同期で使用)
+// ★ 既存仕様: cliparts/templates の SVG content は `svg` フィールドに格納される
+async function fetchSvgAsDataUri(svgPath) {
+  const url = GITHUB_PAGES_BASE + '/' + svgPath + '?_=' + Date.now();
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('SVG fetch failed: ' + svgPath + ' (' + res.status + ')');
+  const text = await res.text();
+  const b64 = btoa(unescape(encodeURIComponent(text)));
+  return { svg: text, dataUri: 'data:image/svg+xml;base64,' + b64 };
+}
+
+// 起動時: クラウドから最新を取得して localStorage を更新
+async function syncFromCloud(showToast) {
+  if (!_cloudEnabled) return false;
+  return new Promise((resolve) => {
+    if (showToast) toast('☁ クラウドから取得中...');
+    cloudFetchList(async (resp) => {
+      if (!resp || !resp.ok) {
+        if (showToast) toast('☁ 取得失敗: ' + (resp && resp.error || 'unknown'), true);
+        resolve(false); return;
+      }
+      const cloudData = resp.data || {};
+      const cloudTpl = cloudData.templates || [];
+      const cloudClip = cloudData.cliparts || [];
+      const cloudCats = cloudData.categories || { tpl: [], clip: [] };
+      // 既存ローカルから dataUri を引き継ぎ (再 fetch を最小化)
+      const localData = loadAll();
+      const localTplMap = {};
+      (localData.templates || []).forEach(it => { if (it.id) localTplMap[it.id] = it; });
+      const localClipMap = {};
+      (localData.cliparts || []).forEach(it => { if (it.id) localClipMap[it.id] = it; });
+
+      // ★ 2026-05-08 fix: ローカルに svg があれば優先流用 (GitHub Pages 反映遅延で
+      //   SVG fetch が失敗しても、 ローカルの svg を消さない)。
+      //   ローカルにない場合のみ GitHub Pages から fetch。 fetch 失敗時は meta だけ保持。
+      //   既存仕様: フィールド名は `svg` (saveTpl/saveClip がそう書いている)
+      const fetchPromises = [];
+      const merged = { templates: [], cliparts: [] };
+      cloudTpl.forEach(meta => {
+        const local = localTplMap[meta.id];
+        if (local && local.svg) {
+          merged.templates.push({ ...meta, svg: local.svg, dataUri: local.dataUri || '' });
+        } else {
+          const m = { ...meta };
+          merged.templates.push(m);
+          if (meta.svgPath) {
+            fetchPromises.push(
+              fetchSvgAsDataUri(meta.svgPath)
+                .then(r => { m.svg = r.svg; m.dataUri = r.dataUri; })
+                .catch(e => { console.warn('SVG fetch fail (tpl)', meta.id, e); })
+            );
+          }
+        }
+      });
+      cloudClip.forEach(meta => {
+        const local = localClipMap[meta.id];
+        if (local && local.svg) {
+          merged.cliparts.push({ ...meta, svg: local.svg, dataUri: local.dataUri || '' });
+        } else {
+          const m = { ...meta };
+          merged.cliparts.push(m);
+          if (meta.svgPath) {
+            fetchPromises.push(
+              fetchSvgAsDataUri(meta.svgPath)
+                .then(r => { m.svg = r.svg; m.dataUri = r.dataUri; })
+                .catch(e => { console.warn('SVG fetch fail (clip)', meta.id, e); })
+            );
+          }
+        }
+      });
+      // ★ 2026-05-08: ローカルにあって GitHub にない item も保持 (アップロード予定として)
+      Object.keys(localTplMap).forEach(id => {
+        if (!cloudTpl.find(m => m.id === id) && localTplMap[id].svg) {
+          merged.templates.push(localTplMap[id]);
+        }
+      });
+      Object.keys(localClipMap).forEach(id => {
+        if (!cloudClip.find(m => m.id === id) && localClipMap[id].svg) {
+          merged.cliparts.push(localClipMap[id]);
+        }
+      });
+      await Promise.all(fetchPromises);
+      // localStorage 上書き
+      saveAll(merged);
+      saveCats(cloudCats);
+      // UI 再描画
+      try { renderSavedTpl && renderSavedTpl(); } catch(_){}
+      try { renderSavedClip && renderSavedClip(); } catch(_){}
+      try { refreshCatDatalists && refreshCatDatalists(); } catch(_){}
+      if (showToast) toast('☁ 同期完了 (テンプレ ' + cloudTpl.length + ' / クリップ ' + cloudClip.length + ')');
+      resolve(true);
+    });
+  });
+}
+
+// ★ 2026-05-08: アップロード進捗パネル — 開始時に右下にフローティング表示
+function _cloudShowProgress(){
+  let modal = document.getElementById('_cloudProgressPanel');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = '_cloudProgressPanel';
+    modal.innerHTML =
+      '<div class="cpHd">'
+      +   '<span class="cpTtl">☁ クラウドへアップロード</span>'
+      +   '<button type="button" class="cpClose" title="閉じる">×</button>'
+      + '</div>'
+      + '<div class="cpProg">'
+      +   '<div class="cpBar"><div class="cpFill"></div></div>'
+      +   '<div class="cpCnt">準備中...</div>'
+      + '</div>'
+      + '<div class="cpLog"></div>';
+    modal.style.cssText =
+      'position:fixed; right:20px; bottom:20px; width:380px; max-height:70vh;'
+      + ' background:var(--bg2); border:2px solid var(--ac); border-radius:12px;'
+      + ' box-shadow:0 12px 40px rgba(0,0,0,.5); z-index:9999;'
+      + ' color:var(--t); display:flex; flex-direction:column;'
+      + ' font:13px/1.5 var(--ff); overflow:hidden;';
+    // 内部 CSS をインラインで追加
+    const style = document.createElement('style');
+    style.textContent =
+      '#_cloudProgressPanel .cpHd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--bd)}'
+    + '#_cloudProgressPanel .cpTtl{font-weight:700;color:var(--ac)}'
+    + '#_cloudProgressPanel .cpClose{background:transparent;border:none;color:var(--t2);cursor:pointer;font-size:18px;width:24px;height:24px;border-radius:4px}'
+    + '#_cloudProgressPanel .cpClose:hover{background:var(--bg);color:var(--t)}'
+    + '#_cloudProgressPanel .cpProg{padding:12px 14px;border-bottom:1px solid var(--bd)}'
+    + '#_cloudProgressPanel .cpBar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-bottom:6px}'
+    + '#_cloudProgressPanel .cpFill{height:100%;background:linear-gradient(90deg,var(--ac),var(--acH));width:0%;transition:width .3s ease}'
+    + '#_cloudProgressPanel .cpCnt{font-size:12px;color:var(--t2);text-align:right}'
+    + '#_cloudProgressPanel .cpLog{padding:8px 14px;overflow-y:auto;flex:1;min-height:80px;max-height:40vh;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}'
+    + '#_cloudProgressPanel .cpLine{padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.05)}'
+    + '#_cloudProgressPanel .cpLine.ok{color:var(--gn)}'
+    + '#_cloudProgressPanel .cpLine.err{color:var(--rd)}'
+    + '#_cloudProgressPanel .cpLine.info{color:var(--t2)}'
+    + '#_cloudProgressPanel.done .cpFill{background:var(--gn)}'
+    + '#_cloudProgressPanel.fail .cpFill{background:var(--rd)}';
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+    modal.querySelector('.cpClose').addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+  }
+  modal.classList.remove('done', 'fail');
+  modal.style.display = 'flex';
+  modal.querySelector('.cpLog').innerHTML = '';
+  modal.querySelector('.cpFill').style.width = '0%';
+  modal.querySelector('.cpCnt').textContent = '準備中...';
+  return {
+    log: (msg, kind) => {
+      const log = modal.querySelector('.cpLog');
+      const line = document.createElement('div');
+      line.className = 'cpLine' + (kind ? ' ' + kind : '');
+      line.textContent = msg;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    },
+    progress: (done, total) => {
+      const pct = total ? Math.round(done / total * 100) : 0;
+      modal.querySelector('.cpFill').style.width = pct + '%';
+      modal.querySelector('.cpCnt').textContent = done + ' / ' + total + ' 件 (' + pct + '%)';
+    },
+    finish: (msg, isErr) => {
+      modal.classList.add(isErr ? 'fail' : 'done');
+      modal.querySelector('.cpCnt').textContent = msg || '完了';
+      const log = modal.querySelector('.cpLog');
+      const line = document.createElement('div');
+      line.className = 'cpLine ' + (isErr ? 'err' : 'ok');
+      line.style.cssText = 'padding:6px 0;font-weight:700;font-size:13px';
+      line.textContent = (isErr ? '✗ ' : '✓ ') + msg;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    },
+  };
+}
+
+// localStorage 全体を bulk アップロード (移行用)
+async function uploadAllToCloud() {
+  if (!_cloudEnabled) { toast('クラウド未設定', true); return; }
+  const data = loadAll();
+  const cats = loadCats();
+  // ★ 既存仕様: SVG content は `svg` フィールドに保存される
+  const allTpl = (data.templates || []).filter(it => it.id && it.svg);
+  const allClip = (data.cliparts || []).filter(it => it.id && it.svg);
+
+  // ★ 進捗パネル表示
+  const ui = _cloudShowProgress();
+  ui.log('ローカル: テンプレ ' + allTpl.length + ' + クリップ ' + allClip.length + ' = ' + (allTpl.length + allClip.length) + ' 件', 'info');
+  ui.log('▶ サーバー状態を確認中...', 'info');
+
+  // ★ 2026-05-08: 差分アップロード — サーバーと内容が同じ item はスキップ
+  const serverResp = await new Promise(r => cloudFetchList(r));
+  const serverTplMap = {};
+  const serverClipMap = {};
+  if (serverResp && serverResp.ok && serverResp.data) {
+    (serverResp.data.templates || []).forEach(t => { serverTplMap[t.id] = t.updated || ''; });
+    (serverResp.data.cliparts || []).forEach(c => { serverClipMap[c.id] = c.updated || ''; });
+  } else {
+    ui.log('  サーバー取得失敗 → 全件送信モード', 'err');
+  }
+  const _toMs = v => {
+    if (!v) return 0;
+    if (typeof v === 'number') return v;
+    const t = new Date(v).getTime();
+    return isNaN(t) ? 0 : t;
+  };
+  const needUpload = (it, serverMap) => {
+    const sUpd = serverMap[it.id];
+    if (!sUpd) return true;        // サーバにない → 新規
+    return _toMs(it.updated) > _toMs(sUpd);  // ローカル更新の方が新しい
+  };
+  const tplItems = allTpl.filter(it => needUpload(it, serverTplMap));
+  const clipItems = allClip.filter(it => needUpload(it, serverClipMap));
+  const skipped = (allTpl.length - tplItems.length) + (allClip.length - clipItems.length);
+  const total = tplItems.length + clipItems.length;
+
+  if (skipped > 0) ui.log('  スキップ (変更なし): ' + skipped + ' 件', 'info');
+  if (total === 0) {
+    ui.log('  アップロード対象なし', 'ok');
+    ui.finish('全て最新 (' + allTpl.length + allClip.length + ' 件)');
+    toast('☁ 全て最新 (' + (allTpl.length + allClip.length) + ' 件)');
+    return;
+  }
+  ui.log('  対象: テンプレ ' + tplItems.length + ' + クリップ ' + clipItems.length + ' = ' + total + ' 件', 'info');
+  ui.log('1 バッチあたり ' + CLOUD_BATCH_SIZE + ' 件 (timeout 回避)', 'info');
+  ui.progress(0, total);
+
+  const sendBulk = (type, items) => new Promise((resolve, reject) => {
+    if (!items.length) { resolve({ ok: true, count: 0 }); return; }
+    cloudBulkSave(type, items, resp => {
+      if (resp && resp.ok) resolve(resp.data); else reject(resp && resp.error || 'bulk save failed');
+    });
+  });
+  const sendCats = () => new Promise((resolve, reject) => {
+    cloudSaveCategories(cats, resp => {
+      if (resp && resp.ok) resolve(resp.data); else reject(resp && resp.error || 'cats save failed');
+    });
+  });
+
+  let doneCnt = 0;
+  const sendBatched = async (type, items) => {
+    for (let i = 0; i < items.length; i += CLOUD_BATCH_SIZE) {
+      const batch = items.slice(i, i + CLOUD_BATCH_SIZE);
+      const lo = i + 1, hi = Math.min(i + batch.length, items.length);
+      ui.log('▶ ' + type + ' ' + lo + '〜' + hi + ' / ' + items.length + ' 送信中...', 'info');
+      const t0 = Date.now();
+      await sendBulk(type, batch);
+      const ms = Date.now() - t0;
+      doneCnt += batch.length;
+      ui.log('  ✓ ' + batch.length + ' 件 (' + ms + 'ms) 完了', 'ok');
+      ui.progress(doneCnt, total);
+    }
+  };
+
+  try {
+    if (tplItems.length) await sendBatched('template', tplItems);
+    if (clipItems.length) await sendBatched('clipart', clipItems);
+    ui.log('▶ カテゴリ保存中...', 'info');
+    await sendCats();
+    ui.log('  ✓ カテゴリ完了', 'ok');
+    ui.finish('アップロード完了 (' + total + ' 件)');
+    toast('☁ アップロード完了 (' + total + ' 件)');
+  } catch (e) {
+    ui.log('  ✗ ' + e, 'err');
+    ui.finish('アップロード失敗: ' + e, true);
+    toast('☁ アップロード失敗', true);
+    console.error('uploadAllToCloud failed:', e);
+  }
+}
+window.uploadAllToCloud = uploadAllToCloud;
+window.syncFromCloud = syncFromCloud;
+
+// ===== ストレージ =====
+const STORAGE_KEY = 'cocoro_admin_templates';
+const CAT_KEY = 'cocoro_admin_cats';
+const DEFAULT_TPL_CATS = ['スポーツ','企業・法人','学校','イベント','飲食','団体','カジュアル','ファッション','アウトドア','ウェルネス'];
+const DEFAULT_CLIP_CATS = ['スポーツ','動物','装飾','季節','食べ物','乗り物','シンボル'];
+function loadAll(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"templates":[],"cliparts":[]}'); }
+  catch(e){ return {templates:[],cliparts:[]}; }
+}
+function saveAll(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function loadCats(){
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(CAT_KEY) || 'null'); } catch(e){}
+  if(!raw) raw = { tpl: DEFAULT_TPL_CATS.slice(), clip: DEFAULT_CLIP_CATS.slice() };
+  if(!Array.isArray(raw.tpl)) raw.tpl = DEFAULT_TPL_CATS.slice();
+  if(!Array.isArray(raw.clip)) raw.clip = DEFAULT_CLIP_CATS.slice();
+  return raw;
+}
+function saveCats(cats){
+  localStorage.setItem(CAT_KEY, JSON.stringify(cats));
+}
+// 使用中の cat も含めた完全リスト (datalist 用)
+function allCats(kind){
+  const cats = loadCats();
+  const stored = (kind === 'tpl' ? cats.tpl : cats.clip).slice();
+  const data = loadAll();
+  const usedField = (kind === 'tpl') ? 'templates' : 'cliparts';
+  (data[usedField] || []).forEach(it => {
+    if(it.cat && stored.indexOf(it.cat) < 0) stored.push(it.cat);
+  });
+  return [...new Set(stored)];
+}
+// 使用件数
+function catUsageCount(kind, catName){
+  const data = loadAll();
+  const list = (kind === 'tpl' ? data.templates : data.cliparts) || [];
+  return list.filter(it => it.cat === catName).length;
+}
+
+// ===== トースト =====
+function toast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  setTimeout(() => { t.className = 'toast'; }, 2400);
+}
+
+// ===== タブ切替 =====
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('act', b.dataset.tab === t));
+  document.getElementById('tabTpl').style.display  = (t === 'tpl' ? '' : 'none');
+  document.getElementById('tabClip').style.display = (t === 'clip' ? '' : 'none');
+}
+
+// ===== ドロップゾーン =====
+function setupDrop(zoneId, kind){
+  const z = document.getElementById(zoneId);
+  z.addEventListener('dragover', (e) => { e.preventDefault(); z.classList.add('over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('over'));
+  z.addEventListener('drop', (e) => {
+    e.preventDefault();
+    z.classList.remove('over');
+    const f = e.dataTransfer.files[0];
+    if(f) loadSvgFile(f, kind);
+  });
+}
+// ★ 一括アップロード ドロップ
+function setupBulkDrop(zoneId, kind){
+  const z = document.getElementById(zoneId);
+  if(!z) return;
+  z.addEventListener('dragover', (e) => { e.preventDefault(); z.classList.add('over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('over'));
+  z.addEventListener('drop', (e) => {
+    e.preventDefault();
+    z.classList.remove('over');
+    const files = e.dataTransfer.files;
+    if(files && files.length){
+      if(kind === 'clip') loadBulkClips(files);
+    }
+  });
+}
+
+// ===== 一括アップロード (クリップアート) =====
+let _bulkClipQueue = [];   // [{name, cat, svgText, dataUri}]
+
+function loadBulkClips(files){
+  if(!files || !files.length) return;
+  let processed = 0;
+  const filesArr = Array.from(files).filter(f =>
+    /svg/i.test(f.type) || /\.svg$/i.test(f.name)
+  );
+  if(!filesArr.length){ toast('SVG ファイルが見つかりません', true); return; }
+  filesArr.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const svgText = ev.target.result;
+      // data URI for preview
+      let dataUri = '';
+      try {
+        dataUri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgText)));
+      } catch(e){ console.warn('preview encode fail', e); }
+      _bulkClipQueue.push({
+        name: f.name.replace(/\.svg$/i, '').replace(/[-_]/g, ' '),
+        cat: '',
+        svgText,
+        dataUri,
+      });
+      processed++;
+      if(processed === filesArr.length){
+        document.getElementById('bulkClipPanel').style.display = '';
+        renderBulkClipList();
+      }
+    };
+    reader.readAsText(f);
+  });
+}
+
+function renderBulkClipList(){
+  const host = document.getElementById('bulkClipList');
+  if(!host) return;
+  document.getElementById('bulkClipCount').textContent = _bulkClipQueue.length;
+  if(!_bulkClipQueue.length){
+    host.innerHTML = '<div class="empty">アイテムがありません</div>';
+    document.getElementById('bulkClipPanel').style.display = 'none';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'bulk-grid';
+  _bulkClipQueue.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'bulk-card';
+    card.innerHTML =
+        '<button type="button" class="x-btn" title="削除" data-idx="' + idx + '">✕</button>'
+      + '<div class="pv">' + (item.dataUri ? '<img src="' + item.dataUri + '">' : '') + '</div>'
+      + '<input type="text" class="name-in" placeholder="名前" value="' + escapeHtml(item.name) + '" data-idx="' + idx + '" data-fld="name">'
+      + '<input type="text" class="cat-in" placeholder="カテゴリ" value="' + escapeHtml(item.cat) + '" data-idx="' + idx + '" data-fld="cat" list="clipCatList">';
+    grid.appendChild(card);
+  });
+  host.innerHTML = '';
+  host.appendChild(grid);
+  // event delegation
+  host.querySelectorAll('input.name-in, input.cat-in').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const i = parseInt(e.target.dataset.idx, 10);
+      const fld = e.target.dataset.fld;
+      if(_bulkClipQueue[i]){ _bulkClipQueue[i][fld] = e.target.value; }
+    });
+  });
+  host.querySelectorAll('.x-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const i = parseInt(e.target.dataset.idx, 10);
+      _bulkClipQueue.splice(i, 1);
+      renderBulkClipList();
+    });
+  });
+}
+
+function bulkApplyCat(kind){
+  if(kind !== 'clip') return;
+  const cat = (document.getElementById('bulkClipDefCat').value || '').trim();
+  if(!cat){ toast('カテゴリを入力してください', true); return; }
+  _bulkClipQueue.forEach(it => { it.cat = cat; });
+  renderBulkClipList();
+  toast('✓ ' + _bulkClipQueue.length + '件 にカテゴリ適用');
+}
+
+function bulkSaveClips(){
+  if(!_bulkClipQueue.length){ toast('保存するアイテムがありません', true); return; }
+  // 名前必須チェック
+  const noName = _bulkClipQueue.findIndex(it => !it.name || !it.name.trim());
+  if(noName >= 0){ toast('名前が空のアイテムがあります (' + (noName+1) + '番目)', true); return; }
+  const data = loadAll();
+  data.cliparts = data.cliparts || [];
+  const existingNames = new Set((data.cliparts || []).map(c => c.name));
+  // ★ 重複名のリスト化
+  const dupItems = _bulkClipQueue.filter(it => existingNames.has(it.name.trim()));
+  let dupMode = 'new';   // 'overwrite' | 'skip' | 'new'
+  if(dupItems.length){
+    const msg =
+      '同じ名前が既に登録されているアイテムが ' + dupItems.length + '件 あります:\n\n' +
+      dupItems.slice(0,5).map(it => '  ・' + it.name).join('\n') +
+      (dupItems.length > 5 ? '\n  …他 ' + (dupItems.length-5) + '件' : '') +
+      '\n\n' +
+      '[OK] 重複は上書き保存\n' +
+      '[キャンセル] 重複はスキップ (新規のみ保存)';
+    dupMode = confirm(msg) ? 'overwrite' : 'skip';
+  }
+  const cats = loadCats();
+  let savedCnt = 0, overwroteCnt = 0, skippedCnt = 0, newCats = 0;
+  const baseT = Date.now();
+  _bulkClipQueue.forEach((it, idx) => {
+    const name = it.name.trim();
+    const cat = it.cat.trim() || 'その他';
+    const dup = data.cliparts.find(c => c.name === name);
+    if(dup){
+      if(dupMode === 'skip'){ skippedCnt++; return; }
+      // overwrite
+      const i = data.cliparts.findIndex(c => c.id === dup.id);
+      if(i >= 0){
+        data.cliparts[i] = {
+          id: dup.id, name, cat, thumb: '',
+          svg: it.svgText,
+          created: dup.created, updated: baseT + idx
+        };
+        overwroteCnt++;
+      }
+    } else {
+      const id = 'clipA-' + (baseT + idx);
+      data.cliparts.unshift({
+        id, name, cat, thumb: '', svg: it.svgText, created: baseT + idx
+      });
+      savedCnt++;
+    }
+    if(cat !== 'その他' && cats.clip.indexOf(cat) < 0){
+      cats.clip.push(cat); newCats++;
+    }
+  });
+  saveAll(data);
+  if(newCats > 0){ saveCats(cats); refreshCatDatalists(); }
+  // 結果メッセージ
+  const parts = [];
+  if(savedCnt > 0)   parts.push('新規 ' + savedCnt + '件');
+  if(overwroteCnt>0) parts.push('上書き ' + overwroteCnt + '件');
+  if(skippedCnt > 0) parts.push('スキップ ' + skippedCnt + '件');
+  if(newCats > 0)    parts.push('新規カテゴリ ' + newCats);
+  toast('✓ ' + (parts.join(' / ') || '完了'));
+  bulkClearClips();
+  renderSavedClip();
+}
+
+function bulkClearClips(){
+  _bulkClipQueue = [];
+  document.getElementById('bulkClipPanel').style.display = 'none';
+  document.getElementById('bulkClipList').innerHTML = '';
+  document.getElementById('bulkClipDefCat').value = '';
+  document.getElementById('fileClipBulk').value = '';
+  document.getElementById('bulkClipCount').textContent = '0';
+}
+
+// ===== SVG ファイル読み込み =====
+let _curTplSvg = null;     // {svgText, partsInfo:[]}
+let _curClipSvg = null;
+let _curTplCanvas = null;
+let _curClipCanvas = null;
+
+function loadSvgFile(file, kind){
+  if(!file) return;
+  if(!/svg/i.test(file.type) && !/\.svg$/i.test(file.name)){
+    toast('SVG ファイルを選択してください', true);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const svgText = ev.target.result;
+    if(kind === 'tpl') loadTplSvg(svgText, file.name);
+    else loadClipSvg(svgText, file.name);
+  };
+  reader.readAsText(file);
+}
+
+// ===== テンプレート: SVG をパーツ分解して表示 =====
+function loadTplSvg(svgText, fileName){
+  fabric.loadSVGFromString(svgText, (objects, options) => {
+    // プレビュー描画
+    const cvs = new fabric.Canvas('tplPreview', { backgroundColor: '#ffffff' });
+    if(_curTplCanvas){ try { _curTplCanvas.dispose(); } catch(_){} }
+    _curTplCanvas = cvs;
+    const vbW = options.viewBoxWidth || options.width || 400;
+    const vbH = options.viewBoxHeight || options.height || 300;
+    const cw = 400, ch = 300;
+    const sc = Math.min((cw*0.9)/vbW, (ch*0.9)/vbH);
+    const ox = cw/2 - vbW*sc/2;
+    const oy = ch/2 - vbH*sc/2;
+
+    const partsInfo = [];
+    objects.forEach((obj, idx) => {
+      if(!obj) return;
+      const isText = obj.type === 'text' || obj.type === 'i-text';
+      // 自動名前 (id, data-name から取得)
+      const autoName = obj.id || obj['data-name'] || '';
+      const previewText = isText ? (obj.text || '').substring(0, 20) : '';
+      const fillHex = (typeof obj.fill === 'string') ? obj.fill : '';
+      partsInfo.push({
+        idx, type: obj.type,
+        isText,
+        autoId: obj.id || '',
+        autoName: autoName,
+        text: previewText,
+        fill: fillHex,
+        customName: autoName || (isText ? (previewText.substring(0,8) || 'テキスト') : 'パーツ ' + (idx+1)),
+        // 元 obj 参照 (プレビュー上のハイライト用)
+        _ref: null
+      });
+      // プレビュー配置
+      obj.set({
+        left: (obj.left||0) * sc + ox,
+        top:  (obj.top||0) * sc + oy,
+        scaleX: (obj.scaleX||1) * sc,
+        scaleY: (obj.scaleY||1) * sc,
+        selectable: true, hasControls: false,
+        borderColor: '#f59e0b', borderScaleFactor: 1.5
+      });
+      obj.setCoords();
+      cvs.add(obj);
+      partsInfo[partsInfo.length - 1]._ref = obj;
+    });
+    cvs.renderAll();
+
+    _curTplSvg = { svgText, partsInfo, vbW, vbH };
+
+    // UI 表示
+    document.getElementById('tplPreviewPanel').style.display = '';
+    document.getElementById('tplMetaPanel').style.display = '';
+    document.getElementById('tplPartsPanel').style.display = '';
+    document.getElementById('tplSavePanel').style.display = '';
+
+    // 名前自動推定 (ファイル名 → name)
+    if(!document.getElementById('tplName').value){
+      const base = fileName.replace(/\.svg$/i,'').replace(/[-_]/g,' ');
+      document.getElementById('tplName').value = base;
+    }
+    // 色サマリー
+    const colors = [...new Set(partsInfo.filter(p => p.fill).map(p => p.fill))];
+    document.getElementById('tplPreviewStat').textContent =
+      'パーツ数: ' + partsInfo.length + ' / 色数: ' + colors.length + ' / viewBox: ' + Math.round(vbW) + '×' + Math.round(vbH);
+
+    renderTplPartsList();
+  });
+}
+
+function renderTplPartsList(){
+  const host = document.getElementById('tplPartsList');
+  host.innerHTML = '';
+  if(!_curTplSvg) return;
+  _curTplSvg.partsInfo.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'part-row';
+    row.dataset.idx = String(i);
+
+    const ic = document.createElement('div');
+    ic.className = 'ic';
+    ic.textContent = p.isText ? '🔤' : (p.fill ? '⬛' : '◆');
+    if(p.fill){ ic.style.color = p.fill; ic.style.fontSize = '14px'; }
+    row.appendChild(ic);
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    if(p.isText){
+      info.innerHTML = '<span class="pill">テキスト</span>「' + escapeHtml(p.text) + '」';
+    } else {
+      info.innerHTML = '<span class="pill">' + p.type + '</span>' + (p.fill ? p.fill : '');
+    }
+    row.appendChild(info);
+
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'name-input';
+    inp.placeholder = 'パーツ名 (例: 店名)';
+    inp.value = p.customName || '';
+    inp.addEventListener('input', () => { p.customName = inp.value; });
+    row.appendChild(inp);
+
+    const fb = document.createElement('button');
+    fb.className = 'focus-btn';
+    fb.textContent = '👁';
+    fb.title = 'プレビューでハイライト';
+    fb.addEventListener('click', () => highlightPart(i));
+    row.appendChild(fb);
+
+    host.appendChild(row);
+  });
+}
+
+function highlightPart(i){
+  if(!_curTplSvg || !_curTplCanvas) return;
+  const p = _curTplSvg.partsInfo[i];
+  if(!p || !p._ref) return;
+  document.querySelectorAll('.part-row').forEach(r => r.classList.remove('highlight'));
+  document.querySelector('.part-row[data-idx="'+i+'"]').classList.add('highlight');
+  _curTplCanvas.setActiveObject(p._ref);
+  _curTplCanvas.requestRenderAll();
+  setTimeout(() => {
+    if(_curTplCanvas){ _curTplCanvas.discardActiveObject(); _curTplCanvas.requestRenderAll(); }
+  }, 1500);
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== テンプレート 保存 =====
+function saveTpl(){
+  if(!_curTplSvg){ toast('SVG を読み込んでください', true); return; }
+  const name = document.getElementById('tplName').value.trim();
+  if(!name){ toast('テンプレート名を入力してください', true); document.getElementById('tplName').focus(); return; }
+  const cat = document.getElementById('tplCat').value.trim() || 'その他';
+  const style = document.getElementById('tplStyle').value.trim() || '';
+  const thumb = document.getElementById('tplThumb').value.trim() || '🎨';
+  const tags = document.getElementById('tplTags').value.split(',').map(s => s.trim()).filter(Boolean);
+  const colors = [...new Set(_curTplSvg.partsInfo.filter(p => p.fill).map(p => p.fill))].slice(0,6);
+  // パーツ名 マッピング (idx → 名前)
+  const parts = {};
+  _curTplSvg.partsInfo.forEach(p => {
+    if(p.customName && p.customName.trim()){
+      parts[String(p.idx)] = p.customName.trim();
+    }
+  });
+
+  const data = loadAll();
+  data.templates = data.templates || [];
+  // ★ 重複名チェック
+  const dup = data.templates.find(t => t.name === name);
+  let id, mode = 'new';
+  if(dup){
+    const choice = confirm(
+      '同じ名前のテンプレート 「' + name + '」 が既に登録されています。\n\n' +
+      '[OK] 上書き保存する\n' +
+      '[キャンセル] 保存しない'
+    );
+    if(!choice) return;
+    id = dup.id;   // 同じ id を維持
+    mode = 'overwrite';
+  } else {
+    id = 'tplA-' + Date.now();
+  }
+  const item = {
+    id, name, cat, style, thumb, tags, colors,
+    svg: _curTplSvg.svgText, parts,
+    created: dup ? dup.created : Date.now(),
+    updated: Date.now()
+  };
+  if(mode === 'overwrite'){
+    const i = data.templates.findIndex(t => t.id === dup.id);
+    if(i >= 0) data.templates[i] = item;
+  } else {
+    data.templates.unshift(item);
+  }
+  saveAll(data);
+  // ★ 新カテゴリ自動登録
+  const cats = loadCats();
+  if(cat && cat !== 'その他' && cats.tpl.indexOf(cat) < 0){ cats.tpl.push(cat); saveCats(cats); refreshCatDatalists(); }
+  toast(mode === 'overwrite' ? '✓ 上書き保存: ' + name : '✓ 保存しました: ' + name);
+  resetTplForm();
+  renderSavedTpl();
+}
+
+function resetTplForm(){
+  _curTplSvg = null;
+  if(_curTplCanvas){ try { _curTplCanvas.dispose(); } catch(_){} _curTplCanvas = null; }
+  document.getElementById('tplName').value = '';
+  document.getElementById('tplCat').value = '';
+  document.getElementById('tplStyle').value = '';
+  document.getElementById('tplThumb').value = '';
+  document.getElementById('tplTags').value = '';
+  document.getElementById('tplPreviewPanel').style.display = 'none';
+  document.getElementById('tplMetaPanel').style.display = 'none';
+  document.getElementById('tplPartsPanel').style.display = 'none';
+  document.getElementById('tplSavePanel').style.display = 'none';
+  document.getElementById('tplPartsList').innerHTML = '';
+  document.getElementById('tplPreviewStat').textContent = '';
+  document.getElementById('fileTpl').value = '';
+}
+
+// ===== クリップアート 読み込み =====
+function loadClipSvg(svgText, fileName){
+  fabric.loadSVGFromString(svgText, (objects, options) => {
+    const cvs = new fabric.Canvas('clipPreview', { backgroundColor: '#ffffff' });
+    if(_curClipCanvas){ try { _curClipCanvas.dispose(); } catch(_){} }
+    _curClipCanvas = cvs;
+    const vbW = options.viewBoxWidth || options.width || 400;
+    const vbH = options.viewBoxHeight || options.height || 300;
+    const cw = 400, ch = 300;
+    const sc = Math.min((cw*0.9)/vbW, (ch*0.9)/vbH);
+    const ox = cw/2 - vbW*sc/2;
+    const oy = ch/2 - vbH*sc/2;
+    objects.forEach(obj => {
+      if(!obj) return;
+      obj.set({
+        left: (obj.left||0)*sc + ox,
+        top:  (obj.top||0)*sc + oy,
+        scaleX: (obj.scaleX||1)*sc,
+        scaleY: (obj.scaleY||1)*sc,
+        selectable: false, hasControls: false
+      });
+      cvs.add(obj);
+    });
+    cvs.renderAll();
+    _curClipSvg = { svgText, vbW, vbH };
+    document.getElementById('clipPreviewPanel').style.display = '';
+    document.getElementById('clipMetaPanel').style.display = '';
+    document.getElementById('clipSavePanel').style.display = '';
+    if(!document.getElementById('clipName').value){
+      document.getElementById('clipName').value = fileName.replace(/\.svg$/i,'').replace(/[-_]/g,' ');
+    }
+  });
+}
+function saveClip(){
+  if(!_curClipSvg){ toast('SVG を読み込んでください', true); return; }
+  const name = document.getElementById('clipName').value.trim();
+  if(!name){ toast('名前を入力', true); return; }
+  const cat = document.getElementById('clipCat').value.trim() || 'その他';
+  const thumb = document.getElementById('clipThumb').value.trim() || '✨';
+  const data = loadAll();
+  data.cliparts = data.cliparts || [];
+  // ★ 重複名チェック
+  const dup = data.cliparts.find(c => c.name === name);
+  let id, mode = 'new';
+  if(dup){
+    const choice = confirm(
+      '同じ名前のクリップアート 「' + name + '」 が既に登録されています。\n\n' +
+      '[OK] 上書き保存する\n' +
+      '[キャンセル] 保存しない'
+    );
+    if(!choice) return;
+    id = dup.id;
+    mode = 'overwrite';
+  } else {
+    id = 'clipA-' + Date.now();
+  }
+  const item = {
+    id, name, cat, thumb,
+    svg: _curClipSvg.svgText,
+    created: dup ? dup.created : Date.now(),
+    updated: Date.now()
+  };
+  if(mode === 'overwrite'){
+    const i = data.cliparts.findIndex(c => c.id === dup.id);
+    if(i >= 0) data.cliparts[i] = item;
+  } else {
+    data.cliparts.unshift(item);
+  }
+  saveAll(data);
+  // ★ 新カテゴリ自動登録
+  const cats = loadCats();
+  if(cat && cat !== 'その他' && cats.clip.indexOf(cat) < 0){ cats.clip.push(cat); saveCats(cats); refreshCatDatalists(); }
+  toast(mode === 'overwrite' ? '✓ 上書き保存: ' + name : '✓ 保存しました: ' + name);
+  resetClipForm();
+  renderSavedClip();
+}
+function resetClipForm(){
+  _curClipSvg = null;
+  if(_curClipCanvas){ try { _curClipCanvas.dispose(); } catch(_){} _curClipCanvas = null; }
+  document.getElementById('clipName').value = '';
+  document.getElementById('clipCat').value = '';
+  document.getElementById('clipThumb').value = '';
+  document.getElementById('clipPreviewPanel').style.display = 'none';
+  document.getElementById('clipMetaPanel').style.display = 'none';
+  document.getElementById('clipSavePanel').style.display = 'none';
+  document.getElementById('fileClip').value = '';
+}
+
+// ===== ソート/検索ヘルパー =====
+function _sortAndFilter(items, searchId, catId, sortId){
+  const q = (document.getElementById(searchId)?.value || '').trim().toLowerCase();
+  const cat = document.getElementById(catId)?.value || '';
+  const sort = document.getElementById(sortId)?.value || 'newest';
+  let list = items.slice();
+  if(q) list = list.filter(t => (t.name||'').toLowerCase().includes(q));
+  if(cat) list = list.filter(t => t.cat === cat);
+  // 並び替え
+  if(sort === 'newest')      list.sort((a,b) => (b.created||0) - (a.created||0));
+  else if(sort === 'oldest') list.sort((a,b) => (a.created||0) - (b.created||0));
+  else if(sort === 'name')   list.sort((a,b) => (a.name||'').localeCompare((b.name||''), 'ja'));
+  else if(sort === 'cat')    list.sort((a,b) => (a.cat||'').localeCompare((b.cat||''), 'ja') || (a.name||'').localeCompare((b.name||''),'ja'));
+  return list;
+}
+function _refreshFilterCats(items, selectId){
+  const sel = document.getElementById(selectId);
+  if(!sel) return;
+  const cur = sel.value;
+  const cats = [...new Set(items.map(t => t.cat).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ja'));
+  sel.innerHTML = '<option value="">すべてのカテゴリ (' + items.length + ')</option>'
+    + cats.map(c => '<option value="' + escapeHtml(c) + '"' + (c===cur ? ' selected' : '') + '>' + escapeHtml(c) + ' (' + items.filter(x=>x.cat===c).length + ')</option>').join('');
+}
+
+// ===== 複数選択状態 =====
+const _selSet = { tpl: new Set(), clip: new Set() };
+const _lastClickedId = { tpl: null, clip: null };   // 最後に単独クリックした id
+
+function _toggleSel(kind, id, e){
+  const s = _selSet[kind];
+  // ★ 2026-05-08: Shift+クリック = 範囲選択、 Ctrl+クリック = 個別追加/除外、 通常クリック = トグル
+  if (e && e.shiftKey && _lastClickedId[kind]) {
+    // 表示順 (現在のフィルタ + ソート) で _lastClickedId と id の間を全部追加
+    const data = loadAll();
+    const all = (kind === 'tpl' ? data.templates : data.cliparts) || [];
+    const filtered = _sortAndFilter(all, kind + 'Search', kind + 'CatFilter', kind + 'Sort');
+    const ids = filtered.map(it => it.id);
+    const a = ids.indexOf(_lastClickedId[kind]);
+    const b = ids.indexOf(id);
+    if (a >= 0 && b >= 0) {
+      const lo = Math.min(a, b), hi = Math.max(a, b);
+      for (let i = lo; i <= hi; i++) s.add(ids[i]);
+    } else {
+      // anchor が見つからない場合は通常 add
+      s.add(id);
+    }
+  } else if (e && (e.ctrlKey || e.metaKey)) {
+    // Ctrl/Cmd: トグル (個別)
+    if (s.has(id)) s.delete(id); else s.add(id);
+    _lastClickedId[kind] = id;
+  } else {
+    // 通常: トグル + anchor 更新
+    if (s.has(id)) s.delete(id); else s.add(id);
+    _lastClickedId[kind] = id;
+  }
+  if(kind === 'tpl') renderSavedTpl(); else renderSavedClip();
+}
+function _selectAll(kind){
+  const data = loadAll();
+  const all = (kind === 'tpl' ? data.templates : data.cliparts) || [];
+  const filtered = _sortAndFilter(all,
+    kind+'Search', kind+'CatFilter', kind+'Sort');
+  filtered.forEach(it => _selSet[kind].add(it.id));
+  if(kind === 'tpl') renderSavedTpl(); else renderSavedClip();
+}
+function _clearSel(kind){
+  _selSet[kind].clear();
+  if(kind === 'tpl') renderSavedTpl(); else renderSavedClip();
+}
+function _bulkDelete(kind){
+  const ids = Array.from(_selSet[kind]);
+  if(!ids.length) return;
+  if(!confirm(ids.length + '件を削除しますか?\nクラウドからも削除されます。\nこの操作は取り消せません。')) return;
+  const data = loadAll();
+  const field = (kind === 'tpl') ? 'templates' : 'cliparts';
+  data[field] = (data[field] || []).filter(it => !ids.includes(it.id));
+  saveAll(data);
+  _selSet[kind].clear();
+  if(kind === 'tpl') renderSavedTpl(); else renderSavedClip();
+  // ★ 2026-05-08: クラウドからも順次削除 (LockService で直列化される)
+  if (_cloudEnabled) {
+    const type = (kind === 'tpl') ? 'template' : 'clipart';
+    const ui = _cloudShowProgress();
+    ui.log('クラウド削除開始: ' + ids.length + ' 件', 'info');
+    ui.progress(0, ids.length);
+    let done = 0;
+    const next = (i) => {
+      if (i >= ids.length) {
+        ui.finish('削除完了 (' + ids.length + ' 件)');
+        toast('☁ 削除完了 (' + ids.length + ' 件)');
+        return;
+      }
+      ui.log('▶ 削除中: ' + ids[i].substring(0, 30) + '...', 'info');
+      cloudDeleteItem(type, ids[i], (resp) => {
+        done++;
+        if (resp && resp.ok) ui.log('  ✓ 完了', 'ok');
+        else ui.log('  ✗ ' + (resp && resp.error || '失敗'), 'err');
+        ui.progress(done, ids.length);
+        next(i + 1);
+      });
+    };
+    next(0);
+  } else {
+    toast('✓ ' + ids.length + '件 削除しました');
+  }
+}
+function _bulkChangeCat(kind){
+  const ids = Array.from(_selSet[kind]);
+  if(!ids.length) return;
+  const cats = (kind === 'tpl' ? loadCats().tpl : loadCats().clip);
+  const cur = prompt(
+    '選択した ' + ids.length + '件 のカテゴリを変更します。\n\n' +
+    '既存カテゴリ: ' + (cats.length ? cats.join(', ') : '(なし)') + '\n\n' +
+    '新しいカテゴリ名:',
+    ''
+  );
+  if(cur == null) return;
+  const newCat = cur.trim();
+  if(!newCat){ toast('カテゴリ名を入力してください', true); return; }
+  const data = loadAll();
+  const field = (kind === 'tpl') ? 'templates' : 'cliparts';
+  let cnt = 0;
+  (data[field] || []).forEach(it => {
+    if(ids.includes(it.id)){ it.cat = newCat; cnt++; }
+  });
+  saveAll(data);
+  // 新カテゴリ自動登録
+  const allCats = loadCats();
+  const arr = (kind === 'tpl') ? allCats.tpl : allCats.clip;
+  if(arr.indexOf(newCat) < 0){ arr.push(newCat); saveCats(allCats); refreshCatDatalists(); }
+  _selSet[kind].clear();
+  toast('✓ ' + cnt + '件 のカテゴリを「' + newCat + '」に変更');
+  if(kind === 'tpl') renderSavedTpl(); else renderSavedClip();
+}
+
+// ===== 登録済み一覧 =====
+function renderSavedTpl(){
+  const data = loadAll();
+  const host = document.getElementById('tplSavedList');
+  const all = data.templates || [];
+  document.getElementById('tplCount').textContent = all.length;
+  _refreshFilterCats(all, 'tplCatFilter');
+  host.innerHTML = '';
+  if(!all.length){
+    host.innerHTML = '<div class="empty">まだ登録されていません</div>';
+    return;
+  }
+  const filtered = _sortAndFilter(all, 'tplSearch', 'tplCatFilter', 'tplSort');
+  if(!filtered.length){
+    host.innerHTML = '<div class="empty">該当するテンプレートがありません</div>';
+    return;
+  }
+  // ★ マルチアクションバー
+  if(_selSet.tpl.size > 0){
+    const bar = document.createElement('div');
+    bar.className = 'multi-bar';
+    bar.innerHTML =
+        '<span class="lbl">✓ 選択中 ' + _selSet.tpl.size + '件</span>'
+      + '<button class="btn" onclick="_bulkChangeCat(\'tpl\')">📁 カテゴリ変更</button>'
+      + '<button class="btn danger" onclick="_bulkDelete(\'tpl\')">🗑 一括削除</button>'
+      + '<button class="btn" onclick="_clearSel(\'tpl\')">解除</button>';
+    host.appendChild(bar);
+  }
+  // 全選択 / 解除 ボタン
+  const ctrl = document.createElement('div');
+  ctrl.style.cssText = 'margin-bottom:6px;font-size:11px;color:var(--t3)';
+  ctrl.innerHTML = '<button class="btn" style="padding:3px 8px;font-size:11px" onclick="_selectAll(\'tpl\')">☑ 全選択</button>';
+  host.appendChild(ctrl);
+
+  filtered.forEach(t => {
+    const r = document.createElement('div');
+    r.className = 'saved-row' + (_selSet.tpl.has(t.id) ? ' sel' : '');
+    // ★ チェックボックス
+    const ck = document.createElement('input');
+    ck.type = 'checkbox';
+    ck.className = 'sel-ck';
+    ck.checked = _selSet.tpl.has(t.id);
+    // ★ 2026-05-08: Shift/Ctrl 修飾キー対応
+    ck.addEventListener('click', (e) => { e.preventDefault(); _toggleSel('tpl', t.id, e); });
+    r.appendChild(ck);
+    const th = document.createElement('div'); th.className = 'thumb';
+    if(t.svg){
+      const blob = new Blob([t.svg], {type:'image/svg+xml'});
+      const img = document.createElement('img'); img.src = URL.createObjectURL(blob);
+      th.appendChild(img);
+    } else {
+      th.textContent = t.thumb || '🎨';
+    }
+    r.appendChild(th);
+    const meta = document.createElement('div'); meta.className = 'meta';
+    meta.innerHTML = '<div class="nm">' + escapeHtml(t.name) + '</div>'
+      + '<div class="sub">' + escapeHtml(t.cat) + (t.style ? ' / ' + escapeHtml(t.style) : '')
+      + ' / パーツ' + Object.keys(t.parts || {}).length + ' / ' + new Date(t.created).toLocaleString('ja-JP') + '</div>';
+    r.appendChild(meta);
+    const acts = document.createElement('div'); acts.className = 'acts';
+    const dl = document.createElement('button');
+    dl.className = 'btn'; dl.textContent = 'SVG⬇';
+    dl.title = 'SVG ダウンロード';
+    dl.addEventListener('click', () => downloadSvg(t.svg, (t.name||'template') + '.svg'));
+    acts.appendChild(dl);
+    const del = document.createElement('button');
+    del.className = 'btn danger'; del.textContent = '🗑 削除';
+    del.addEventListener('click', () => {
+      if(!confirm('「'+ t.name +'」を削除しますか?\nクラウドからも削除されます。')) return;
+      const d = loadAll();
+      d.templates = (d.templates || []).filter(x => x.id !== t.id);
+      saveAll(d);
+      renderSavedTpl();
+      toast('削除しました');
+      // ★ 2026-05-08: クラウドからも削除
+      if (_cloudEnabled) {
+        cloudDeleteItem('template', t.id, (resp) => {
+          if (resp && resp.ok) toast('☁ クラウド削除完了');
+          else toast('☁ クラウド削除失敗: ' + (resp && resp.error || 'unknown'), true);
+        });
+      }
+    });
+    acts.appendChild(del);
+    r.appendChild(acts);
+    host.appendChild(r);
+  });
+}
+function renderSavedClip(){
+  const data = loadAll();
+  const host = document.getElementById('clipSavedList');
+  const all = data.cliparts || [];
+  document.getElementById('clipCount').textContent = all.length;
+  _refreshFilterCats(all, 'clipCatFilter');
+  host.innerHTML = '';
+  if(!all.length){
+    host.innerHTML = '<div class="empty">まだ登録されていません</div>';
+    return;
+  }
+  const filtered = _sortAndFilter(all, 'clipSearch', 'clipCatFilter', 'clipSort');
+  if(!filtered.length){
+    host.innerHTML = '<div class="empty">該当するクリップアートがありません</div>';
+    return;
+  }
+  // ★ マルチアクションバー
+  if(_selSet.clip.size > 0){
+    const bar = document.createElement('div');
+    bar.className = 'multi-bar';
+    bar.innerHTML =
+        '<span class="lbl">✓ 選択中 ' + _selSet.clip.size + '件</span>'
+      + '<button class="btn" onclick="_bulkChangeCat(\'clip\')">📁 カテゴリ変更</button>'
+      + '<button class="btn danger" onclick="_bulkDelete(\'clip\')">🗑 一括削除</button>'
+      + '<button class="btn" onclick="_clearSel(\'clip\')">解除</button>';
+    host.appendChild(bar);
+  }
+  // 全選択
+  const ctrl = document.createElement('div');
+  ctrl.style.cssText = 'margin-bottom:6px;font-size:11px;color:var(--t3)';
+  ctrl.innerHTML = '<button class="btn" style="padding:3px 8px;font-size:11px" onclick="_selectAll(\'clip\')">☑ 全選択 (絞り込み中)</button>';
+  host.appendChild(ctrl);
+
+  filtered.forEach(t => {
+    const r = document.createElement('div');
+    r.className = 'saved-row' + (_selSet.clip.has(t.id) ? ' sel' : '');
+    // ★ チェックボックス
+    const ck = document.createElement('input');
+    ck.type = 'checkbox';
+    ck.className = 'sel-ck';
+    ck.checked = _selSet.clip.has(t.id);
+    // ★ 2026-05-08: Shift/Ctrl 修飾キー対応
+    ck.addEventListener('click', (e) => { e.preventDefault(); _toggleSel('clip', t.id, e); });
+    r.appendChild(ck);
+    const th = document.createElement('div'); th.className = 'thumb';
+    if(t.svg){
+      const blob = new Blob([t.svg], {type:'image/svg+xml'});
+      const img = document.createElement('img'); img.src = URL.createObjectURL(blob);
+      th.appendChild(img);
+    } else { th.textContent = t.thumb || '✨'; }
+    r.appendChild(th);
+    const meta = document.createElement('div'); meta.className = 'meta';
+    meta.innerHTML = '<div class="nm">' + escapeHtml(t.name) + '</div>'
+      + '<div class="sub">' + escapeHtml(t.cat) + ' / ' + new Date(t.created).toLocaleString('ja-JP') + '</div>';
+    r.appendChild(meta);
+    const acts = document.createElement('div'); acts.className = 'acts';
+    const dl = document.createElement('button'); dl.className = 'btn'; dl.textContent = 'SVG⬇';
+    dl.addEventListener('click', () => downloadSvg(t.svg, (t.name||'clip') + '.svg'));
+    acts.appendChild(dl);
+    const del = document.createElement('button'); del.className = 'btn danger'; del.textContent = '🗑 削除';
+    del.addEventListener('click', () => {
+      if(!confirm('「'+ t.name +'」を削除?\nクラウドからも削除されます。')) return;
+      const d = loadAll();
+      d.cliparts = (d.cliparts || []).filter(x => x.id !== t.id);
+      saveAll(d);
+      renderSavedClip();
+      toast('削除しました');
+      // ★ 2026-05-08: クラウドからも削除
+      if (_cloudEnabled) {
+        cloudDeleteItem('clipart', t.id, (resp) => {
+          if (resp && resp.ok) toast('☁ クラウド削除完了');
+          else toast('☁ クラウド削除失敗: ' + (resp && resp.error || 'unknown'), true);
+        });
+      }
+    });
+    acts.appendChild(del);
+    r.appendChild(acts);
+    host.appendChild(r);
+  });
+}
+
+function downloadSvg(svgText, name){
+  const blob = new Blob([svgText], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ===== エクスポート / インポート =====
+function exportData(){
+  const data = loadAll();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cocoro-admin-templates-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function importData(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(!data.templates && !data.cliparts){ toast('不正な JSON 形式', true); return; }
+      if(!confirm('既存データを置き換えます。 続けますか?')) return;
+      saveAll(data);
+      renderSavedTpl(); renderSavedClip();
+      toast('✓ インポート完了');
+    } catch(e){ toast('JSON 解析エラー', true); }
+  };
+  reader.readAsText(file);
+}
+
+// ===== カテゴリ管理 =====
+function refreshCatDatalists(){
+  const tplDl = document.getElementById('catList');
+  if(tplDl){
+    tplDl.innerHTML = allCats('tpl').map(c => '<option>' + escapeHtml(c) + '</option>').join('');
+  }
+  const clipDl = document.getElementById('clipCatList');
+  if(clipDl){
+    clipDl.innerHTML = allCats('clip').map(c => '<option>' + escapeHtml(c) + '</option>').join('');
+  }
+}
+function addCat(kind){
+  const inpId = (kind === 'tpl') ? 'newTplCat' : 'newClipCat';
+  const inp = document.getElementById(inpId);
+  const v = (inp.value || '').trim();
+  if(!v){ toast('カテゴリ名を入力してください', true); return; }
+  const cats = loadCats();
+  const arr = (kind === 'tpl') ? cats.tpl : cats.clip;
+  if(arr.indexOf(v) >= 0){ toast('既に存在します', true); return; }
+  arr.push(v);
+  saveCats(cats);
+  inp.value = '';
+  toast('✓ 追加: ' + v);
+  renderCatLists();
+  refreshCatDatalists();
+}
+function deleteCat(kind, name){
+  const used = catUsageCount(kind, name);
+  let msg = '「' + name + '」を削除しますか?';
+  if(used > 0) msg += '\n(使用中: ' + used + '件 → 「その他」に変更されます)';
+  if(!confirm(msg)) return;
+  const cats = loadCats();
+  if(kind === 'tpl') cats.tpl = cats.tpl.filter(c => c !== name);
+  else cats.clip = cats.clip.filter(c => c !== name);
+  saveCats(cats);
+  // 該当カテゴリの items を「その他」に変更
+  if(used > 0){
+    const data = loadAll();
+    const field = (kind === 'tpl') ? 'templates' : 'cliparts';
+    (data[field] || []).forEach(it => { if(it.cat === name) it.cat = 'その他'; });
+    saveAll(data);
+    if(kind === 'tpl') renderSavedTpl(); else renderSavedClip();
+  }
+  toast('削除しました');
+  renderCatLists();
+  refreshCatDatalists();
+}
+function renameCat(kind, oldName){
+  const nv = prompt('カテゴリ名を変更:', oldName);
+  if(nv == null) return;
+  const trimmed = nv.trim();
+  if(!trimmed || trimmed === oldName) return;
+  const cats = loadCats();
+  const arr = (kind === 'tpl') ? cats.tpl : cats.clip;
+  if(arr.indexOf(trimmed) >= 0){ toast('既に存在します', true); return; }
+  const i = arr.indexOf(oldName);
+  if(i >= 0){ arr[i] = trimmed; saveCats(cats); }
+  // 該当 items も rename
+  const data = loadAll();
+  const field = (kind === 'tpl') ? 'templates' : 'cliparts';
+  let cnt = 0;
+  (data[field] || []).forEach(it => { if(it.cat === oldName){ it.cat = trimmed; cnt++; } });
+  if(cnt > 0){ saveAll(data); if(kind === 'tpl') renderSavedTpl(); else renderSavedClip(); }
+  toast('✓ ' + cnt + '件 一括変更');
+  renderCatLists();
+  refreshCatDatalists();
+}
+function renderCatLists(){
+  const _renderOne = (kind, hostId) => {
+    const host = document.getElementById(hostId);
+    if(!host) return;
+    const cats = (kind === 'tpl') ? loadCats().tpl : loadCats().clip;
+    if(!cats.length){
+      host.innerHTML = '<div class="empty">カテゴリがありません</div>';
+      return;
+    }
+    host.innerHTML = cats.map(c => {
+      const u = catUsageCount(kind, c);
+      return `<div class="saved-row" style="padding:6px 10px">
+        <div style="flex-shrink:0;font-size:18px">🏷</div>
+        <div class="meta"><div class="nm">${escapeHtml(c)}</div>
+          <div class="sub">使用中: ${u}件</div></div>
+        <div class="acts">
+          <button class="btn" onclick="renameCat('${kind}', ${JSON.stringify(c)})">✏ 編集</button>
+          <button class="btn danger" onclick="deleteCat('${kind}', ${JSON.stringify(c)})">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  };
+  _renderOne('tpl', 'catTplList');
+  _renderOne('clip', 'catClipList');
+}
+
+// switchTab を上書きしてカテゴリタブも対応
+const _originalSwitchTab = switchTab;
+switchTab = function(t){
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('act', b.dataset.tab === t));
+  document.getElementById('tabTpl').style.display  = (t === 'tpl' ? '' : 'none');
+  document.getElementById('tabClip').style.display = (t === 'clip' ? '' : 'none');
+  const catTab = document.getElementById('tabCat');
+  if(catTab) catTab.style.display = (t === 'cat' ? '' : 'none');
+  if(t === 'cat') renderCatLists();
+};
+
+// ===== 初期化 =====
+function initAdmin(){
+  setupDrop('dropTpl', 'tpl');
+  setupDrop('dropClip', 'clip');
+  setupBulkDrop('dropClipBulk', 'clip');   // ★ 一括アップロード
+  refreshCatDatalists();
+  renderSavedTpl();
+  renderSavedClip();
+  // ★ Phase 2: 起動時にクラウドから最新を取得 (失敗時はローカルのまま)
+  if (_cloudEnabled) {
+    setTimeout(() => { syncFromCloud(true).catch(e => console.warn('sync error', e)); }, 500);
+  }
+}
+</script>
+</body>
+</html>
