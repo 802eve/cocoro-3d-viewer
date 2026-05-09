@@ -4721,10 +4721,28 @@ function setupSnapGuides(){
     if(obj && (!obj.angle || obj.angle === 0)){
       try {
         const corner = obj.__corner || '';
-        const isRight  = /^(mr|tr|br)$/.test(corner);
-        const isLeft   = /^(ml|tl|bl)$/.test(corner);
-        const isBottom = /^(mb|bl|br)$/.test(corner);
-        const isTop    = /^(mt|tl|tr)$/.test(corner);
+        let isRight  = /^(mr|tr|br)$/.test(corner);
+        let isLeft   = /^(ml|tl|bl)$/.test(corner);
+        let isBottom = /^(mb|bl|br)$/.test(corner);
+        let isTop    = /^(mt|tl|tr)$/.test(corner);
+        // ★ フォールバック: __corner が空 (mobile touch等) なら scale/位置 変化方向 から推定
+        if(!isRight && !isLeft && !isBottom && !isTop){
+          if(obj._scaleStartSnap === undefined){
+            obj._scaleStartSnap = { sx: obj.scaleX || 1, sy: obj.scaleY || 1, left: obj.left || 0, top: obj.top || 0 };
+          }
+          const ss = obj._scaleStartSnap;
+          const dsx = (obj.scaleX || 1) - ss.sx;
+          const dsy = (obj.scaleY || 1) - ss.sy;
+          const dleft = (obj.left || 0) - ss.left;
+          const dtop  = (obj.top  || 0) - ss.top;
+          // X軸: scale 変化があれば、 left も動いた = 左端ハンドル, 動かない = 右端ハンドル
+          if(Math.abs(dsx) > 0.001){
+            if(Math.abs(dleft) > 0.5) isLeft = true; else isRight = true;
+          }
+          if(Math.abs(dsy) > 0.001){
+            if(Math.abs(dtop) > 0.5) isTop = true; else isBottom = true;
+          }
+        }
         if(isRight || isLeft || isBottom || isTop){
           const myRect = obj.getBoundingRect(true);
           const cwTotal = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
@@ -4737,9 +4755,15 @@ function setupSnapGuides(){
             xLines.push(r.left, r.left + r.width, r.left + r.width / 2);
             yLines.push(r.top, r.top + r.height, r.top + r.height / 2);
           });
-          // ヒステリシス: 既にスナップ中なら閾値を倍にして 解除しづらく (= 微小な震え防止)
-          const SNAP_PX = obj._scaleSnapping ? 14 : 7;
+          // ★ 2026-05-10 v2: スクリーンピクセル基準に変更 (mobile CSS scale を考慮)
+          //   1本指 finger-friendly: 引っ張り中 ~25 screen px、 吸着中 ~75 screen px (3倍ヒステリシス → 震え防止)
+          const mobileZ_ = (typeof _mobileZoomLevel !== 'undefined' && _mobileZoomLevel) ? _mobileZoomLevel : 1;
+          const fabricZ_ = (fabCanvas.getZoom && fabCanvas.getZoom()) || 1;
+          const displayZoom_ = mobileZ_ * fabricZ_;
+          const screenPx_ = obj._scaleSnapping ? 75 : 25;
+          const SNAP_PX = screenPx_ / Math.max(0.1, displayZoom_);
           let snapped = false;
+          let snapXLine_ = null, snapYLine_ = null;
           // 右端 → 自分の left を保持して width を変える
           if(isRight){
             const myRight = myRect.left + myRect.width;
@@ -4751,6 +4775,7 @@ function setupSnapGuides(){
                 const ratio = targetWidth / Math.max(1, myRect.width);
                 obj.scaleX = (obj.scaleX || 1) * ratio;
                 snapped = true;
+                snapXLine_ = bestX;
               }
             }
           } else if(isLeft){
@@ -4764,6 +4789,7 @@ function setupSnapGuides(){
                 obj.scaleX = (obj.scaleX || 1) * ratio;
                 obj.left = (obj.left || 0) + (bestX - myRect.left);
                 snapped = true;
+                snapXLine_ = bestX;
               }
             }
           }
@@ -4777,6 +4803,7 @@ function setupSnapGuides(){
                 const ratio = targetHeight / Math.max(1, myRect.height);
                 obj.scaleY = (obj.scaleY || 1) * ratio;
                 snapped = true;
+                snapYLine_ = bestY;
               }
             }
           } else if(isTop){
@@ -4790,17 +4817,21 @@ function setupSnapGuides(){
                 obj.scaleY = (obj.scaleY || 1) * ratio;
                 obj.top = (obj.top || 0) + (bestY - myRect.top);
                 snapped = true;
+                snapYLine_ = bestY;
               }
             }
           }
           if(snapped){
             obj.setCoords();
             if(!obj._scaleSnapping){
-              try { if(navigator.vibrate) navigator.vibrate(8); } catch(_){}
+              try { if(navigator.vibrate) navigator.vibrate(12); } catch(_){}
               obj._scaleSnapping = true;
             }
+            // 視覚フィードバック: スナップ線を強調表示用に記録
+            try { window._scaleSnapLines = { x: snapXLine_, y: snapYLine_ }; } catch(_){}
           } else {
             obj._scaleSnapping = false;
+            try { window._scaleSnapLines = null; } catch(_){}
           }
         }
       } catch(e){ /* fail silently */ }
@@ -4808,9 +4839,13 @@ function setupSnapGuides(){
     // ガイドライン表示
     _checkSnapGuideOnly(opt.target);
   });
-  // mouse:up でスナップ状態リセット
+  // mouse:up でスナップ状態リセット + フォールバック開始値クリア + 視覚ガイドクリア
   fabCanvas.on('mouse:up', (opt) => {
-    if(opt && opt.target) opt.target._scaleSnapping = false;
+    if(opt && opt.target){
+      opt.target._scaleSnapping = false;
+      try { delete opt.target._scaleStartSnap; } catch(_){ opt.target._scaleStartSnap = undefined; }
+    }
+    try { window._scaleSnapLines = null; fabCanvas.requestRenderAll(); } catch(_){}
   });
   // 2026-04-25: Shift キー押しながら回転で 90度スナップ（Illustrator と同じ挙動）
   fabCanvas.on('object:rotating', (opt) => {
@@ -5023,22 +5058,45 @@ function clearSnap(){
 
 function drawGuides(){
   const ctx = fabCanvas.contextContainer;
-  if(_snapGuides.x === null && _snapGuides.y === null) return;
+  // ★ 2026-05-10 v2: スケールスナップ engaged 時 は強い赤線で表示 (視認性UP)
+  const scaleSnap = (typeof window._scaleSnapLines !== 'undefined') ? window._scaleSnapLines : null;
+  if(_snapGuides.x === null && _snapGuides.y === null && !scaleSnap) return;
   ctx.save();
-  ctx.strokeStyle = '#f59e0b';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([5, 4]);
-  if(_snapGuides.x !== null){
-    ctx.beginPath();
-    ctx.moveTo(_snapGuides.x, 0);
-    ctx.lineTo(_snapGuides.x, fabCanvas.height);
-    ctx.stroke();
+  // 通常スナップガイド (オレンジ点線)
+  if(_snapGuides.x !== null || _snapGuides.y !== null){
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    if(_snapGuides.x !== null){
+      ctx.beginPath();
+      ctx.moveTo(_snapGuides.x, 0);
+      ctx.lineTo(_snapGuides.x, fabCanvas.height);
+      ctx.stroke();
+    }
+    if(_snapGuides.y !== null){
+      ctx.beginPath();
+      ctx.moveTo(0, _snapGuides.y);
+      ctx.lineTo(fabCanvas.width, _snapGuides.y);
+      ctx.stroke();
+    }
   }
-  if(_snapGuides.y !== null){
-    ctx.beginPath();
-    ctx.moveTo(0, _snapGuides.y);
-    ctx.lineTo(fabCanvas.width, _snapGuides.y);
-    ctx.stroke();
+  // ★ スケールスナップガイド (赤実線・太め・視認性高)
+  if(scaleSnap){
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([]);
+    if(scaleSnap.x !== null && scaleSnap.x !== undefined){
+      ctx.beginPath();
+      ctx.moveTo(scaleSnap.x, 0);
+      ctx.lineTo(scaleSnap.x, fabCanvas.height);
+      ctx.stroke();
+    }
+    if(scaleSnap.y !== null && scaleSnap.y !== undefined){
+      ctx.beginPath();
+      ctx.moveTo(0, scaleSnap.y);
+      ctx.lineTo(fabCanvas.width, scaleSnap.y);
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -9754,8 +9812,10 @@ function _3d_inlineRefresh(){
                 yLines.push(r.top, r.top + r.height, r.top + r.height / 2);
               });
               const candidates = [];
-              // ★ 2026-05-10: ヒステリシス — 既にスナップ中なら 閾値を倍 (震え防止)
-              const SNAP_PX = partRef._lastScaleSnap ? 16 : 8;
+              // ★ 2026-05-10 v2: スクリーンピクセル基準 + 強いヒステリシス (3倍) で 1-2mm 震え防止
+              const _mZ_pinch = (typeof _mobileZoomLevel !== 'undefined' && _mobileZoomLevel) ? _mobileZoomLevel : 1;
+              const _screenPx_pinch = partRef._lastScaleSnap ? 60 : 20;
+              const SNAP_PX = _screenPx_pinch / Math.max(0.1, _mZ_pinch);
               // X 軸: 自分の右端 (cx + halfW) または 左端 (cx - halfW) が xLines に近い ratio
               xLines.forEach(L => {
                 // 右端 → halfW = L - cx → scale = (L-cx)*2/baseW
@@ -12897,7 +12957,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.15.4';
+    _vb.textContent = 'N3.15.5';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
