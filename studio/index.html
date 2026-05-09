@@ -2993,15 +2993,41 @@ function getEffectiveColorLimit(){
 }
 // 指定hexを適用した場合、上限を超えるか判定（超えるなら詳細情報を返す）
 // 戻り値: null（OK）or { message, limit, canBump, nextN }
+// ★ 2026-05-09: 「色変更」 で カウントが増えてしまうバグ修正
+//   選択中オブジェクトを除外して色を集計 → 変更後の色数を正しく算出
 function _wouldExceedColorLimit(hex){
   const limit = getEffectiveColorLimit();
   if(limit == null) return null;
   const newH = (typeof normalizeToInk==='function') ? normalizeToInk(hex) : String(hex).toLowerCase();
-  const used = collectUsedInkColors();
-  const has = used.some(u => u.hex === newH);
-  if(has) return null; // 既存色なら増えない
-  if(used.length >= limit){
-    const nextN = used.length + 1;
+  // ★ 影響を受けるオブジェクト集合 (選択中 + その子)
+  const skipSet = new Set();
+  function _addToSkip(o){
+    if(!o) return;
+    skipSet.add(o);
+    if(typeof o.getObjects === 'function'){
+      o.getObjects().forEach(_addToSkip);
+    }
+  }
+  try { _addToSkip(fabCanvas && fabCanvas.getActiveObject()); } catch(_){}
+  // 残りのオブジェクトの色を集計
+  const remainColors = new Set();
+  function _collect(obj){
+    if(!obj || skipSet.has(obj)) return;
+    if(obj.type === 'group' && typeof obj.getObjects === 'function'){
+      obj.getObjects().forEach(_collect);
+    } else if(obj.fill && typeof obj.fill === 'string'){
+      const norm = (typeof normalizeToInk === 'function') ? normalizeToInk(obj.fill) : String(obj.fill).toLowerCase();
+      remainColors.add(norm);
+    }
+  }
+  try { fabCanvas.getObjects().forEach(_collect); } catch(_){}
+  const has = remainColors.has(newH);
+  // 変更後の色数 = 残り色 + 新色 (重複なら +0)
+  const nextCount = remainColors.size + (has ? 0 : 1);
+  if(nextCount <= limit) return null;
+  // 上限超過
+  if(true){  // 旧コード互換のためブロック維持
+    const nextN = nextCount;
     // シルクで4色未満ならフォーム色数を上げる提案も可能（4色までOK）
     const canBump = FORM_CONTEXT.mode === 'silk' && nextN <= 4;
     let message;
@@ -9364,20 +9390,21 @@ function _3d_inlineRefresh(){
         try { panWrap.removeChild(child); } catch(_){}
       }
     });
-    // ★ 2026-05-09: 強制 absolute 中央配置 (fabric の inline style を上書き)
-    //   旧: 「inline style クリアして CSS flex 中央化に任せる」 だが
-    //   一部の起動タイミングで CSS が効かず、 canvas が下端に張り付くケースがある
+    // ★ 2026-05-09: 強制 absolute 中央配置 (CSS の !important も上書きするため setProperty important 指定)
+    //   旧: position: relative !important が CSS で指定されていて 通常の inline style では上書きできなかった
     try {
-      panWrap.style.position = 'relative';
-      wrapper.style.position = 'absolute';
-      wrapper.style.left = '50%';
-      wrapper.style.top = '50%';
-      wrapper.style.right = '';
-      wrapper.style.bottom = '';
-      wrapper.style.margin = '0';
-      wrapper.style.float = '';
-      wrapper.style.transformOrigin = 'center center';
-      wrapper.style.transform = `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`;
+      panWrap.style.setProperty('position', 'relative', 'important');
+      wrapper.style.setProperty('position', 'absolute', 'important');
+      wrapper.style.setProperty('left', '50%', 'important');
+      wrapper.style.setProperty('top', '50%', 'important');
+      wrapper.style.removeProperty('right');
+      wrapper.style.removeProperty('bottom');
+      wrapper.style.setProperty('margin', '0', 'important');
+      wrapper.style.removeProperty('float');
+      wrapper.style.setProperty('transform-origin', 'center center', 'important');
+      wrapper.style.setProperty('transform',
+        `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`,
+        'important');
     } catch(_){}
     // ★ N2.16 fix 2026-05-05: ResizeObserver で m-main のサイズ変化を監視 → 自動フィット。
     //   in-editor 切替直後など layout が確定するまでのタイミング差を吸収し、
@@ -9453,17 +9480,19 @@ function _3d_inlineRefresh(){
       root.setProperty('--m-canvas-w', baseW + 'px');
       root.setProperty('--m-canvas-h', baseH + 'px');
       root.setProperty('--m-scale', String(_mobileZoomLevel));
-      // ★ 2026-05-09: 強制 absolute 中央配置を維持 (CSS flex 中央が効かない場合の対策)
+      // ★ 2026-05-09: setProperty important で CSS !important を上書き
       const wrapper = document.getElementById('fabCanvas')?.parentElement;
       const panWrap = document.getElementById('mPanWrap');
       if(wrapper && panWrap){
-        panWrap.style.position = 'relative';
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = '50%';
-        wrapper.style.top = '50%';
-        wrapper.style.margin = '';
-        wrapper.style.transformOrigin = 'center center';
-        wrapper.style.transform = `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`;
+        panWrap.style.setProperty('position', 'relative', 'important');
+        wrapper.style.setProperty('position', 'absolute', 'important');
+        wrapper.style.setProperty('left', '50%', 'important');
+        wrapper.style.setProperty('top', '50%', 'important');
+        wrapper.style.setProperty('margin', '0', 'important');
+        wrapper.style.setProperty('transform-origin', 'center center', 'important');
+        wrapper.style.setProperty('transform',
+          `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`,
+          'important');
       }
       if(typeof window._zoom !== 'undefined') window._zoom = _mobileZoomLevel;
       if(typeof updateZoomLabel === 'function') updateZoomLabel();
@@ -10168,22 +10197,20 @@ function _3d_inlineRefresh(){
     const z = Math.min(availW / baseW, availH / baseH);
     _mobileFitZoom = z;
     _mobileZoomLevel = z;
-    // ★ 2026-05-09 強制中央配置パッチ — canvas-container を absolute + top/left 50% で確実に中央化
-    //   (フォーム経由起動時の CSS flex 中央化が効かない問題対策)
+    // ★ 2026-05-09 強制中央配置パッチ — setProperty important で CSS の !important を上書き
     try {
       const wrapper = document.getElementById('fabCanvas')?.parentElement;
       const panWrap = document.getElementById('mPanWrap');
       if(wrapper && panWrap){
-        // panWrap を position: relative に
-        panWrap.style.position = 'relative';
-        // canvas-container を absolute + 中央
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = '50%';
-        wrapper.style.top = '50%';
-        // transform-origin で中央起点 + translate -50% で完全中央 + scale + pan
-        // pan-x/pan-y は --m-pan-x/y で transform に組込
-        wrapper.style.transformOrigin = 'center center';
-        wrapper.style.transform = `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`;
+        panWrap.style.setProperty('position', 'relative', 'important');
+        wrapper.style.setProperty('position', 'absolute', 'important');
+        wrapper.style.setProperty('left', '50%', 'important');
+        wrapper.style.setProperty('top', '50%', 'important');
+        wrapper.style.setProperty('margin', '0', 'important');
+        wrapper.style.setProperty('transform-origin', 'center center', 'important');
+        wrapper.style.setProperty('transform',
+          `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`,
+          'important');
       }
     } catch(_){}
     // wrapper の残留 inline style をクリア (CSS の純粋 flex centering に任せる)
