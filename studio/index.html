@@ -4709,17 +4709,108 @@ function setupSnapGuides(){
     // Alt+スケール（中心基準）中はスナップで left/top を動かすと中心がズレるのでスキップ
     if(opt.e && opt.e.altKey){
       clearSnap();
-      // 中心点をロック（浮動小数点誤差の蓄積対策）
       if(opt.target && opt.target.__altScaleCenter){
         opt.target.setPositionByOrigin(opt.target.__altScaleCenter, 'center', 'center');
         opt.target.setCoords();
       }
       return;
     }
-    // 2026-04-24: スケール中は位置補正しない（パーツが動くバグの原因）
-    //   以前は checkSnap(opt.target) が left/top を書き換えてスケール中にパーツが移動していた。
-    //   ガイドライン表示だけは残す（視覚的な整列補助）。
+    // ★ 2026-05-10: 角/辺ハンドルでスケール中、 他パーツの端と一致する所でスナップ吸着
+    //   angle != 0 のときは boundingRect 計算が複雑になるのでスキップ (ガイドのみ)
+    const obj = opt.target;
+    if(obj && (!obj.angle || obj.angle === 0)){
+      try {
+        const corner = obj.__corner || '';
+        const isRight  = /^(mr|tr|br)$/.test(corner);
+        const isLeft   = /^(ml|tl|bl)$/.test(corner);
+        const isBottom = /^(mb|bl|br)$/.test(corner);
+        const isTop    = /^(mt|tl|tr)$/.test(corner);
+        if(isRight || isLeft || isBottom || isTop){
+          const myRect = obj.getBoundingRect(true);
+          const cwTotal = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+          const chTotal = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
+          const xLines = [0, cwTotal, cwTotal/2];
+          const yLines = [0, chTotal, chTotal/2];
+          fabCanvas.getObjects().forEach(o => {
+            if(o === obj || !o.getBoundingRect) return;
+            const r = o.getBoundingRect(true);
+            xLines.push(r.left, r.left + r.width, r.left + r.width / 2);
+            yLines.push(r.top, r.top + r.height, r.top + r.height / 2);
+          });
+          // ヒステリシス: 既にスナップ中なら閾値を倍にして 解除しづらく (= 微小な震え防止)
+          const SNAP_PX = obj._scaleSnapping ? 14 : 7;
+          let snapped = false;
+          // 右端 → 自分の left を保持して width を変える
+          if(isRight){
+            const myRight = myRect.left + myRect.width;
+            let bestX = null, bestDx = SNAP_PX + 1;
+            xLines.forEach(x => { const dx = Math.abs(myRight - x); if(dx < bestDx){ bestDx = dx; bestX = x; } });
+            if(bestX !== null){
+              const targetWidth = bestX - myRect.left;
+              if(targetWidth > 5){
+                const ratio = targetWidth / Math.max(1, myRect.width);
+                obj.scaleX = (obj.scaleX || 1) * ratio;
+                snapped = true;
+              }
+            }
+          } else if(isLeft){
+            const myRight = myRect.left + myRect.width;
+            let bestX = null, bestDx = SNAP_PX + 1;
+            xLines.forEach(x => { const dx = Math.abs(myRect.left - x); if(dx < bestDx){ bestDx = dx; bestX = x; } });
+            if(bestX !== null){
+              const targetWidth = myRight - bestX;
+              if(targetWidth > 5){
+                const ratio = targetWidth / Math.max(1, myRect.width);
+                obj.scaleX = (obj.scaleX || 1) * ratio;
+                obj.left = (obj.left || 0) + (bestX - myRect.left);
+                snapped = true;
+              }
+            }
+          }
+          if(isBottom){
+            const myBottom = myRect.top + myRect.height;
+            let bestY = null, bestDy = SNAP_PX + 1;
+            yLines.forEach(y => { const dy = Math.abs(myBottom - y); if(dy < bestDy){ bestDy = dy; bestY = y; } });
+            if(bestY !== null){
+              const targetHeight = bestY - myRect.top;
+              if(targetHeight > 5){
+                const ratio = targetHeight / Math.max(1, myRect.height);
+                obj.scaleY = (obj.scaleY || 1) * ratio;
+                snapped = true;
+              }
+            }
+          } else if(isTop){
+            const myBottom = myRect.top + myRect.height;
+            let bestY = null, bestDy = SNAP_PX + 1;
+            yLines.forEach(y => { const dy = Math.abs(myRect.top - y); if(dy < bestDy){ bestDy = dy; bestY = y; } });
+            if(bestY !== null){
+              const targetHeight = myBottom - bestY;
+              if(targetHeight > 5){
+                const ratio = targetHeight / Math.max(1, myRect.height);
+                obj.scaleY = (obj.scaleY || 1) * ratio;
+                obj.top = (obj.top || 0) + (bestY - myRect.top);
+                snapped = true;
+              }
+            }
+          }
+          if(snapped){
+            obj.setCoords();
+            if(!obj._scaleSnapping){
+              try { if(navigator.vibrate) navigator.vibrate(8); } catch(_){}
+              obj._scaleSnapping = true;
+            }
+          } else {
+            obj._scaleSnapping = false;
+          }
+        }
+      } catch(e){ /* fail silently */ }
+    }
+    // ガイドライン表示
     _checkSnapGuideOnly(opt.target);
+  });
+  // mouse:up でスナップ状態リセット
+  fabCanvas.on('mouse:up', (opt) => {
+    if(opt && opt.target) opt.target._scaleSnapping = false;
   });
   // 2026-04-25: Shift キー押しながら回転で 90度スナップ（Illustrator と同じ挙動）
   fabCanvas.on('object:rotating', (opt) => {
@@ -9663,7 +9754,8 @@ function _3d_inlineRefresh(){
                 yLines.push(r.top, r.top + r.height, r.top + r.height / 2);
               });
               const candidates = [];
-              const SNAP_PX = 8;
+              // ★ 2026-05-10: ヒステリシス — 既にスナップ中なら 閾値を倍 (震え防止)
+              const SNAP_PX = partRef._lastScaleSnap ? 16 : 8;
               // X 軸: 自分の右端 (cx + halfW) または 左端 (cx - halfW) が xLines に近い ratio
               xLines.forEach(L => {
                 // 右端 → halfW = L - cx → scale = (L-cx)*2/baseW
