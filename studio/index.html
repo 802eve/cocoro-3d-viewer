@@ -6611,9 +6611,16 @@ function confirmApplyForm(apply){
         colors: used.map(u=>({hex:u.hex, name:u.name, id:u.id})),
         requestedMethod: FORM_CONTEXT.method || '',
         requestedColorCount: FORM_CONTEXT.colorCount || '',
-        mode: FORM_CONTEXT.mode || ''
+        mode: FORM_CONTEXT.mode || '',
+        // ★ 2026-05-09: モード切替・色数変更の状態を form 側に伝える (PC 同等の警告表示用)
+        switched: !!FORM_CONTEXT._switched,
+        bumped: !!FORM_CONTEXT._bumped,
+        originalMethod: FORM_CONTEXT._originalMethod || '',
+        originalColorCount: FORM_CONTEXT._originalColorCount || ''
       };
       _tryLS('cocoro_design_usage', JSON.stringify(stats));
+      // 旧キーも別途保存 (現在の method/colorCount を確実に更新)
+      _tryLS('cocoro_design_color_count', String(FORM_CONTEXT.colorCount || ''));
     }catch(e){}
     // ④ 必須 `cocoro_design_data` が入ったかどうかで成否判定
     if(okData){
@@ -7166,9 +7173,16 @@ function renderUsedColorsInline(options){
   }
   fabCanvas.getObjects().forEach(collect);
   const colors = [...colorMap.values()];
+  // ★ 2026-05-09: モード名を表示 (●●モード) — PC 同様
+  let modeLabel = '';
+  try {
+    const m = (FORM_CONTEXT && FORM_CONTEXT.mode) || '';
+    const labels = { silk: 'シルク印刷モード', 'transfer-spot': '転写スポットモード', 'transfer-full': '転写フルカラーモード', free: 'フリーモード' };
+    if(labels[m]) modeLabel = ` <span style="font-size:9px;color:var(--ac);background:rgba(245,158,11,.12);padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:700">${labels[m]}</span>`;
+  } catch(_){}
   const titleHtml = showTitle
-    ? `<div class="txt-ed-lbl" style="margin-top:8px;margin-bottom:4px;font-size:10px">💡 使用中のカラー${applyable?'（クリックで適用）':''}</div>`
-    : '';
+    ? `<div class="txt-ed-lbl" style="margin-top:8px;margin-bottom:4px;font-size:10px">💡 使用中のカラー${applyable?'（クリックで適用）':''}${modeLabel}</div>`
+    : `<div style="margin-bottom:4px;font-size:10px">💡 使用中のカラー${modeLabel}</div>`;
   // フォーム仕様との差分警告
   let warnHtml = '';
   try {
@@ -7818,10 +7832,9 @@ function breakTextApart(){
   const extraSpacingPx = fontSize * (charSpacing / 1000);
 
   // 親の変換（angle, scale, 位置）をローカル座標→世界座標に適用するためのマトリクス
-  // ただし fabric の IText は originX/originY に応じてローカル原点が違うため
-  // 親の bounding rect 左上を参照にオフセットを計算。
-  // シンプル化のため「親の回転・スケールはリセットして、基準点を左上に揃えた後」の姿勢で配置する。
-  // 回転は親と同じ angle を各文字にコピーしつつ、位置は t.getPointByOrigin('left','top') から相対展開。
+  // ★ 2026-05-09: fabric の __charBounds を使って正確な文字位置を取得
+  //   従来 ctx.measureText で計算していたが、 fabric 内部の getCharBounds と微差あり
+  //   → fabric._renderText() / initDimensions() を呼んで __charBounds を確定
   let basePt;
   try {
     if(t.getPointByOrigin) basePt = t.getPointByOrigin('left','top');
@@ -7835,21 +7848,45 @@ function breakTextApart(){
   const scaleY = t.scaleY || 1;
   const lineHeightPx = fontSize * lineHeight;
 
+  // ★ fabric の __charBounds を初期化 (測定済みの正確な文字位置情報)
+  let charBounds = null;
+  try {
+    if(typeof t.initDimensions === 'function') t.initDimensions();
+    charBounds = t.__charBounds;
+  } catch(_){ charBounds = null; }
+
   // 新しい文字オブジェクトをすべて生成
   const created = [];
   lines.forEach((line, lineIdx) => {
     if(line.length === 0) return; // 空行はスキップ（オフセットだけ進む）
     let xCur = 0;
     const chars = Array.from(line); // サロゲートペア対応
-    chars.forEach((ch) => {
+    chars.forEach((ch, charIdx) => {
       if(ch === ' '){
         // スペースはスキップ（オフセットだけ進める）
-        xCur += meas.measureText(' ').width + extraSpacingPx;
+        // ★ 2026-05-09: __charBounds から正確な幅を取得
+        if(charBounds && charBounds[lineIdx] && charBounds[lineIdx][charIdx]){
+          const cb = charBounds[lineIdx][charIdx];
+          xCur = cb.left + (cb.kernedWidth || cb.width);
+        } else {
+          xCur += meas.measureText(' ').width + extraSpacingPx;
+        }
         return;
       }
-      const w = meas.measureText(ch).width;
+      // ★ 2026-05-09: __charBounds から正確な x 位置と幅を取得 (sub-pixel ズレ解消)
+      let charLeft = xCur, w;
+      if(charBounds && charBounds[lineIdx] && charBounds[lineIdx][charIdx]){
+        const cb = charBounds[lineIdx][charIdx];
+        charLeft = cb.left;
+        w = cb.kernedWidth || cb.width;
+        xCur = charLeft + w;
+      } else {
+        w = meas.measureText(ch).width;
+        charLeft = xCur;
+        xCur += w + extraSpacingPx;
+      }
       // 親のローカル座標（左上基準・未回転）で (x, y)
-      const localX = xCur * scaleX;
+      const localX = charLeft * scaleX;
       const localY = (lineIdx * lineHeightPx) * scaleY;
       // 回転を適用した世界座標
       const worldX = basePt.x + localX * cos - localY * sin;
@@ -7874,7 +7911,7 @@ function breakTextApart(){
       newT._partType = 'text';
       newT._partLabel = ch;
       created.push(newT);
-      xCur += w + extraSpacingPx;
+      // xCur は上のブロックで __charBounds 経由 or measureText 経由で 更新済み
     });
   });
 
@@ -8859,9 +8896,13 @@ function _3d_isSmallArea(area){
 function _3d_getModelKey(){
   const cat = (FORM_CONTEXT && FORM_CONTEXT.cat) ? String(FORM_CONTEXT.cat) : '';
   // 2026-04-24: 表記揺れ対応 ― 「ロンT」「ロング」「ロングTシャツ」「長袖」「long」を全部拾う
-  //   旧コード: cat.indexOf('ロンT') は「ロングTシャツ」を拾えなかった（ン と T の間に グ）
   if(/ロンT|ロング|長袖|long/i.test(cat)) return 'long_sleeve';
-  // パーカー/Hoodie は未対応（モデル取得後に追加）。暫定で tshirt にフォールバック。
+  // ★ 2026-05-09: 全カテゴリ対応 (ジップパーカー / パーカー / スウェット / ポロ)
+  //   ジップパーカー判定を先に (パーカー より先に拾う)
+  if(/ジップ|フルジップ|zip/i.test(cat)) return 'hoodie_zip';
+  if(/パーカー|hoodie|フード/i.test(cat)) return 'hoodie';
+  if(/スウェット|トレーナー|sweat/i.test(cat)) return 'sweat';
+  if(/ポロ|polo/i.test(cat)) return 'polo';
   return 'tshirt';
 }
 function _3d_getBodyColorHex(){
@@ -10091,14 +10132,21 @@ function _3d_inlineRefresh(){
   }
 
   // ★ N2.12 fix: 純粋 flex centering + 独自ズーム
+  // ★ 2026-05-09: SAFETY 拡大 + 大型キャンバス (34cm角内 等) でも 確実に画面内に収まるよう
+  //   余白マージンを安全側に取る (キャンバスが画面下にはみ出さないように)
   function _mobileFitCanvas(){
     const main = document.getElementById('mMain');
     if(!main || !window.fabCanvas) return;
-    const SAFETY = 8;
+    const SAFETY = 16; // 旧 8 → 16
     const availW = Math.max(50, main.clientWidth - SAFETY*2);
     const availH = Math.max(50, main.clientHeight - SAFETY*2);
     const baseW = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : 900;
     const baseH = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : 700;
+    // ★ 2026-05-09: fabric の内部 width/height を CANVAS_BASE と同期させてからフィット
+    try {
+      if(fabCanvas.getWidth() !== baseW) fabCanvas.setWidth(baseW);
+      if(fabCanvas.getHeight() !== baseH) fabCanvas.setHeight(baseH);
+    } catch(_){}
     const z = Math.min(availW / baseW, availH / baseH);
     _mobileFitZoom = z;
     _mobileZoomLevel = z;
