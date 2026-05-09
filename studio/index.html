@@ -3531,9 +3531,10 @@ function insertFontToCanvas(name){
     setTimeout(() => _doInsertFontText(name, arched), 200);
   })();
 }
-function _doInsertFontText(fontFamily, arched){
+function _doInsertFontText(fontFamily, arched, customText){
   if(!fabCanvas) return;
-  const text = 'テキスト';
+  // ★ 2026-05-09 (②): customText で プレビュー入力した文字列を渡せる
+  const text = (typeof customText === 'string' && customText.trim()) ? customText.trim() : 'テキスト';
   const fontSize = 32;
   // 2026-04-23: キャンバスサイズは可変（15cm角/A4/自由サイズ等）なので
   // ハードコード 450/350 ではなく現在のキャンバス中央を使う
@@ -10295,13 +10296,70 @@ function _3d_inlineRefresh(){
   }
 
   // ── 追加タブ: テキスト/画像/クリップアート/マイデザイン ──
+  // ★ 2026-05-09 (⑤): モバイル用 画像追加 — その場でキャンバスに追加する
+  window.m_addImage = function(){
+    if(!window.fabCanvas){ try{ toast('キャンバス起動中'); }catch(_){} return; }
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*,.svg';
+    inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', () => {
+      const file = inp.files && inp.files[0];
+      if(!file){ inp.remove(); return; }
+      const r = new FileReader();
+      r.onload = e => {
+        const dataUrl = e.target.result;
+        const isSvg = /^data:image\/svg/i.test(dataUrl) || /\.svg$/i.test(file.name);
+        const cw = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+        const ch = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
+        const placeAndSelect = (obj) => {
+          const w = obj.width * (obj.scaleX || 1);
+          const h = obj.height * (obj.scaleY || 1);
+          const sc = Math.min((cw * 0.5) / w, (ch * 0.5) / h, 1);
+          obj.set({
+            left: cw / 2, top: ch / 2,
+            originX: 'center', originY: 'center',
+            scaleX: (obj.scaleX || 1) * sc,
+            scaleY: (obj.scaleY || 1) * sc
+          });
+          obj._partType = 'image';
+          obj._partLabel = (file.name || '画像').replace(/\.[^.]+$/, '');
+          fabCanvas.add(obj);
+          fabCanvas.setActiveObject(obj);
+          fabCanvas.requestRenderAll();
+          try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+          // 編集タブに自動切替
+          try { if(typeof m_switchTab === 'function') m_switchTab('edit'); } catch(_){}
+        };
+        if(isSvg){
+          // SVG として読み込み (パーツ分解せず group)
+          const svgText = atob(dataUrl.split(',')[1]);
+          fabric.loadSVGFromString(svgText, (objects, options) => {
+            const grp = fabric.util.groupSVGElements(objects, options);
+            placeAndSelect(grp);
+          });
+        } else {
+          fabric.Image.fromURL(dataUrl, img => {
+            if(!img) return;
+            placeAndSelect(img);
+          }, { crossOrigin: 'anonymous' });
+        }
+      };
+      r.readAsDataURL(file);
+      setTimeout(() => { try{ inp.remove(); }catch(_){} }, 200);
+    });
+    inp.click();
+  };
+
   function m_renderAddTab(host){
     const grid = document.createElement('div');
     grid.className = 'm-add-grid';
     // ★ N2.13: テキスト追加→フォント選択ピッカー (自動追加しない)
+    // ★ 2026-05-09 (⑤): 画像追加をモバイル直接ハンドラに変更 (PC の edFile 経由は サイドバー保存だけで キャンバス追加されないため)
     const items = [
       { ic: 'T', label: 'テキスト追加', fn: () => { m_openFontPickerForAdd(); } },
-      { ic: '🖼', label: '画像追加',   fn: () => { const f = document.getElementById('edFile'); if(f) f.click(); } },
+      { ic: '🖼', label: '画像追加',   fn: () => { m_addImage(); } },
       { ic: '✨', label: 'クリップアート', fn: () => { m_openClipPicker(); } },
     ];
     items.forEach(it => {
@@ -10431,6 +10489,72 @@ function _3d_inlineRefresh(){
     row3.appendChild(stepper);
     sec3.appendChild(row3);
     host.appendChild(sec3);
+
+    // ── ★ 2026-05-09 (④): 文字バラバラ分解ボタン (PC 同様の breakTextApart) ──
+    const secBreak = document.createElement('div');
+    secBreak.className = 'm-edit-section';
+    const breakBtn = document.createElement('button');
+    breakBtn.type = 'button';
+    breakBtn.className = 'm-toggle-btn';
+    breakBtn.style.cssText = 'width:100%;padding:10px;font-weight:600;background:rgba(245,158,11,.12);border:1px dashed var(--ac);color:var(--ac);';
+    breakBtn.innerHTML = '✂️ 1 文字ずつバラバラに分解';
+    breakBtn.title = '各文字を独立したパーツにします。 個別に移動・回転・色変更できます';
+    breakBtn.addEventListener('click', () => {
+      try {
+        if(typeof breakTextApart === 'function'){
+          breakTextApart();
+          // 編集タブを再描画 (分解後は ActiveSelection になる)
+          setTimeout(() => { try { m_renderActiveTabContent(); } catch(_){} }, 100);
+        }
+      } catch(e){ console.warn('breakTextApart', e); }
+    });
+    secBreak.appendChild(breakBtn);
+    host.appendChild(secBreak);
+
+    // ── ★ 2026-05-09 (③): 文字間隔スライダー (通常テキスト用) ──
+    const secSp = document.createElement('div');
+    secSp.className = 'm-edit-section';
+    secSp.innerHTML = '<div class="m-edit-label">文字間隔</div>';
+    const spRow = document.createElement('div');
+    spRow.className = 'm-edit-row';
+    const spSlider = document.createElement('input');
+    spSlider.type = 'range'; spSlider.className = 'm-slider';
+    spSlider.min = '-200'; spSlider.max = '800'; spSlider.step = '10';
+    spSlider.value = String(sel.charSpacing || 0);
+    const spLbl = document.createElement('div');
+    spLbl.style.cssText = 'min-width:42px;text-align:right;color:var(--t2);font-size:12px;';
+    spLbl.textContent = spSlider.value;
+    spSlider.addEventListener('input', () => {
+      sel.set('charSpacing', parseInt(spSlider.value, 10));
+      spLbl.textContent = spSlider.value;
+      _m_fireModified(sel);
+    });
+    spRow.appendChild(spSlider); spRow.appendChild(spLbl);
+    secSp.appendChild(spRow);
+    host.appendChild(secSp);
+
+    // ── ★ 2026-05-09 (③): 行間隔 (lineHeight) スライダー ──
+    const secLh = document.createElement('div');
+    secLh.className = 'm-edit-section';
+    secLh.innerHTML = '<div class="m-edit-label">行間隔</div>';
+    const lhRow = document.createElement('div');
+    lhRow.className = 'm-edit-row';
+    const lhSlider = document.createElement('input');
+    lhSlider.type = 'range'; lhSlider.className = 'm-slider';
+    lhSlider.min = '0.6'; lhSlider.max = '3.0'; lhSlider.step = '0.05';
+    lhSlider.value = String(sel.lineHeight != null ? sel.lineHeight : 1.16);
+    const lhLbl = document.createElement('div');
+    lhLbl.style.cssText = 'min-width:42px;text-align:right;color:var(--t2);font-size:12px;';
+    lhLbl.textContent = parseFloat(lhSlider.value).toFixed(2);
+    lhSlider.addEventListener('input', () => {
+      const v = parseFloat(lhSlider.value);
+      sel.set('lineHeight', v);
+      lhLbl.textContent = v.toFixed(2);
+      _m_fireModified(sel);
+    });
+    lhRow.appendChild(lhSlider); lhRow.appendChild(lhLbl);
+    secLh.appendChild(lhRow);
+    host.appendChild(secLh);
 
     // ── カラー ──
     _m_renderColorSection(host, sel, 'fill', '文字色');
@@ -11984,24 +12108,27 @@ function _3d_inlineRefresh(){
             try { m_renderActiveTabContent(); } catch(_){}
           } else {
             // ★ N3.12: アーチON なら アーチテキスト挿入、 OFF なら通常テキスト挿入
+            // ★ 2026-05-09 (②): プレビューで打ったスペル (_fpPreviewText) を そのまま挿入
             const useArch = !!_mFontArch[d.name];
+            const previewTxt = (_fpPreviewText && _fpPreviewText !== 'テキスト') ? _fpPreviewText : '';
             if(!document.getElementById('mShell').classList.contains('in-editor')){
               m_startBlank();
             }
             m_closeFullPicker();
             setTimeout(() => {
               try {
-                if(useArch && typeof _doInsertFontText === 'function'){
-                  // PC 同様のアーチテキスト挿入
-                  _doInsertFontText(d.name, true);
+                if(typeof _doInsertFontText === 'function'){
+                  // PC 同等: アーチ/通常 どちらも _doInsertFontText で統一 (customText 対応)
+                  _doInsertFontText(d.name, useArch, previewTxt);
                   return;
                 }
-                // 通常テキスト挿入 (既存ロジック)
+                // フォールバック (旧ロジック)
                 if(typeof edAddText === 'function') edAddText();
                 setTimeout(() => {
                   const sel = window.fabCanvas && fabCanvas.getActiveObject();
                   if(sel){
                     sel.set('fontFamily', d.name);
+                    if(previewTxt) sel.set('text', previewTxt);
                     if(typeof fabCanvas.centerObject === 'function'){
                       fabCanvas.centerObject(sel);
                     } else {
@@ -12011,6 +12138,7 @@ function _3d_inlineRefresh(){
                     }
                     sel.setCoords();
                     fabCanvas.requestRenderAll();
+                    try { _m_fireModified && _m_fireModified(sel); } catch(_){}
                   }
                 }, 150);
               } catch(e){ console.warn(e); }
