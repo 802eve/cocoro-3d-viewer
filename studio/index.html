@@ -9648,10 +9648,32 @@ function _3d_inlineRefresh(){
           const newScaleY = partStartScaleY * ratio;
           const a = getTouchAngle(e.touches);
           const angleDiffDeg = (a - partStartTouchAngle) * 180 / Math.PI;
+          // ★ 2026-05-09: 0/90/180/270/360° スナップ (±5° 以内なら吸着)
+          let finalAngle = partStartAngle + angleDiffDeg;
+          // 0-360 に正規化
+          let normAngle = ((finalAngle % 360) + 360) % 360;
+          const SNAP_TARGETS = [0, 90, 180, 270, 360];
+          const SNAP_THRESHOLD = 5;
+          for(const t of SNAP_TARGETS){
+            if(Math.abs(normAngle - t) < SNAP_THRESHOLD){
+              // 元の方向 (回転累積) を保持しつつ スナップ
+              const delta = t - normAngle;
+              finalAngle = finalAngle + delta;
+              // 触覚フィードバック (はじめてスナップした瞬間のみ)
+              if(!partRef._lastSnapAngle || partRef._lastSnapAngle !== t){
+                try { if(navigator.vibrate) navigator.vibrate(15); } catch(_){}
+                partRef._lastSnapAngle = t;
+              }
+              break;
+            } else if(t === SNAP_TARGETS[SNAP_TARGETS.length-1]){
+              // どのターゲットにも近くない → スナップ解除
+              partRef._lastSnapAngle = null;
+            }
+          }
           partRef.set({
             scaleX: newScaleX,
             scaleY: newScaleY,
-            angle: partStartAngle + angleDiffDeg,
+            angle: finalAngle,
           });
           // ★ N3.9: 中央位置を保持 (left/top 基準だと左上が固定軸になるため、中央へ再配置)
           if(partStartCenter && partRef.setPositionByOrigin){
