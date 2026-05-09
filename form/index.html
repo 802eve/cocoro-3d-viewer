@@ -5628,8 +5628,9 @@ function renderSizeGrid(){
 //   ローカル開発時は ../デザイン制作フォーム/design-studio.html (相対)
 const DESIGN_STUDIO_URL = (function(){
   if(window.location.hostname === '802eve.github.io'){
-    // 本番: cocoro-3d-viewer リポジトリ root の デザイン制作フォーム/design-studio.html
-    return 'https://802eve.github.io/cocoro-3d-viewer/%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E5%88%B6%E4%BD%9C%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0/design-studio.html';
+    // ★ 2026-05-09: 旧パス `デザイン制作フォーム/design-studio.html` には古いバージョンが残ってるため
+    //   新しい `studio/` (= 最新の design-studio.html) を参照するように修正。
+    return 'https://802eve.github.io/cocoro-3d-viewer/studio/';
   }
   // ローカル開発
   return '../デザイン制作フォーム/design-studio.html';
