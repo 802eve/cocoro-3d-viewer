@@ -8915,9 +8915,16 @@ function _3d_getPrintMethodForViewer(){
 }
 // 2026-04-23: フォームで選んだプリント箇所を取り込み。未指定や「その他」の場合は
 // 前面（胸中央）にフォールバック。
+// ★ 2026-05-09: form (v13) は英語 area key (back_center 等) を直接渡してくる
+//   旧コードは日本語 (背中（中央）) のみ対応で 全部 front_center にフォールバックしていた
 function _3d_getAreaKey(){
   const loc = (FORM_CONTEXT && FORM_CONTEXT.location) ? FORM_CONTEXT.location : '';
-  if(loc && _3D_AREA_MAP_LOC[loc]) return _3D_AREA_MAP_LOC[loc];
+  if(!loc) return 'front_center';
+  // 英語キー (back_center 等) ならそのまま通す
+  const VALID = ['front_center','back_center','left_chest','right_chest','left_sleeve','right_sleeve','back_upper','front_hem','back_hem'];
+  if(VALID.indexOf(loc) >= 0) return loc;
+  // 旧 日本語キー も維持
+  if(_3D_AREA_MAP_LOC[loc]) return _3D_AREA_MAP_LOC[loc];
   return 'front_center';
 }
 function _3d_defaultSizeFor(method, area){
