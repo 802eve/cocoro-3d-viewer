@@ -6108,8 +6108,11 @@ function edAddClipart(id, x, y){
   if(!fabCanvas) return;
   const c = CLIPARTS.find(x=>x.id===id);
   if(!c) return;
-  const px = (typeof x === 'number') ? x : 450;
-  const py = (typeof y === 'number') ? y : 350;
+  // ★ 2026-05-09: キャンバス サイズに応じた中央 (旧: 450/350 固定)
+  const _cw = (typeof CANVAS_BASE_W !== 'undefined' && CANVAS_BASE_W > 0) ? CANVAS_BASE_W : (fabCanvas.width || 900);
+  const _ch = (typeof CANVAS_BASE_H !== 'undefined' && CANVAS_BASE_H > 0) ? CANVAS_BASE_H : (fabCanvas.height || 700);
+  const px = (typeof x === 'number') ? x : _cw / 2;
+  const py = (typeof y === 'number') ? y : _ch / 2;
   // ★ 2026-05-08: SVG クリップアート対応 — svgKey が登録されていれば SVG を読み込む
   if(c.svgKey && typeof SVG_TEMPLATE_PATHS !== 'undefined' && SVG_TEMPLATE_PATHS[c.svgKey]){
     const src = SVG_TEMPLATE_PATHS[c.svgKey];
@@ -6142,6 +6145,13 @@ function edAddClipart(id, x, y){
           fabCanvas.renderAll();
           if(typeof updEdSide === 'function') updEdSide();
           if(typeof pushHistory === 'function') pushHistory();
+          // ★ 2026-05-09: モバイルでキャンバス位置がズレる問題対策 — 追加直後に強制 fit
+          if(document.body.classList.contains('mobile-mode')){
+            try {
+              if(typeof window._mobileResetPan === 'function') window._mobileResetPan();
+              if(typeof _mobileFitCanvas === 'function') setTimeout(_mobileFitCanvas, 50);
+            } catch(_){}
+          }
         });
       } catch(e){ console.warn('clipart SVG load fail', e); }
     };
@@ -10382,6 +10392,11 @@ function _3d_inlineRefresh(){
           fabCanvas.setActiveObject(obj);
           fabCanvas.requestRenderAll();
           try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+          // ★ 2026-05-09: モバイルでキャンバス位置がズレる問題対策
+          try {
+            if(typeof window._mobileResetPan === 'function') window._mobileResetPan();
+            if(typeof _mobileFitCanvas === 'function') setTimeout(_mobileFitCanvas, 50);
+          } catch(_){}
           // 編集タブに自動切替
           try { if(typeof m_switchTab === 'function') m_switchTab('edit'); } catch(_){}
         };
@@ -10435,6 +10450,19 @@ function _3d_inlineRefresh(){
   // ── 編集タブ: 選択中のパーツ操作 (★ N4 2026-05-04 本実装) ──
   function m_renderEditTab(host){
     const sel = (window.fabCanvas && fabCanvas.getActiveObject) ? fabCanvas.getActiveObject() : null;
+    // ★ 2026-05-09: フォーム連携モード時は最上部に「使用中のカラー + モード警告」 を表示 (PC 版同等)
+    //   選択中アイテムがなくても表示する (色数オーバー警告など 重要情報)
+    try {
+      if(typeof FORM_CONTEXT !== 'undefined' && FORM_CONTEXT && FORM_CONTEXT.mode && FORM_CONTEXT.mode !== 'free'){
+        if(typeof renderUsedColorsInline === 'function'){
+          const banner = document.createElement('div');
+          banner.className = 'm-edit-section';
+          banner.style.cssText = 'background:rgba(255,255,255,.04);border-radius:8px;padding:10px;font-size:11px;line-height:1.5;border:1px solid var(--bd)';
+          banner.innerHTML = renderUsedColorsInline({ applyable: !!sel });
+          host.appendChild(banner);
+        }
+      }
+    } catch(e){ console.warn('mode banner', e); }
     if(!sel){
       const msg = document.createElement('div');
       msg.className = 'm-edit-empty';
@@ -11033,6 +11061,20 @@ function _3d_inlineRefresh(){
   }
   function _m_applyPropToSel(sel, prop, value){
     if(!sel) return;
+    // ★ 2026-05-09: 色変更時は色数制限チェック (PC 版同等) — シルク 4色 / 転写スポット 1色 等
+    if(prop === 'fill' && typeof _wouldExceedColorLimit === 'function'){
+      try {
+        const info = _wouldExceedColorLimit(value);
+        if(info){
+          if(typeof _showColorLimitModal === 'function'){
+            _showColorLimitModal(info, value);
+          } else {
+            alert(info.message);
+          }
+          return;
+        }
+      } catch(e){ console.warn('color limit check', e); }
+    }
     try {
       if(sel.type === 'activeSelection' && typeof sel.getObjects === 'function'){
         sel.getObjects().forEach(o => _m_applyOne(o, prop, value));
@@ -12443,9 +12485,13 @@ function _3d_inlineRefresh(){
       tries++;
       if(mountCanvasToMobile() || tries > 100){ clearInterval(tryMount); }
     }, 100);
-    // ★ さらに 500ms 後に再フィット (PC editor が visible になってから)
-    setTimeout(_mobileFitCanvas, 500);
-    setTimeout(_mobileFitCanvas, 1000);
+    // ★ 2026-05-09: フィット タイミングを増やして フォーム経由でも確実に中央化
+    [300, 800, 1500, 2500].forEach(ms => setTimeout(() => {
+      try {
+        if(typeof window._mobileResetPan === 'function') window._mobileResetPan();
+        _mobileFitCanvas();
+      } catch(_){}
+    }, ms));
   }
   // 戻る (エディタ → ランチャー)
   function m_backToLauncher(){
