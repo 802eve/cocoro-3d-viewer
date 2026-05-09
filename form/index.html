@@ -5656,8 +5656,16 @@ function buildStudioUrl(area){
   if(area) params.set('pid', area);
   if(area) params.set('location', area);
   // カテゴリ
+  // ★ 2026-05-09: パーカー商品名で「ジップ」 判定 → ジップパーカーとして渡す (3D viewer モデル切替)
   if(line.category && line.category.key){
-    params.set('cat', _v12Cat(line.category.key));
+    let v12cat = _v12Cat(line.category.key);
+    if(line.category.key === 'hoodie' && line.product && line.product.name){
+      const nm = String(line.product.name);
+      if(/ジップ|フルジップ|zip/i.test(nm)){
+        v12cat = 'ジップパーカー';
+      }
+    }
+    params.set('cat', v12cat);
   }
   // ボディ色
   if(line.color){
@@ -6511,6 +6519,45 @@ function checkDesignToolData(){
       _recolorCache.clear();
     }
 
+    // ★ 2026-05-09: モード切替/色数変更があった場合 警告 (PC同等) + form 側に反映
+    if(usageRaw){
+      try {
+        const usage = JSON.parse(usageRaw);
+        const changes = [];
+        if(usage.switched && usage.requestedMethod){
+          const orig = usage.originalMethod || '';
+          const newM = usage.requestedMethod;
+          if(orig && orig !== newM){
+            changes.push('🌈 印刷方法: ' + orig + ' → ' + newM);
+          }
+        }
+        if(usage.bumped && usage.requestedColorCount){
+          const origC = usage.originalColorCount || '';
+          const newC = usage.requestedColorCount;
+          if(origC && origC !== newC){
+            changes.push('📝 色数: ' + origC + ' → ' + newC);
+          }
+        }
+        if(changes.length){
+          // form 側に反映 (method / colorCount を更新)
+          state.lines.forEach((ln, idx) => {
+            if(!ln.printDesigns || !ln.printDesigns[targetArea]) return;
+            const d = ln.printDesigns[targetArea];
+            if(usage.requestedMethod){
+              const m = (usage.requestedMethod === 'シルク') ? 'シルクスクリーン' : usage.requestedMethod;
+              d.method = m;
+            }
+            if(usage.requestedColorCount){
+              d.colorCount = usage.requestedColorCount;
+            }
+          });
+          // 警告
+          setTimeout(() => {
+            alert('🔔 デザインスタジオで以下の変更がありました:\n\n' + changes.join('\n') + '\n\nお見積りに反映しました。');
+          }, 300);
+        }
+      } catch(e){ console.warn('mode change check failed', e); }
+    }
     _clearStudioKeys();
     pushPrintsTo3D();
     renderPrintGrid();
