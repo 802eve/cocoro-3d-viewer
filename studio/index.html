@@ -9438,15 +9438,17 @@ function _3d_inlineRefresh(){
       root.setProperty('--m-canvas-w', baseW + 'px');
       root.setProperty('--m-canvas-h', baseH + 'px');
       root.setProperty('--m-scale', String(_mobileZoomLevel));
-      // wrapper / 内部 canvas に残った inline style (left/top/margin/position) をクリア
-      // ※ width/height は CSS 変数で !important なので inline があっても問題ないが念のため
+      // ★ 2026-05-09: 強制 absolute 中央配置を維持 (CSS flex 中央が効かない場合の対策)
       const wrapper = document.getElementById('fabCanvas')?.parentElement;
-      if(wrapper){
-        wrapper.style.left = '';
-        wrapper.style.top = '';
+      const panWrap = document.getElementById('mPanWrap');
+      if(wrapper && panWrap){
+        panWrap.style.position = 'relative';
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = '50%';
+        wrapper.style.top = '50%';
         wrapper.style.margin = '';
-        wrapper.style.position = '';
-        wrapper.style.transform = '';
+        wrapper.style.transformOrigin = 'center center';
+        wrapper.style.transform = `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`;
       }
       if(typeof window._zoom !== 'undefined') window._zoom = _mobileZoomLevel;
       if(typeof updateZoomLabel === 'function') updateZoomLabel();
@@ -10132,12 +10134,13 @@ function _3d_inlineRefresh(){
   }
 
   // ★ N2.12 fix: 純粋 flex centering + 独自ズーム
-  // ★ 2026-05-09: SAFETY 拡大 + 大型キャンバス (34cm角内 等) でも 確実に画面内に収まるよう
-  //   余白マージンを安全側に取る (キャンバスが画面下にはみ出さないように)
+  // ★ 2026-05-09: SAFETY 拡大 + canvas-container を JS で強制中央配置
+  //   CSS だけでは align-items center が効かないケース (panWrap height collapse 等) を回避するため
+  //   canvas-container に absolute/top/left 中央配置を強制する。
   function _mobileFitCanvas(){
     const main = document.getElementById('mMain');
     if(!main || !window.fabCanvas) return;
-    const SAFETY = 16; // 旧 8 → 16
+    const SAFETY = 16;
     const availW = Math.max(50, main.clientWidth - SAFETY*2);
     const availH = Math.max(50, main.clientHeight - SAFETY*2);
     const baseW = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : 900;
@@ -10150,6 +10153,24 @@ function _3d_inlineRefresh(){
     const z = Math.min(availW / baseW, availH / baseH);
     _mobileFitZoom = z;
     _mobileZoomLevel = z;
+    // ★ 2026-05-09 強制中央配置パッチ — canvas-container を absolute + top/left 50% で確実に中央化
+    //   (フォーム経由起動時の CSS flex 中央化が効かない問題対策)
+    try {
+      const wrapper = document.getElementById('fabCanvas')?.parentElement;
+      const panWrap = document.getElementById('mPanWrap');
+      if(wrapper && panWrap){
+        // panWrap を position: relative に
+        panWrap.style.position = 'relative';
+        // canvas-container を absolute + 中央
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = '50%';
+        wrapper.style.top = '50%';
+        // transform-origin で中央起点 + translate -50% で完全中央 + scale + pan
+        // pan-x/pan-y は --m-pan-x/y で transform に組込
+        wrapper.style.transformOrigin = 'center center';
+        wrapper.style.transform = `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`;
+      }
+    } catch(_){}
     // wrapper の残留 inline style をクリア (CSS の純粋 flex centering に任せる)
     const wrapper = document.getElementById('fabCanvas')?.parentElement;
     if(wrapper){
