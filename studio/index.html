@@ -7721,11 +7721,64 @@ function deleteSel(){
 //   - 親の回転・スケール・位置 を維持（transformMatrix 経由で世界座標を算出）
 //   - 分解後は ActiveSelection で全文字まとめて選択状態に（動かしやすさ優先）
 //   - アーチテキストは対応外（親グループを先に解除してから使用）
+// ★ 2026-05-09 (④追加): アーチテキストの 1文字ずつ分解
+//   アーチグループ → 各 fabric.Text の世界座標を計算 → 独立した fabric.IText に変換 → ActiveSelection
+function breakArchTextApart(){
+  const grp = fabCanvas && fabCanvas.getActiveObject();
+  if(!grp || (typeof _isArchTextGroup === 'function' && !_isArchTextGroup(grp))){
+    alert('アーチテキストを選択してください'); return;
+  }
+  const objects = grp.getObjects();
+  if(!objects || !objects.length){ alert('文字がありません'); return; }
+  // group の transformMatrix
+  const groupMatrix = grp.calcTransformMatrix();
+  const created = [];
+  objects.forEach(letter => {
+    if(!letter.text) return;
+    let centerPt;
+    try { centerPt = letter.getCenterPoint ? letter.getCenterPoint() : { x: letter.left, y: letter.top }; }
+    catch(_){ centerPt = { x: letter.left || 0, y: letter.top || 0 }; }
+    const worldPt = fabric.util.transformPoint(centerPt, groupMatrix);
+    const totalAngle = (grp.angle || 0) + (letter.angle || 0);
+    const scaleX = (grp.scaleX || 1) * (letter.scaleX || 1);
+    const scaleY = (grp.scaleY || 1) * (letter.scaleY || 1);
+    const newT = new fabric.IText(letter.text, {
+      left: worldPt.x, top: worldPt.y,
+      originX: 'center', originY: 'center',
+      angle: totalAngle,
+      scaleX: scaleX, scaleY: scaleY,
+      fontFamily: letter.fontFamily || grp._archFont || 'sans-serif',
+      fontSize: letter.fontSize || grp._archSize || 32,
+      fontWeight: letter.fontWeight || 'normal',
+      fontStyle: letter.fontStyle || 'normal',
+      underline: letter.underline || false,
+      fill: letter.fill || grp._archFill || '#1a1a1a',
+      objectCaching: false,
+    });
+    newT._partType = 'text';
+    newT._partLabel = letter.text;
+    created.push(newT);
+  });
+  if(!created.length){ alert('分解できる文字がありませんでした'); return; }
+  fabCanvas.remove(grp);
+  created.forEach(t => fabCanvas.add(t));
+  const sel = new fabric.ActiveSelection(created, { canvas: fabCanvas });
+  fabCanvas.setActiveObject(sel);
+  fabCanvas.requestRenderAll();
+  try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+}
+window.breakArchTextApart = breakArchTextApart;
+
 function breakTextApart(){
   const t = fabCanvas && fabCanvas.getActiveObject();
   if(!t){ alert('テキストを選択してください'); return; }
+  // ★ 2026-05-09: アーチテキストなら専用関数へ自動振り分け
+  if(typeof _isArchTextGroup === 'function' && _isArchTextGroup(t)){
+    breakArchTextApart();
+    return;
+  }
   if(!(t.type === 'i-text' || t.type === 'text' || t.type === 'textbox')){
-    alert('1文字ずつバラバラにできるのは通常テキストのみです。アーチテキストは先に解除してください。');
+    alert('1文字ずつバラバラにできるのは通常テキストとアーチテキストのみです。');
     return;
   }
   const srcText = (t.text || '').replace(/\r/g, '');
@@ -10642,6 +10695,25 @@ function _3d_inlineRefresh(){
         '<div style="font-size:12px;font-weight:700;color:var(--ac);margin-bottom:2px">⌒ アーチテキスト</div>'
       + '<div style="font-size:10px;color:var(--t3);line-height:1.4">下のスライダーで深さ・文字間隔を調整できます。</div>';
     host.appendChild(banner);
+
+    // ── ★ 2026-05-09 (④追加): アーチを 1文字ずつ独立に分解 ──
+    const secBreak = document.createElement('div');
+    secBreak.className = 'm-edit-section';
+    const breakBtn = document.createElement('button');
+    breakBtn.type = 'button';
+    breakBtn.style.cssText = 'width:100%;padding:10px;font-weight:600;background:rgba(245,158,11,.12);border:1px dashed var(--ac);color:var(--ac);border-radius:8px;font-family:inherit;cursor:pointer;font-size:13px;';
+    breakBtn.innerHTML = '✂️ 1 文字ずつバラバラに分解';
+    breakBtn.title = 'アーチを解除して各文字を独立したテキストにします';
+    breakBtn.addEventListener('click', () => {
+      try {
+        if(typeof breakArchTextApart === 'function'){
+          breakArchTextApart();
+          setTimeout(() => { try { m_renderActiveTabContent(); } catch(_){} }, 100);
+        }
+      } catch(e){ console.warn('breakArchTextApart', e); }
+    });
+    secBreak.appendChild(breakBtn);
+    host.appendChild(secBreak);
 
     // ── テキスト内容 ──
     const sec1 = document.createElement('div');
