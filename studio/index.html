@@ -8928,6 +8928,11 @@ function _3d_getAreaKey(){
   return 'front_center';
 }
 function _3d_defaultSizeFor(method, area){
+  // ★ 2026-05-09: フォームで指定された size (5cm角内 / 34x12cm 等) を最優先
+  //   _printSizeKey は applyPrintSizeCanvas で URL params から設定される
+  if(typeof _printSizeKey === 'string' && _printSizeKey){
+    return _printSizeKey;
+  }
   // 2026-04-24: viewer の SIZE_SCALES に合う短キーを返す（typo「34cm内」→「34cm角内」修正）
   const small = _3d_isSmallArea(area);
   if(method === '転写'){
@@ -9359,17 +9364,20 @@ function _3d_inlineRefresh(){
         try { panWrap.removeChild(child); } catch(_){}
       }
     });
-    // ★ N2.16 fix: canvas-container に fabric が書き込んだ inline style (left/top/margin/position 等)
-    //   を完全クリア。 これらが残っていると CSS の margin:auto / flex centering を妨げる。
+    // ★ 2026-05-09: 強制 absolute 中央配置 (fabric の inline style を上書き)
+    //   旧: 「inline style クリアして CSS flex 中央化に任せる」 だが
+    //   一部の起動タイミングで CSS が効かず、 canvas が下端に張り付くケースがある
     try {
-      wrapper.style.left = '';
-      wrapper.style.top = '';
+      panWrap.style.position = 'relative';
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '50%';
+      wrapper.style.top = '50%';
       wrapper.style.right = '';
       wrapper.style.bottom = '';
-      wrapper.style.margin = '';
-      wrapper.style.position = '';
-      wrapper.style.transform = '';
+      wrapper.style.margin = '0';
       wrapper.style.float = '';
+      wrapper.style.transformOrigin = 'center center';
+      wrapper.style.transform = `translate(calc(-50% + var(--m-pan-x, 0px)), calc(-50% + var(--m-pan-y, 0px))) scale(var(--m-scale, 1))`;
     } catch(_){}
     // ★ N2.16 fix 2026-05-05: ResizeObserver で m-main のサイズ変化を監視 → 自動フィット。
     //   in-editor 切替直後など layout が確定するまでのタイミング差を吸収し、
