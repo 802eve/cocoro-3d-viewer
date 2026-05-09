@@ -9643,7 +9643,74 @@ function _3d_inlineRefresh(){
       if(partActive && partRef){
         try {
           const d = getDistance(e.touches);
-          const ratio = d / Math.max(1, partStartDistance);
+          let ratio = d / Math.max(1, partStartDistance);
+          // ★ 2026-05-10: スケールスナップ — 自分の左右端/上下端 が 他パーツの端と一致する ratio で吸着
+          //   中心固定でスケール変化するので、 各「目標端ライン」 に合う ratio を計算 → 現在 ratio に近いものを選ぶ
+          try {
+            if(partStartCenter && partRef.width && partRef.height){
+              const baseW = partRef.width;
+              const baseH = partRef.height;
+              const cx = partStartCenter.x;
+              const cy = partStartCenter.y;
+              const cwTotal = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+              const chTotal = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
+              const xLines = [0, cwTotal, cwTotal/2];
+              const yLines = [0, chTotal, chTotal/2];
+              fabCanvas.getObjects().forEach(o => {
+                if(o === partRef || !o.getBoundingRect) return;
+                const r = o.getBoundingRect(true);
+                xLines.push(r.left, r.left + r.width, r.left + r.width / 2);
+                yLines.push(r.top, r.top + r.height, r.top + r.height / 2);
+              });
+              const candidates = [];
+              const SNAP_PX = 8;
+              // X 軸: 自分の右端 (cx + halfW) または 左端 (cx - halfW) が xLines に近い ratio
+              xLines.forEach(L => {
+                // 右端 → halfW = L - cx → scale = (L-cx)*2/baseW
+                const sR = (L - cx) * 2 / baseW;
+                if(sR > 0.05 && sR < 50){
+                  const r2 = sR / Math.max(0.001, partStartScaleX);
+                  candidates.push({ ratio: r2, axis: 'x', dist: Math.abs(cx + (baseW * partStartScaleX * ratio)/2 - L) });
+                }
+                // 左端 → halfW = cx - L → scale = (cx-L)*2/baseW
+                const sL = (cx - L) * 2 / baseW;
+                if(sL > 0.05 && sL < 50){
+                  const r2 = sL / Math.max(0.001, partStartScaleX);
+                  candidates.push({ ratio: r2, axis: 'x', dist: Math.abs(cx - (baseW * partStartScaleX * ratio)/2 - L) });
+                }
+              });
+              yLines.forEach(L => {
+                const sB = (L - cy) * 2 / baseH;
+                if(sB > 0.05 && sB < 50){
+                  const r2 = sB / Math.max(0.001, partStartScaleY);
+                  candidates.push({ ratio: r2, axis: 'y', dist: Math.abs(cy + (baseH * partStartScaleY * ratio)/2 - L) });
+                }
+                const sT = (cy - L) * 2 / baseH;
+                if(sT > 0.05 && sT < 50){
+                  const r2 = sT / Math.max(0.001, partStartScaleY);
+                  candidates.push({ ratio: r2, axis: 'y', dist: Math.abs(cy - (baseH * partStartScaleY * ratio)/2 - L) });
+                }
+              });
+              // 視覚距離が SNAP_PX 以内 + 現在 ratio に最も近い候補を選ぶ
+              let bestRatio = ratio;
+              let bestScore = SNAP_PX + 1;
+              candidates.forEach(c => {
+                if(c.dist < SNAP_PX && c.dist < bestScore){
+                  bestScore = c.dist;
+                  bestRatio = c.ratio;
+                }
+              });
+              if(bestRatio !== ratio){
+                ratio = bestRatio;
+                if(!partRef._lastScaleSnap){
+                  try { if(navigator.vibrate) navigator.vibrate(8); } catch(_){}
+                  partRef._lastScaleSnap = true;
+                }
+              } else {
+                partRef._lastScaleSnap = false;
+              }
+            }
+          } catch(_){}
           const newScaleX = partStartScaleX * ratio;
           const newScaleY = partStartScaleY * ratio;
           const a = getTouchAngle(e.touches);
