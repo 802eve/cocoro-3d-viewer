@@ -8495,17 +8495,26 @@ function startCropMode(img){
   fabCanvas.setActiveObject(cropRect);
   fabCanvas.requestRenderAll();
   // 3. ツールバー (適用/キャンセル) 表示
+  // ★ N3.16.1 2026-05-10: コンパクトな丸ボタン2個 (キャンバス覆わない位置に)
+  //   左上 (戻るボタン横) に縦並びで配置 = キャンバス操作の邪魔にならない
   const toolbar = document.createElement('div');
   toolbar.id = '_cropToolbar';
-  toolbar.style.cssText = 'position:fixed;left:50%;top:80px;transform:translateX(-50%);z-index:10000;display:flex;gap:10px;padding:10px 14px;background:rgba(0,0,0,.85);border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.5);backdrop-filter:blur(8px);';
-  const btnApply = document.createElement('button');
-  btnApply.style.cssText = 'padding:10px 20px;border:none;border-radius:24px;background:#10b981;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;';
-  btnApply.innerHTML = '<span style="font-size:16px;">✓</span>適用';
-  btnApply.addEventListener('click', () => applyCropMode());
-  const btnCancel = document.createElement('button');
-  btnCancel.style.cssText = 'padding:10px 20px;border:none;border-radius:24px;background:#374151;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;';
-  btnCancel.innerHTML = '<span style="font-size:16px;">✕</span>キャンセル';
-  btnCancel.addEventListener('click', () => cancelCropMode());
+  toolbar.style.cssText = 'position:fixed;right:14px;top:60px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+  const _mkBtn = (bg, ico, title, fn) => {
+    const b = document.createElement('button');
+    b.title = title;
+    b.style.cssText = 'pointer-events:auto;width:54px;height:54px;border:none;border-radius:50%;background:' + bg + ';color:#fff;font-size:24px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.18);transition:transform .15s;';
+    b.innerHTML = ico;
+    b.addEventListener('touchstart', () => { b.style.transform = 'scale(0.9)'; }, { passive: true });
+    b.addEventListener('touchend',   () => { b.style.transform = ''; }, { passive: true });
+    b.addEventListener('mousedown',  () => { b.style.transform = 'scale(0.9)'; });
+    b.addEventListener('mouseup',    () => { b.style.transform = ''; });
+    b.addEventListener('mouseleave', () => { b.style.transform = ''; });
+    b.addEventListener('click', fn);
+    return b;
+  };
+  const btnApply  = _mkBtn('#10b981', '✓', 'トリミング適用', () => applyCropMode());
+  const btnCancel = _mkBtn('#ef4444', '✕', 'キャンセル',     () => cancelCropMode());
   toolbar.appendChild(btnApply);
   toolbar.appendChild(btnCancel);
   document.body.appendChild(toolbar);
@@ -13436,7 +13445,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.0';
+    _vb.textContent = 'N3.16.1';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
