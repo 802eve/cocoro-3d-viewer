@@ -3277,11 +3277,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderModeBadge();
   initGridZooms();
   initSplitters();
-  // ★ N3.15.6 2026-05-10: モバイル スライダー (m-slider) のバー部分タップを無効化
-  //   ハンドル付近 (中心 ±28px) のみ有効 → 誤タップで値が飛ぶ問題を防止
-  const _disableSliderBarTap = (e) => {
+  // ★ N3.15.6→N3.15.8 2026-05-10: モバイル スライダー (m-slider) UX
+  //   - マウス: ハンドル付近 (±28px) 以外のクリックを無視 (preventDefault)
+  //   - タッチ: 完全 passive (スクロール邪魔しない)。値変更が起きても、
+  //            「タップだけ」 or 「縦スライド」 と判定したら 元の値に revert
+  //            横方向に十分動いたら ハンドルドラッグと見なして そのまま値変更を許可
+  // マウス・ペン: ハンドル付近以外を preventDefault
+  const _disableSliderBarMouse = (e) => {
     const t = e.target;
     if(!t || !t.matches || !t.matches('input[type="range"].m-slider')) return;
+    if(e.pointerType === 'touch') return; // タッチは別経路で処理
     try {
       const rect = t.getBoundingClientRect();
       const min = parseFloat(t.min) || 0;
@@ -3289,7 +3294,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       const val = parseFloat(t.value) || 0;
       const ratio = (max > min) ? (val - min) / (max - min) : 0;
       const thumbX = rect.left + ratio * rect.width;
-      const clickX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+      const clickX = e.clientX || 0;
       if(Math.abs(clickX - thumbX) > 28){
         e.preventDefault();
         e.stopPropagation();
@@ -3297,9 +3302,67 @@ document.addEventListener('DOMContentLoaded',()=>{
       }
     } catch(_){}
   };
-  document.addEventListener('pointerdown', _disableSliderBarTap, true);
-  document.addEventListener('mousedown',   _disableSliderBarTap, true);
-  document.addEventListener('touchstart',  _disableSliderBarTap, { capture: true, passive: false });
+  document.addEventListener('pointerdown', _disableSliderBarMouse, true);
+  document.addEventListener('mousedown',   _disableSliderBarMouse, true);
+  // タッチ: ジェスチャー判定方式 (passive = スクロール邪魔しない)
+  let _sliderTouchData = null;
+  document.addEventListener('touchstart', (e) => {
+    const t = e.target;
+    if(!t || !t.matches || !t.matches('input[type="range"].m-slider')) return;
+    if(!e.touches || !e.touches[0]) return;
+    try {
+      const rect = t.getBoundingClientRect();
+      const min = parseFloat(t.min) || 0;
+      const max = parseFloat(t.max) || 100;
+      const val = parseFloat(t.value) || 0;
+      const ratio = (max > min) ? (val - min) / (max - min) : 0;
+      const thumbX = rect.left + ratio * rect.width;
+      const startX = e.touches[0].clientX;
+      const startY = e.touches[0].clientY;
+      const farFromThumb = Math.abs(startX - thumbX) > 28;
+      _sliderTouchData = {
+        slider: t,
+        origValue: t.value,
+        startX, startY,
+        farFromThumb,
+        committed: false,  // ハンドルドラッグ判定確定したら true (revert しない)
+      };
+    } catch(_){ _sliderTouchData = null; }
+  }, { capture: true, passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if(!_sliderTouchData || !e.touches || !e.touches[0]) return;
+    if(_sliderTouchData.committed) return;
+    const dx = e.touches[0].clientX - _sliderTouchData.startX;
+    const dy = e.touches[0].clientY - _sliderTouchData.startY;
+    if(Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.2){
+      // 縦スライド判定 → 値を元に戻す + 以降 値変更を全部 revert
+      try {
+        _sliderTouchData.slider.value = _sliderTouchData.origValue;
+        _sliderTouchData.slider.dispatchEvent(new Event('input', { bubbles: true }));
+      } catch(_){}
+      _sliderTouchData.scrolling = true;
+    } else if(!_sliderTouchData.farFromThumb && Math.abs(dx) > 10){
+      // ハンドル近くから横方向ドラッグ → スライダー操作確定
+      _sliderTouchData.committed = true;
+    }
+    if(_sliderTouchData.scrolling){
+      // スクロール継続: 値が動いたら戻す
+      try {
+        _sliderTouchData.slider.value = _sliderTouchData.origValue;
+      } catch(_){}
+    }
+  }, { capture: true, passive: true });
+  document.addEventListener('touchend', (e) => {
+    if(!_sliderTouchData) return;
+    // タップだけ (committed/scrolling どちらでもない) かつ ハンドル外なら 値を元に戻す
+    if(!_sliderTouchData.committed && _sliderTouchData.farFromThumb){
+      try {
+        _sliderTouchData.slider.value = _sliderTouchData.origValue;
+        _sliderTouchData.slider.dispatchEvent(new Event('input', { bubbles: true }));
+      } catch(_){}
+    }
+    _sliderTouchData = null;
+  }, { capture: true, passive: true });
 });
 
 // ── リサイズ用スプリッター ──
@@ -4167,7 +4230,7 @@ function extendFabricSerialization(){
     cornerColor: '#ffffff',              // ハンドル中身：白
     cornerStrokeColor: '#f59e0b',        // ハンドル枠：オレンジ
     cornerStyle: 'circle',               // 丸いハンドル
-    cornerSize: _isMobileTouch ? 22 : 12, // ハンドルのサイズ (モバイル指タッチ用 大きめ)
+    cornerSize: _isMobileTouch ? 32 : 12, // ハンドルのサイズ (モバイル指タッチ用 大きめ)
     transparentCorners: false,           // 塗り表示
     borderScaleFactor: 1.5,              // 枠線太さ
     padding: 4,                          // 枠と中身のすき間
@@ -4176,7 +4239,7 @@ function extendFabricSerialization(){
   });
   // ピクセル単位の当たり判定（グループのbbox内の空白では下のパーツを選べるように）
   fabric.Object.prototype.perPixelTargetFind = true;
-  fabric.Object.prototype.targetFindTolerance = _isMobileTouch ? 12 : 4; // 指タッチで掴みやすく
+  fabric.Object.prototype.targetFindTolerance = _isMobileTouch ? 18 : 4; // 指タッチで掴みやすく
 
   // ── 装飾フォント（Arbutus, Ewertなど）のバウンディングボックス誤差を補正 ──
   // Text / IText / Textbox の initDimensions を上書きし、width に実描画のはみ出し幅を加算
@@ -4416,7 +4479,7 @@ async function openEditor(id){
                 cornerColor: '#ffffff',
                 cornerStrokeColor: '#f59e0b',
                 cornerStyle: 'circle',
-                cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 22 : 12, // ★ N3.15.7 mobile UP
+                cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 32 : 12, // ★ N3.15.7 mobile UP
                 transparentCorners: false,
                 padding: 4,
                 rotatingPointOffset: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 40 : 30,
@@ -6322,7 +6385,7 @@ function edAddClipart(id, x, y){
             cornerColor: '#ffffff',
             cornerStrokeColor: '#f59e0b',
             cornerStyle: 'circle',
-            cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 22 : 12, // ★ N3.15.7 mobile UP
+            cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 32 : 12, // ★ N3.15.7 mobile UP
             transparentCorners: false,
             padding: 4,
           });
@@ -9870,10 +9933,9 @@ function _3d_inlineRefresh(){
               });
               if(bestRatio !== ratio){
                 ratio = bestRatio;
-                if(!partRef._lastScaleSnap){
-                  try { if(navigator.vibrate) navigator.vibrate(8); } catch(_){}
-                  partRef._lastScaleSnap = true;
-                }
+                // ★ N3.15.8 2026-05-10: スケール snap のバイブは削除 (反応多すぎてうるさい)
+                //   回転 snap (90度) のバイブは引き続き残す
+                partRef._lastScaleSnap = true;
               } else {
                 partRef._lastScaleSnap = false;
               }
@@ -11439,29 +11501,9 @@ function _3d_inlineRefresh(){
     sec2.appendChild(rg);
     host.appendChild(sec2);
 
-    // ── キャンバス整列 ──
-    const sec3 = document.createElement('div');
-    sec3.className = 'm-edit-section';
-    sec3.innerHTML = '<div class="m-edit-label">キャンバス整列</div>';
-    const ca = document.createElement('div');
-    ca.className = 'm-toggle-row';
-    const _ab = (lbl, fn) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'm-toggle-btn';
-      b.textContent = lbl;
-      b.addEventListener('click', () => { fn(); _m_fireModified(sel); });
-      return b;
-    };
-    const W = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
-    const H = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
-    ca.appendChild(_ab('左', () => sel.set('left', sel.width * (sel.scaleX||1) * (sel.originX==='center'?0.5:0))));
-    ca.appendChild(_ab('中央', () => sel.set('left', W/2 - (sel.originX==='center'?0:sel.width*(sel.scaleX||1)/2))));
-    ca.appendChild(_ab('右', () => sel.set('left', W - (sel.originX==='center'?sel.width*(sel.scaleX||1)/2:sel.width*(sel.scaleX||1)))));
-    ca.appendChild(_ab('上', () => sel.set('top', sel.originY==='center'?sel.height*(sel.scaleY||1)/2:0)));
-    ca.appendChild(_ab('下', () => sel.set('top', H - (sel.originY==='center'?sel.height*(sel.scaleY||1)/2:sel.height*(sel.scaleY||1)))));
-    sec3.appendChild(ca);
-    host.appendChild(sec3);
+    // ★ N3.15.8 2026-05-10: 「キャンバス整列」 セクションは撤去
+    //   m_renderEditTab 共通の `_m_renderPartsAlignUI` (パーツ整列 6個) に置き換え済み
+    //   オブジェクト固有の他のセクションは ここで終わり
   }
 
   // ★ N3.14.1 2026-05-07: モバイル編集系の共通ヘルパー — set + fire('modified') で onChange → pushHistory が走る
@@ -13049,7 +13091,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.15.7';
+    _vb.textContent = 'N3.15.8';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
