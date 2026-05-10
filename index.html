@@ -10,9 +10,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>COCORO-KOBO ホーム</title>
 
-<!-- アイコン (Tシャツ + ハート の SVG を data URI 化) -->
-<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230e1116"/><path d="M22 16 L28 16 C28 19 30 21 32 21 C34 21 36 19 36 16 L42 16 L52 22 L48 30 L43 27 L43 50 C43 51 42 52 41 52 L23 52 C22 52 21 51 21 50 L21 27 L16 30 L12 22 Z" fill="%23ef4444"/><circle cx="26" cy="36" r="2.5" fill="%23fff"/><circle cx="38" cy="36" r="2.5" fill="%23fff"/></svg>'>
-<link rel="apple-touch-icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="40" fill="%230e1116"/><path d="M62 45 L78 45 C78 53 84 58 90 58 C96 58 102 53 102 45 L118 45 L146 62 L135 84 L121 76 L121 140 C121 143 118 146 115 146 L65 146 C62 146 59 143 59 140 L59 76 L45 84 L34 62 Z" fill="%23ef4444"/><circle cx="73" cy="100" r="7" fill="%23fff"/><circle cx="107" cy="100" r="7" fill="%23fff"/></svg>'>
+<!-- ★ N3.16.0 2026-05-10: PWA manifest + PNG アイコン -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -224,6 +228,36 @@
   if(window.matchMedia('(display-mode: standalone)').matches){
     document.body.classList.add('standalone');
   }
+  // ★ N3.16.0 2026-05-10: Service Worker 登録 (オフライン対応 + 高速化)
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js', { scope: '/cocoro-3d-viewer/' })
+        .then((reg) => { console.log('SW registered:', reg.scope); })
+        .catch((err) => { console.warn('SW register failed:', err); });
+    });
+  }
+  // ★ N3.16.0: 「アプリをインストール」 プロンプトを ボタンで出せるように
+  let _installPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _installPrompt = e;
+    // フッターに ボタン追加
+    const ft = document.querySelector('.ft');
+    if(ft && !document.getElementById('_installBtn')){
+      const b = document.createElement('button');
+      b.id = '_installBtn';
+      b.textContent = '📲 アプリをインストール';
+      b.style.cssText = 'display:block;margin:14px auto 0;padding:10px 20px;background:linear-gradient(135deg,var(--ac),var(--rd));color:#1a1a2e;border:none;border-radius:24px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--ff);box-shadow:0 4px 14px rgba(245,158,11,.3);';
+      b.addEventListener('click', async () => {
+        if(!_installPrompt) return;
+        _installPrompt.prompt();
+        const choice = await _installPrompt.userChoice;
+        if(choice && choice.outcome === 'accepted') b.remove();
+        _installPrompt = null;
+      });
+      ft.appendChild(b);
+    }
+  });
 </script>
 
 </body>
