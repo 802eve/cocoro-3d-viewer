@@ -3341,6 +3341,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderModeBadge();
   initGridZooms();
   initSplitters();
+  // ★ N3.16.4 2026-05-10: 前回編集の自動復元バナー表示 (24時間以内の保存があれば)
+  setTimeout(() => { try { _maybeShowAutoRestoreBanner(); } catch(_){} }, 800);
+  // 定期的に自動保存 (10秒ごと、 編集中のみ)
+  setInterval(() => {
+    if(!fabCanvas || !fabCanvas.getObjects || fabCanvas.getObjects().length === 0) return;
+    try { _autoSaveCanvas(); } catch(_){}
+  }, 10000);
+  // ページ離脱直前 (戻る ボタン や タブ閉じ) に最終保存
+  window.addEventListener('beforeunload', () => { try { _autoSaveCanvas(); } catch(_){} });
+  window.addEventListener('pagehide',     () => { try { _autoSaveCanvas(); } catch(_){} });
   // ★ N3.15.6→N3.15.8 2026-05-10: モバイル スライダー (m-slider) UX
   //   - マウス: ハンドル付近 (±28px) 以外のクリックを無視 (preventDefault)
   //   - タッチ: 完全 passive (スクロール邪魔しない)。値変更が起きても、
@@ -4701,6 +4711,121 @@ function snapshotCanvas(){
   return JSON.stringify(fabCanvas.toJSON(TRACKED_PROPS));
 }
 
+// ★ N3.16.4 2026-05-10: 編集ツール 状態の 自動保存 + 復元
+//   ユーザーが「戻る」 ボタンで誤って離脱しても、 戻ってきた時に編集を続けられる
+//   - pushHistory のたびに 自動保存 (デバウンス済みなので 連続編集でも 1回だけ)
+//   - 24時間以内の保存があれば 起動時に「復元しますか?」 バナー表示
+//   - 明示的に保存 / 編集を閉じた / フォームに送信 したら 自動保存をクリア
+const AUTOSAVE_KEY = 'cocoro_studio_autosave';
+const AUTOSAVE_TTL_MS = 24 * 60 * 60 * 1000;  // 24時間
+function _autoSaveCanvas(){
+  if(!fabCanvas) return;
+  try {
+    // オブジェクトが 0個 のキャンバスは保存しない (空状態なら復元する意味なし)
+    if(!fabCanvas.getObjects || fabCanvas.getObjects().length === 0){
+      try { localStorage.removeItem(AUTOSAVE_KEY); } catch(_){}
+      return;
+    }
+    const snap = snapshotCanvas();
+    const payload = {
+      ts: Date.now(),
+      bg: fabCanvas.backgroundColor || '#ffffff',
+      data: snap,
+      designId: (typeof _editingDesignId !== 'undefined') ? _editingDesignId : null,
+    };
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+  } catch(e){
+    // localStorage 容量オーバーなど → 静かに失敗
+    console.warn('autosave failed:', e);
+  }
+}
+function _clearAutoSave(){
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch(_){}
+}
+window._clearAutoSave = _clearAutoSave;
+// 復元バナーを表示 → ユーザーが「復元」 押せば canvas にロード
+function _maybeShowAutoRestoreBanner(){
+  let payload;
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if(!raw) return;
+    payload = JSON.parse(raw);
+    if(!payload || !payload.ts || !payload.data) return;
+    if(Date.now() - payload.ts > AUTOSAVE_TTL_MS){
+      _clearAutoSave();
+      return;
+    }
+  } catch(_){ return; }
+  // バナー DOM 作成
+  if(document.getElementById('_autoRestoreBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = '_autoRestoreBanner';
+  banner.style.cssText = 'position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(15,17,22,.96);border:1px solid #f59e0b;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.6);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;color:#e6edf3;font-size:13px;max-width:calc(100vw - 24px);';
+  const minutes = Math.round((Date.now() - payload.ts) / 60000);
+  const timeText = minutes < 1 ? '1分以内' : (minutes < 60 ? minutes + '分前' : Math.round(minutes / 60) + '時間前');
+  const txt = document.createElement('span');
+  txt.style.cssText = 'flex:1;line-height:1.4;';
+  txt.innerHTML = '前回の編集 (' + timeText + ') を<br>復元しますか?';
+  const btnY = document.createElement('button');
+  btnY.textContent = '復元';
+  btnY.style.cssText = 'padding:8px 14px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#1a1a2e;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0;';
+  const btnN = document.createElement('button');
+  btnN.textContent = '破棄';
+  btnN.style.cssText = 'padding:8px 12px;background:transparent;color:#a8b3bf;border:1px solid #2a313b;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;flex-shrink:0;';
+  banner.appendChild(txt); banner.appendChild(btnY); banner.appendChild(btnN);
+  document.body.appendChild(banner);
+  const close = () => { try { document.body.removeChild(banner); } catch(_){} };
+  btnN.addEventListener('click', () => { _clearAutoSave(); close(); });
+  btnY.addEventListener('click', async () => {
+    close();
+    try {
+      // fabric ロード待ち
+      if(typeof loadFabric === 'function'){ try { await loadFabric(); } catch(_){} }
+      // エディタ表示 (なければ画面遷移)
+      try {
+        document.querySelectorAll('.vp').forEach(p => p.classList.remove('vis'));
+        const evDom = document.getElementById('editorView');
+        if(evDom) evDom.classList.add('vis');
+      } catch(_){}
+      if(!fabCanvas){
+        fabCanvas = new fabric.Canvas('fabCanvas', {
+          backgroundColor: '#ffffff', preserveObjectStacking: true,
+          allowTouchScrolling: false, enableRetinaScaling: true,
+          uniformScaling: true, uniScaleKey: 'shiftKey',
+          centeredScaling: false, centeredKey: 'altKey',
+        });
+      }
+      fabCanvas.clear();
+      fabCanvas.setBackgroundColor(payload.bg || '#ffffff', fabCanvas.renderAll.bind(fabCanvas));
+      fabCanvas.loadFromJSON(payload.data, () => {
+        fabCanvas.renderAll();
+        if(payload.designId !== undefined) _editingDesignId = payload.designId;
+        // 各種イベントセットアップ
+        if(!fabCanvas._selBound){
+          fabCanvas._selBound = true;
+          fabCanvas.on('selection:created', updEdSide);
+          fabCanvas.on('selection:updated', updEdSide);
+          fabCanvas.on('selection:cleared', updEdSide);
+          fabCanvas.on('object:modified', updEdSide);
+        }
+        try { setupCanvasPan(); } catch(_){}
+        try { setupShiftMarqueeAdd(); } catch(_){}
+        try { setupZoomHandlers(); } catch(_){}
+        try { setupHistory(); } catch(_){}
+        try { setupSnapGuides(); } catch(_){}
+        try { renderSideLists(); } catch(_){}
+        try { updEdSide(); } catch(_){}
+        requestAnimationFrame(() => { try { zoomFit(); } catch(e) { try { setZoomLevel(1); } catch(_){} } });
+        // モバイルにも fit
+        try { if(typeof _mobileFitCanvas === 'function') setTimeout(_mobileFitCanvas, 100); } catch(_){}
+      });
+    } catch(e){ console.warn('restore failed:', e); _clearAutoSave(); }
+  });
+  // 30秒で自動的に閉じる
+  setTimeout(() => { try { close(); } catch(_){} }, 30000);
+}
+window._maybeShowAutoRestoreBanner = _maybeShowAutoRestoreBanner;
+
 // ── 変形の繰り返し（Illustrator互換の Ctrl+D: Transform Again）──
 // 直前の単一変形（移動/回転/スケール）を記録し、Ctrl+Dで同じ変形を再適用
 let _preTransformState = null;
@@ -4770,6 +4895,8 @@ function pushHistory(){
     if(historyStack.length > HISTORY_LIMIT+1) historyStack.shift();
     redoStack.length = 0;
     updHistoryButtons();
+    // ★ N3.16.4: 自動保存 (戻るボタンで離脱しても 復元可能に)
+    try { _autoSaveCanvas(); } catch(_){}
   }, 50);
 }
 // デバウンス中の保存を即時フラッシュ（undo直前に必要）
@@ -4784,6 +4911,7 @@ function flushHistory(){
     if(historyStack.length > HISTORY_LIMIT+1) historyStack.shift();
     redoStack.length = 0;
     updHistoryButtons();
+    try { _autoSaveCanvas(); } catch(_){}
   }
 }
 function undoHistory(){
@@ -6841,6 +6969,8 @@ function saveOverwriteDesign(){
   }
   _pendingSave = null;
   try{ _clearEdDirty(); }catch(e){}
+  // ★ N3.16.4: 明示的に保存したら 自動復元を破棄
+  try { if(typeof _clearAutoSave === 'function') _clearAutoSave(); } catch(_){}
   askApplyToForm(url);
   renderMyDesigns();
 }
@@ -6871,6 +7001,8 @@ function saveAsNewDesign(){
   }
   _pendingSave = null;
   try{ _clearEdDirty(); }catch(e){}
+  // ★ N3.16.4: 明示的に保存したら 自動復元を破棄
+  try { if(typeof _clearAutoSave === 'function') _clearAutoSave(); } catch(_){}
   askApplyToForm(url);
   renderMyDesigns();
 }
@@ -13536,7 +13668,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.3';
+    _vb.textContent = 'N3.16.4';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
