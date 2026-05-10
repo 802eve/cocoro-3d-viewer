@@ -8451,7 +8451,12 @@ let _cropState = null;  // { img, cropRect, controls, origStyles, _toolbar }
 function startCropMode(img){
   if(!img || img.type !== 'image' || !window.fabCanvas) return;
   if(_cropState) return;  // 既にトリミング中
-  // 1. 画像を 完全に 選択不可 + 半透明化 (crop 操作中は触れない)
+  // ★ N3.16.3 2026-05-10: 非破壊トリミング — fabric の cropX/cropY/width/height で表示範囲制御
+  //   元画像データ (img._element) は そのまま保持 → 再トリミングで切られた領域を復活可能
+  const elem = img._element || img.getElement();
+  const naturalW = elem.naturalWidth || elem.width || img.width || 1;
+  const naturalH = elem.naturalHeight || elem.height || img.height || 1;
+  // 1. 現在の crop 状態と スタイルを 全部保存 (キャンセル時の復元用)
   const origStyles = {
     selectable: img.selectable,
     evented: img.evented,
@@ -8462,16 +8467,44 @@ function startCropMode(img){
     lockScalingX: img.lockScalingX,
     lockScalingY: img.lockScalingY,
     lockRotation: img.lockRotation,
+    // ★ crop 状態 + 位置も保存 → cancel 時に元通り
+    cropX: img.cropX || 0,
+    cropY: img.cropY || 0,
+    width: img.width,
+    height: img.height,
+    scaleX: img.scaleX,
+    scaleY: img.scaleY,
+    left: img.left,
+    top: img.top,
+    originX: img.originX,
+    originY: img.originY,
   };
+  // 2. 元画像 (FULL) の bbox を求めるため一旦中央オリジンに正規化 + 現在の中心を取得
+  const curBr = img.getBoundingRect(true);
+  const curCenterX = curBr.left + curBr.width / 2;
+  const curCenterY = curBr.top + curBr.height / 2;
+  const curScale = img.scaleX || 1;  // 一様スケール想定
+  const curCropX = img.cropX || 0;
+  const curCropY = img.cropY || 0;
+  const curW = img.width;
+  const curH = img.height;
+  // 3. 画像を FULL ビューに復元 (cropX:0, cropY:0, width:naturalW, height:naturalH)
+  //    位置: 以前見えてた領域の中心が canvas 上で同じ位置に留まるよう調整
   img.set({
+    cropX: 0, cropY: 0,
+    width: naturalW, height: naturalH,
+    originX: 'center', originY: 'center',
+    left: curCenterX + (naturalW/2 - curCropX - curW/2) * curScale,
+    top:  curCenterY + (naturalH/2 - curCropY - curH/2) * curScale,
+    // 操作不可 + 半透明化
     opacity: 0.4,
-    selectable: false,    // ★ 選択不可 (タップしても選択されない)
-    evented: false,       // ★ イベント無視
+    selectable: false, evented: false,
     hasControls: false,
     lockMovementX: true, lockMovementY: true,
     lockScalingX: true, lockScalingY: true,
     lockRotation: true,
   });
+  img.setCoords();
   // ★ N3.16.2: crop 中は 画像以外のオブジェクトも選択不可に (cropRect だけ操作可能)
   const origOtherSelectable = [];
   fabCanvas.getObjects().forEach(o => {
@@ -8479,11 +8512,24 @@ function startCropMode(img){
     origOtherSelectable.push({ obj: o, sel: o.selectable, ev: o.evented });
     o.set({ selectable: false, evented: false });
   });
-  // 2. crop 矩形を画像のbbox 80% で配置
-  const br = img.getBoundingRect(true);
-  const cw = br.width * 0.8, ch = br.height * 0.8;
-  const cl = br.left + (br.width - cw) / 2;
-  const ct = br.top + (br.height - ch) / 2;
+  // 4. crop 矩形を 「以前 cropping されていた範囲」 に配置 (再トリミング時 = 現在の crop 領域から開始)
+  //    新規トリミング時 (curCropX=0, curW=naturalW) は 自動的に curBr = full image なので 80% 内側に
+  let cl, ct, cw, ch;
+  const wasFullImage = (curCropX === 0 && curCropY === 0 && curW >= naturalW && curH >= naturalH);
+  if(wasFullImage){
+    // 新規 → 80% 内側
+    const fullBr = img.getBoundingRect(true);
+    cw = fullBr.width * 0.8;
+    ch = fullBr.height * 0.8;
+    cl = fullBr.left + (fullBr.width - cw) / 2;
+    ct = fullBr.top + (fullBr.height - ch) / 2;
+  } else {
+    // 再トリミング → 既存 crop 領域 (=curBr) から開始
+    cl = curBr.left;
+    ct = curBr.top;
+    cw = curBr.width;
+    ch = curBr.height;
+  }
   const cropRect = new fabric.Rect({
     left: cl, top: ct, width: cw, height: ch,
     // ★ N3.16.2: 半透明オレンジ塗り → 内側どこタップしても 掴める
@@ -8572,62 +8618,56 @@ function applyCropMode(){
   if(!_cropState) return;
   const { img, cropRect, origStyles, toolbar } = _cropState;
   try {
-    // crop 矩形と画像 の キャンバス座標 (絶対座標) 取得
+    // ★ N3.16.3: 非破壊トリミング — 既存 img の cropX/cropY/width/height を更新するだけ
+    //   元画像データは img._element に そのまま残るので 後で再トリミングで復活可能
+    const elem = img._element || img.getElement();
+    const naturalW = elem.naturalWidth || elem.width;
+    const naturalH = elem.naturalHeight || elem.height;
+    const iBr = img.getBoundingRect(true);  // 現在は FULL 表示中の bbox
     const cBr = cropRect.getBoundingRect(true);
-    const iBr = img.getBoundingRect(true);
-    // 画像内の crop 範囲 (画像座標系へ)
-    const srcLeft = (cBr.left - iBr.left) / (iBr.width || 1) * (img.width || 1);
-    const srcTop  = (cBr.top  - iBr.top)  / (iBr.height || 1) * (img.height || 1);
-    const srcW    = cBr.width  / (iBr.width || 1) * (img.width || 1);
-    const srcH    = cBr.height / (iBr.height || 1) * (img.height || 1);
-    // クリップ範囲を 元画像内に制限
-    const sx = Math.max(0, srcLeft);
-    const sy = Math.max(0, srcTop);
-    const sw = Math.max(1, Math.min(srcW, (img.width || 0) - sx));
-    const sh = Math.max(1, Math.min(srcH, (img.height || 0) - sy));
-    // オフスクリーン canvas に切り出して描画
-    const off = document.createElement('canvas');
-    off.width = Math.round(sw); off.height = Math.round(sh);
-    const ctx = off.getContext('2d');
-    ctx.drawImage(img._element || img.getElement(), sx, sy, sw, sh, 0, 0, sw, sh);
-    const newSrc = off.toDataURL('image/png');
-    // 新しい fabric.Image に置き換え (位置とサイズは crop 矩形のもの)
-    fabric.Image.fromURL(newSrc, (newImg) => {
-      // 元画像のスケール = iBr / img.width
-      // 新画像は cBr のサイズで表示したい
-      const newScale = cBr.width / sw;
-      const _isM = window._isMobileTouch;
-      newImg.set({
-        left: cBr.left + cBr.width / 2,
-        top: cBr.top + cBr.height / 2,
-        originX: 'center', originY: 'center',
-        scaleX: newScale, scaleY: newScale,
-        angle: img.angle || 0,
-        cornerSize: _isM ? 32 : 12,
-        cornerStyle: 'circle',
-        cornerColor: '#ffffff',
-        cornerStrokeColor: '#f59e0b',
-        transparentCorners: false,
-        borderColor: '#f59e0b',
-        padding: 4,
-      });
-      newImg._partType = img._partType || 'image';
-      newImg._partLabel = (img._partLabel || '画像') + ' (トリミング)';
-      newImg._folderId = img._folderId;
-      // 元画像と crop 矩形を削除 → 新画像追加
-      _cleanupCropMode();
-      fabCanvas.remove(cropRect);
-      fabCanvas.remove(img);
-      fabCanvas.add(newImg);
-      fabCanvas.setActiveObject(newImg);
-      try { document.body.removeChild(toolbar); } catch(_){}
-      _cropState = null;
-      fabCanvas.requestRenderAll();
-      try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
-      // 編集タブ更新
-      try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
-      try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
-    }, { crossOrigin: 'anonymous' });
+    // canvas 座標 → image-space 座標 (ピクセル) 変換
+    //   iBr.left → 0, iBr.left+iBr.width → naturalW
+    const newCropX = (cBr.left - iBr.left) / iBr.width  * naturalW;
+    const newCropY = (cBr.top  - iBr.top)  / iBr.height * naturalH;
+    const newCropW = cBr.width  / iBr.width  * naturalW;
+    const newCropH = cBr.height / iBr.height * naturalH;
+    // 元画像範囲内に制限
+    const finalCropX = Math.max(0, Math.min(naturalW - 1, newCropX));
+    const finalCropY = Math.max(0, Math.min(naturalH - 1, newCropY));
+    const finalW = Math.max(1, Math.min(newCropW, naturalW - finalCropX));
+    const finalH = Math.max(1, Math.min(newCropH, naturalH - finalCropY));
+    // 新スケール = cBr.width / finalW (見た目を cBr ピッタリに)
+    const newScale = cBr.width / finalW;
+    // 適用
+    _cleanupCropMode();
+    img.set({
+      cropX: finalCropX, cropY: finalCropY,
+      width: finalW, height: finalH,
+      scaleX: newScale, scaleY: newScale,
+      left: cBr.left + cBr.width / 2,
+      top:  cBr.top  + cBr.height / 2,
+      originX: 'center', originY: 'center',
+    });
+    // 元の操作スタイル (selectable, evented, opacity 等) を復元
+    img.set({
+      selectable: origStyles.selectable !== undefined ? origStyles.selectable : true,
+      evented:    origStyles.evented    !== undefined ? origStyles.evented    : true,
+      opacity:    1,  // 半透明から復元
+      hasControls: true,
+      lockMovementX: false, lockMovementY: false,
+      lockScalingX: false,  lockScalingY: false,
+      lockRotation: false,
+    });
+    img.setCoords();
+    img._partLabel = (img._partLabel || '画像').replace(/\s*\(トリミング\)\s*$/, '') + ' (トリミング)';
+    fabCanvas.remove(cropRect);
+    fabCanvas.setActiveObject(img);
+    try { document.body.removeChild(toolbar); } catch(_){}
+    _cropState = null;
+    fabCanvas.requestRenderAll();
+    try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+    try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+    try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
   } catch(e){
     console.warn('crop apply failed:', e);
     cancelCropMode();
@@ -10096,6 +10136,19 @@ function _3d_inlineRefresh(){
             }
           }
         } catch(_){}
+      }
+      // ★ N3.16.3 2026-05-10: トリミングモード中は cropRect の 2本指 拡縮を 無効化
+      //   → キャンバスズーム/パンモードに 切り替え (ピンチでキャンバスをズームして 詳細を見る)
+      if(typeof _cropState !== 'undefined' && _cropState){
+        partActive = false;
+        partRef = null;
+        const c = getCenter(e.touches);
+        pan2Active = true;
+        panStartCx = c.x; panStartCy = c.y;
+        panStartTx = panTx; panStartTy = panTy;
+        pinchStartDistance = getDistance(e.touches);
+        pinchStartZoom = _mobileZoomLevel;
+        return;
       }
       if(activeObj){
         partActive = true;
@@ -13483,7 +13536,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.2';
+    _vb.textContent = 'N3.16.3';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
