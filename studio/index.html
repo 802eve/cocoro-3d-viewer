@@ -3274,6 +3274,62 @@ try {
   }
 } catch(_){}
 
+// ★ N3.16.0 2026-05-10: PC (Ctrl+V) で 画像を直接 貼り付け
+//   iOS Visual Lookup や OS スクショなど 画像が clipboard にあれば fabric.Image として追加
+document.addEventListener('paste', (e) => {
+  if(!window.fabCanvas) return;
+  // テキスト編集中 (input, textarea, IText 編集) は素通し
+  const ae = document.activeElement;
+  if(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+  const active = fabCanvas.getActiveObject && fabCanvas.getActiveObject();
+  if(active && (active.type === 'i-text' || active.type === 'text' || active.type === 'textbox') && active.isEditing) return;
+  // ClipboardEvent.clipboardData から 画像を抽出
+  const cd = e.clipboardData;
+  if(!cd || !cd.items) return;
+  for(const item of cd.items){
+    if(item.type && item.type.startsWith('image/')){
+      const blob = item.getAsFile();
+      if(!blob) continue;
+      e.preventDefault();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target.result;
+        const cw = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+        const ch = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
+        fabric.Image.fromURL(dataUrl, (img) => {
+          if(!img) return;
+          const w = img.width * (img.scaleX || 1);
+          const h = img.height * (img.scaleY || 1);
+          const sc = Math.min((cw * 0.5) / w, (ch * 0.5) / h, 1);
+          const _isM = window._isMobileTouch;
+          img.set({
+            left: cw / 2, top: ch / 2,
+            originX: 'center', originY: 'center',
+            scaleX: (img.scaleX || 1) * sc,
+            scaleY: (img.scaleY || 1) * sc,
+            cornerSize: _isM ? 32 : 12,
+            cornerStyle: 'circle',
+            cornerColor: '#ffffff',
+            cornerStrokeColor: '#f59e0b',
+            transparentCorners: false,
+            borderColor: '#f59e0b',
+            padding: 4,
+          });
+          img._partType = 'image';
+          img._partLabel = 'ペースト画像';
+          fabCanvas.add(img);
+          fabCanvas.setActiveObject(img);
+          fabCanvas.requestRenderAll();
+          try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+        }, { crossOrigin: 'anonymous' });
+      };
+      reader.readAsDataURL(blob);
+      return;
+    }
+  }
+  // 画像なし → 既存の Ctrl+V (内部 _clipboard) ハンドラに任せる
+});
+
 document.addEventListener('DOMContentLoaded',()=>{
   _parseFormContext();
   renderGallery(DESIGNS);
@@ -8385,6 +8441,155 @@ function alignSel(mode){
   updEdSide();
 }
 
+// ── ★ N3.16.0 2026-05-10: 画像トリミング機能 ──
+//   1. 元画像を半透明にして全体表示
+//   2. crop 矩形 (オレンジ枠) をオーバーレイ → ユーザーがドラッグ/リサイズ
+//   3. 「適用」 で 矩形範囲を切り取って 新しい画像に置き換え
+//   4. 「キャンセル」 で 元に戻す
+let _cropState = null;  // { img, cropRect, controls, origStyles, _toolbar }
+
+function startCropMode(img){
+  if(!img || img.type !== 'image' || !window.fabCanvas) return;
+  if(_cropState) return;  // 既にトリミング中
+  // 1. 画像を移動・スケール禁止 + 半透明化
+  const origStyles = {
+    selectable: img.selectable,
+    evented: img.evented,
+    opacity: img.opacity || 1,
+    hasControls: img.hasControls,
+    lockMovementX: img.lockMovementX,
+    lockMovementY: img.lockMovementY,
+    lockScalingX: img.lockScalingX,
+    lockScalingY: img.lockScalingY,
+    lockRotation: img.lockRotation,
+  };
+  img.set({
+    opacity: 0.4,
+    hasControls: false,
+    lockMovementX: true, lockMovementY: true,
+    lockScalingX: true, lockScalingY: true,
+    lockRotation: true,
+  });
+  // 2. crop 矩形を画像のbbox 80% で配置
+  const br = img.getBoundingRect(true);
+  const cw = br.width * 0.8, ch = br.height * 0.8;
+  const cl = br.left + (br.width - cw) / 2;
+  const ct = br.top + (br.height - ch) / 2;
+  const cropRect = new fabric.Rect({
+    left: cl, top: ct, width: cw, height: ch,
+    fill: 'rgba(0,0,0,0)',
+    stroke: '#f59e0b', strokeWidth: 2,
+    strokeDashArray: [8, 4],
+    cornerColor: '#ffffff',
+    cornerStrokeColor: '#f59e0b',
+    cornerStyle: 'circle',
+    cornerSize: window._isMobileTouch ? 32 : 16,
+    transparentCorners: false,
+    borderColor: '#f59e0b',
+    hasRotatingPoint: false,  // 回転禁止
+    lockRotation: true,
+    selectable: true, evented: true,
+  });
+  cropRect._isCropRect = true;
+  fabCanvas.add(cropRect);
+  fabCanvas.setActiveObject(cropRect);
+  fabCanvas.requestRenderAll();
+  // 3. ツールバー (適用/キャンセル) 表示
+  const toolbar = document.createElement('div');
+  toolbar.id = '_cropToolbar';
+  toolbar.style.cssText = 'position:fixed;left:50%;top:80px;transform:translateX(-50%);z-index:10000;display:flex;gap:10px;padding:10px 14px;background:rgba(0,0,0,.85);border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.5);backdrop-filter:blur(8px);';
+  const btnApply = document.createElement('button');
+  btnApply.style.cssText = 'padding:10px 20px;border:none;border-radius:24px;background:#10b981;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;';
+  btnApply.innerHTML = '<span style="font-size:16px;">✓</span>適用';
+  btnApply.addEventListener('click', () => applyCropMode());
+  const btnCancel = document.createElement('button');
+  btnCancel.style.cssText = 'padding:10px 20px;border:none;border-radius:24px;background:#374151;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;';
+  btnCancel.innerHTML = '<span style="font-size:16px;">✕</span>キャンセル';
+  btnCancel.addEventListener('click', () => cancelCropMode());
+  toolbar.appendChild(btnApply);
+  toolbar.appendChild(btnCancel);
+  document.body.appendChild(toolbar);
+  _cropState = { img, cropRect, origStyles, toolbar };
+}
+
+function cancelCropMode(){
+  if(!_cropState) return;
+  const { img, cropRect, origStyles, toolbar } = _cropState;
+  try { fabCanvas.remove(cropRect); } catch(_){}
+  try { img.set(origStyles); fabCanvas.setActiveObject(img); } catch(_){}
+  try { document.body.removeChild(toolbar); } catch(_){}
+  fabCanvas.requestRenderAll();
+  _cropState = null;
+}
+
+function applyCropMode(){
+  if(!_cropState) return;
+  const { img, cropRect, origStyles, toolbar } = _cropState;
+  try {
+    // crop 矩形と画像 の キャンバス座標 (絶対座標) 取得
+    const cBr = cropRect.getBoundingRect(true);
+    const iBr = img.getBoundingRect(true);
+    // 画像内の crop 範囲 (画像座標系へ)
+    const srcLeft = (cBr.left - iBr.left) / (iBr.width || 1) * (img.width || 1);
+    const srcTop  = (cBr.top  - iBr.top)  / (iBr.height || 1) * (img.height || 1);
+    const srcW    = cBr.width  / (iBr.width || 1) * (img.width || 1);
+    const srcH    = cBr.height / (iBr.height || 1) * (img.height || 1);
+    // クリップ範囲を 元画像内に制限
+    const sx = Math.max(0, srcLeft);
+    const sy = Math.max(0, srcTop);
+    const sw = Math.max(1, Math.min(srcW, (img.width || 0) - sx));
+    const sh = Math.max(1, Math.min(srcH, (img.height || 0) - sy));
+    // オフスクリーン canvas に切り出して描画
+    const off = document.createElement('canvas');
+    off.width = Math.round(sw); off.height = Math.round(sh);
+    const ctx = off.getContext('2d');
+    ctx.drawImage(img._element || img.getElement(), sx, sy, sw, sh, 0, 0, sw, sh);
+    const newSrc = off.toDataURL('image/png');
+    // 新しい fabric.Image に置き換え (位置とサイズは crop 矩形のもの)
+    fabric.Image.fromURL(newSrc, (newImg) => {
+      // 元画像のスケール = iBr / img.width
+      // 新画像は cBr のサイズで表示したい
+      const newScale = cBr.width / sw;
+      const _isM = window._isMobileTouch;
+      newImg.set({
+        left: cBr.left + cBr.width / 2,
+        top: cBr.top + cBr.height / 2,
+        originX: 'center', originY: 'center',
+        scaleX: newScale, scaleY: newScale,
+        angle: img.angle || 0,
+        cornerSize: _isM ? 32 : 12,
+        cornerStyle: 'circle',
+        cornerColor: '#ffffff',
+        cornerStrokeColor: '#f59e0b',
+        transparentCorners: false,
+        borderColor: '#f59e0b',
+        padding: 4,
+      });
+      newImg._partType = img._partType || 'image';
+      newImg._partLabel = (img._partLabel || '画像') + ' (トリミング)';
+      newImg._folderId = img._folderId;
+      // 元画像と crop 矩形を削除 → 新画像追加
+      fabCanvas.remove(cropRect);
+      fabCanvas.remove(img);
+      fabCanvas.add(newImg);
+      fabCanvas.setActiveObject(newImg);
+      try { document.body.removeChild(toolbar); } catch(_){}
+      _cropState = null;
+      fabCanvas.requestRenderAll();
+      try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+      // 編集タブ更新
+      try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+      try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
+    }, { crossOrigin: 'anonymous' });
+  } catch(e){
+    console.warn('crop apply failed:', e);
+    cancelCropMode();
+  }
+}
+window.startCropMode = startCropMode;
+window.cancelCropMode = cancelCropMode;
+window.applyCropMode = applyCropMode;
+
 // ── フォント選択モーダル ──
 function openFontModal(){
   const o=fabCanvas?.getActiveObject(); if(!o)return;
@@ -10869,14 +11074,118 @@ function _3d_inlineRefresh(){
     inp.click();
   };
 
+  // ★ N3.16.0 2026-05-10: クリップボードから画像を貼り付け
+  //   iOS Visual Lookup (写真アプリの 人物切り抜き → コピー) や PC のスクリーンショットコピーに対応
+  //   navigator.clipboard.read() は HTTPS + ユーザー操作内 必須
+  window.m_pasteFromClipboard = async function(){
+    if(!window.fabCanvas){ try{ toast('キャンバス起動中'); }catch(_){} return; }
+    if(!navigator.clipboard || !navigator.clipboard.read){
+      try {
+        if(typeof toast === 'function'){
+          toast('クリップボード API 未対応のブラウザです。 「画像追加」 から ファイル選択してください');
+        } else {
+          alert('クリップボード API 未対応のブラウザです。 「画像追加」 から ファイル選択してください');
+        }
+      } catch(_){}
+      return;
+    }
+    try {
+      const items = await navigator.clipboard.read();
+      let foundBlob = null;
+      let foundType = null;
+      for(const item of items){
+        for(const type of item.types){
+          if(type.startsWith('image/')){
+            try {
+              foundBlob = await item.getType(type);
+              foundType = type;
+              break;
+            } catch(_){}
+          }
+        }
+        if(foundBlob) break;
+      }
+      if(!foundBlob){
+        try {
+          if(typeof toast === 'function'){
+            toast('クリップボードに画像がありません');
+          } else {
+            alert('クリップボードに画像がありません。 写真アプリで人物を切り抜いて「コピー」 → ここで再度 タップ');
+          }
+        } catch(_){}
+        return;
+      }
+      // Blob → DataURL → fabric.Image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        const cw = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+        const ch = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
+        fabric.Image.fromURL(dataUrl, (img) => {
+          if(!img) return;
+          const w = img.width * (img.scaleX || 1);
+          const h = img.height * (img.scaleY || 1);
+          const sc = Math.min((cw * 0.5) / w, (ch * 0.5) / h, 1);
+          const _isM = window._isMobileTouch;
+          img.set({
+            left: cw / 2, top: ch / 2,
+            originX: 'center', originY: 'center',
+            scaleX: (img.scaleX || 1) * sc,
+            scaleY: (img.scaleY || 1) * sc,
+            cornerSize: _isM ? 32 : 12,
+            cornerStyle: 'circle',
+            cornerColor: '#ffffff',
+            cornerStrokeColor: '#f59e0b',
+            transparentCorners: false,
+            borderColor: '#f59e0b',
+            padding: 4,
+          });
+          img._partType = 'image';
+          img._partLabel = 'クリップボード画像';
+          fabCanvas.add(img);
+          fabCanvas.setActiveObject(img);
+          fabCanvas.requestRenderAll();
+          try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+          // モバイル fit canvas
+          try {
+            if(typeof window._mobileResetPan === 'function') window._mobileResetPan();
+            if(typeof _mobileFitCanvas === 'function') setTimeout(_mobileFitCanvas, 50);
+          } catch(_){}
+          // 編集タブに自動切替
+          try { if(typeof m_switchTab === 'function') m_switchTab('edit'); } catch(_){}
+        }, { crossOrigin: 'anonymous' });
+      };
+      reader.readAsDataURL(foundBlob);
+    } catch(e){
+      console.warn('clipboard read failed:', e);
+      try {
+        if(e.name === 'NotAllowedError'){
+          if(typeof toast === 'function'){
+            toast('クリップボード読み取りが許可されていません。 ブラウザ設定で許可してください');
+          } else {
+            alert('クリップボード読み取りが許可されていません。 ブラウザ設定で許可してください');
+          }
+        } else {
+          if(typeof toast === 'function'){
+            toast('クリップボードからの貼り付けに失敗しました');
+          } else {
+            alert('クリップボードからの貼り付けに失敗しました');
+          }
+        }
+      } catch(_){}
+    }
+  };
+
   function m_renderAddTab(host){
     const grid = document.createElement('div');
     grid.className = 'm-add-grid';
     // ★ N2.13: テキスト追加→フォント選択ピッカー (自動追加しない)
     // ★ 2026-05-09 (⑤): 画像追加をモバイル直接ハンドラに変更 (PC の edFile 経由は サイドバー保存だけで キャンバス追加されないため)
+    // ★ N3.16.0 2026-05-10: クリップボードから貼り付け 追加
     const items = [
       { ic: 'T', label: 'テキスト追加', fn: () => { m_openFontPickerForAdd(); } },
       { ic: '🖼', label: '画像追加',   fn: () => { m_addImage(); } },
+      { ic: '📋', label: 'クリップボード貼付', fn: () => { m_pasteFromClipboard(); } },
       { ic: '✨', label: 'クリップアート', fn: () => { m_openClipPicker(); } },
     ];
     items.forEach(it => {
@@ -11458,6 +11767,23 @@ function _3d_inlineRefresh(){
     // 単色オブジェクトなら色変更可能
     if(sel.fill || (sel.type === 'group' && sel.getObjects && sel.getObjects().length)){
       _m_renderColorSection(host, sel, 'fill', 'カラー');
+    }
+    // ★ N3.16.0 2026-05-10: 画像のトリミング (fabric.Image のみ)
+    //   SVG クリップアートは ベクター で扱うので トリミングは未対応 (ラスタライズが必要)
+    if(sel.type === 'image'){
+      const sec = document.createElement('div');
+      sec.className = 'm-edit-section';
+      sec.innerHTML = '<div class="m-edit-label">画像トリミング</div>';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'm-toggle-btn';
+      btn.style.cssText = 'width:100%;padding:12px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;';
+      btn.innerHTML = '<span style="font-size:18px;">✂️</span><span>トリミングを開始</span>';
+      btn.addEventListener('click', () => {
+        if(typeof startCropMode === 'function') startCropMode(sel);
+      });
+      sec.appendChild(btn);
+      host.appendChild(sec);
     }
   }
 
@@ -13110,7 +13436,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.15.9';
+    _vb.textContent = 'N3.16.0';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
