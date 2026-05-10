@@ -8451,7 +8451,7 @@ let _cropState = null;  // { img, cropRect, controls, origStyles, _toolbar }
 function startCropMode(img){
   if(!img || img.type !== 'image' || !window.fabCanvas) return;
   if(_cropState) return;  // 既にトリミング中
-  // 1. 画像を移動・スケール禁止 + 半透明化
+  // 1. 画像を 完全に 選択不可 + 半透明化 (crop 操作中は触れない)
   const origStyles = {
     selectable: img.selectable,
     evented: img.evented,
@@ -8465,10 +8465,19 @@ function startCropMode(img){
   };
   img.set({
     opacity: 0.4,
+    selectable: false,    // ★ 選択不可 (タップしても選択されない)
+    evented: false,       // ★ イベント無視
     hasControls: false,
     lockMovementX: true, lockMovementY: true,
     lockScalingX: true, lockScalingY: true,
     lockRotation: true,
+  });
+  // ★ N3.16.2: crop 中は 画像以外のオブジェクトも選択不可に (cropRect だけ操作可能)
+  const origOtherSelectable = [];
+  fabCanvas.getObjects().forEach(o => {
+    if(o === img) return;
+    origOtherSelectable.push({ obj: o, sel: o.selectable, ev: o.evented });
+    o.set({ selectable: false, evented: false });
   });
   // 2. crop 矩形を画像のbbox 80% で配置
   const br = img.getBoundingRect(true);
@@ -8477,23 +8486,37 @@ function startCropMode(img){
   const ct = br.top + (br.height - ch) / 2;
   const cropRect = new fabric.Rect({
     left: cl, top: ct, width: cw, height: ch,
-    fill: 'rgba(0,0,0,0)',
-    stroke: '#f59e0b', strokeWidth: 2,
+    // ★ N3.16.2: 半透明オレンジ塗り → 内側どこタップしても 掴める
+    fill: 'rgba(245,158,11,0.15)',
+    stroke: '#f59e0b', strokeWidth: 3,
     strokeDashArray: [8, 4],
     cornerColor: '#ffffff',
     cornerStrokeColor: '#f59e0b',
     cornerStyle: 'circle',
-    cornerSize: window._isMobileTouch ? 32 : 16,
+    cornerSize: window._isMobileTouch ? 38 : 18,  // ★ 大きめ (掴みやすく)
     transparentCorners: false,
     borderColor: '#f59e0b',
     hasRotatingPoint: false,  // 回転禁止
     lockRotation: true,
     selectable: true, evented: true,
+    // ★ N3.16.2: ピクセル判定 OFF (透明部分でも 掴める)
+    perPixelTargetFind: false,
   });
   cropRect._isCropRect = true;
   fabCanvas.add(cropRect);
   fabCanvas.setActiveObject(cropRect);
   fabCanvas.requestRenderAll();
+  // ★ N3.16.2: 選択解除されたら 自動的に cropRect を再選択
+  const _autoReselect = () => {
+    if(!_cropState) return;
+    if(fabCanvas.getActiveObject() === _cropState.cropRect) return;
+    try {
+      fabCanvas.setActiveObject(_cropState.cropRect);
+      fabCanvas.requestRenderAll();
+    } catch(_){}
+  };
+  fabCanvas.on('selection:cleared', _autoReselect);
+  fabCanvas.on('mouse:up', _autoReselect);
   // 3. ツールバー (適用/キャンセル) 表示
   // ★ N3.16.1 2026-05-10: コンパクトな丸ボタン2個 (キャンバス覆わない位置に)
   //   左上 (戻るボタン横) に縦並びで配置 = キャンバス操作の邪魔にならない
@@ -8518,12 +8541,26 @@ function startCropMode(img){
   toolbar.appendChild(btnApply);
   toolbar.appendChild(btnCancel);
   document.body.appendChild(toolbar);
-  _cropState = { img, cropRect, origStyles, toolbar };
+  _cropState = { img, cropRect, origStyles, toolbar, origOtherSelectable, _autoReselect };
+}
+
+// 共通: crop モード終了時の クリーンアップ (画像/他オブジェクト の selectable/evented 復元 + auto-reselect 解除)
+function _cleanupCropMode(){
+  if(!_cropState) return;
+  const { _autoReselect, origOtherSelectable } = _cropState;
+  try { fabCanvas.off('selection:cleared', _autoReselect); } catch(_){}
+  try { fabCanvas.off('mouse:up', _autoReselect); } catch(_){}
+  try {
+    (origOtherSelectable || []).forEach(({obj, sel, ev}) => {
+      try { obj.set({ selectable: sel, evented: ev }); } catch(_){}
+    });
+  } catch(_){}
 }
 
 function cancelCropMode(){
   if(!_cropState) return;
   const { img, cropRect, origStyles, toolbar } = _cropState;
+  _cleanupCropMode();
   try { fabCanvas.remove(cropRect); } catch(_){}
   try { img.set(origStyles); fabCanvas.setActiveObject(img); } catch(_){}
   try { document.body.removeChild(toolbar); } catch(_){}
@@ -8578,6 +8615,7 @@ function applyCropMode(){
       newImg._partLabel = (img._partLabel || '画像') + ' (トリミング)';
       newImg._folderId = img._folderId;
       // 元画像と crop 矩形を削除 → 新画像追加
+      _cleanupCropMode();
       fabCanvas.remove(cropRect);
       fabCanvas.remove(img);
       fabCanvas.add(newImg);
@@ -13445,7 +13483,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.1';
+    _vb.textContent = 'N3.16.2';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
