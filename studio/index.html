@@ -3266,6 +3266,14 @@ function initGridZooms(){
   Object.keys(GRID_ZOOMS).forEach(applyGridZoom);
 }
 
+// ★ N3.15.9 2026-05-10: バイブを全て無効化 (ユーザー要望「バイブは全てなしでよい」)
+//   個別の navigator.vibrate(...) 呼び出しを変更せずに、 一括で no-op に上書き
+try {
+  if(typeof navigator !== 'undefined' && navigator.vibrate){
+    navigator.vibrate = function(){ return false; };
+  }
+} catch(_){}
+
 document.addEventListener('DOMContentLoaded',()=>{
   _parseFormContext();
   renderGallery(DESIGNS);
@@ -4224,7 +4232,9 @@ function extendFabricSerialization(){
 
   // バウンディングボックスのデフォルトスタイルを改善
   // ★ N3.15.7 2026-05-10: モバイル時 ハンドルサイズUP (12 → 22) + targetFindTolerance UP (4 → 12)
-  const _isMobileTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  // ★ N3.15.9 2026-05-10: window グローバルにして 他コード (clipart load 等) からも参照可能に
+  window._isMobileTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const _isMobileTouch = window._isMobileTouch;
   fabric.Object.prototype.set({
     borderColor: '#f59e0b',              // 枠線：オレンジ
     cornerColor: '#ffffff',              // ハンドル中身：白
@@ -10810,11 +10820,20 @@ function _3d_inlineRefresh(){
           const w = obj.width * (obj.scaleX || 1);
           const h = obj.height * (obj.scaleY || 1);
           const sc = Math.min((cw * 0.5) / w, (ch * 0.5) / h, 1);
+          // ★ N3.15.9: モバイル ハンドル明示的に大きく (prototype 継承だけだと 確実でない)
+          const _isM = window._isMobileTouch;
           obj.set({
             left: cw / 2, top: ch / 2,
             originX: 'center', originY: 'center',
             scaleX: (obj.scaleX || 1) * sc,
-            scaleY: (obj.scaleY || 1) * sc
+            scaleY: (obj.scaleY || 1) * sc,
+            cornerSize: _isM ? 32 : 12,
+            cornerStyle: 'circle',
+            cornerColor: '#ffffff',
+            cornerStrokeColor: '#f59e0b',
+            transparentCorners: false,
+            borderColor: '#f59e0b',
+            padding: 4,
           });
           obj._partType = 'image';
           obj._partLabel = (file.name || '画像').replace(/\.[^.]+$/, '');
@@ -10932,12 +10951,12 @@ function _3d_inlineRefresh(){
       _m_renderObjectEditUI(host, sel);
     }
 
-    // ── ★ N3.15.7 2026-05-10: パーツ整列 (PC の alignSel 6種を移植) ──
+    // ── ③ サイズ・不透明度・回転 (共通) ──
+    _m_renderCommonUI(host, sel);
+
+    // ── ★ N3.15.9 2026-05-10: パーツ整列 を 回転 の後に移動 (ユーザー要望「表示を逆に」) ──
     //   単体選択 = キャンバス基準 / 複数選択 = 選択範囲基準 (PC alignSel と同じ)
     _m_renderPartsAlignUI(host, sel);
-
-    // ── ③ サイズ・不透明度 (共通) ──
-    _m_renderCommonUI(host, sel);
   }
 
   // ★ N3.15.7 2026-05-10: パーツ整列 UI (PC の alignSel に移譲)
@@ -13091,7 +13110,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.15.8';
+    _vb.textContent = 'N3.15.9';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
