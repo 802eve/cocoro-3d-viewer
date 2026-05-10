@@ -4160,21 +4160,23 @@ function extendFabricSerialization(){
   };
 
   // バウンディングボックスのデフォルトスタイルを改善
+  // ★ N3.15.7 2026-05-10: モバイル時 ハンドルサイズUP (12 → 22) + targetFindTolerance UP (4 → 12)
+  const _isMobileTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   fabric.Object.prototype.set({
     borderColor: '#f59e0b',              // 枠線：オレンジ
     cornerColor: '#ffffff',              // ハンドル中身：白
     cornerStrokeColor: '#f59e0b',        // ハンドル枠：オレンジ
     cornerStyle: 'circle',               // 丸いハンドル
-    cornerSize: 12,                      // ハンドルのサイズ
+    cornerSize: _isMobileTouch ? 22 : 12, // ハンドルのサイズ (モバイル指タッチ用 大きめ)
     transparentCorners: false,           // 塗り表示
     borderScaleFactor: 1.5,              // 枠線太さ
     padding: 4,                          // 枠と中身のすき間
     borderDashArray: null,
-    rotatingPointOffset: 30,             // 回転チョボと本体の距離
+    rotatingPointOffset: _isMobileTouch ? 40 : 30, // 回転チョボと本体の距離 (モバイル少し離す)
   });
   // ピクセル単位の当たり判定（グループのbbox内の空白では下のパーツを選べるように）
   fabric.Object.prototype.perPixelTargetFind = true;
-  fabric.Object.prototype.targetFindTolerance = 4;
+  fabric.Object.prototype.targetFindTolerance = _isMobileTouch ? 12 : 4; // 指タッチで掴みやすく
 
   // ── 装飾フォント（Arbutus, Ewertなど）のバウンディングボックス誤差を補正 ──
   // Text / IText / Textbox の initDimensions を上書きし、width に実描画のはみ出し幅を加算
@@ -4414,10 +4416,10 @@ async function openEditor(id){
                 cornerColor: '#ffffff',
                 cornerStrokeColor: '#f59e0b',
                 cornerStyle: 'circle',
-                cornerSize: 12,
+                cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 22 : 12, // ★ N3.15.7 mobile UP
                 transparentCorners: false,
                 padding: 4,
-                rotatingPointOffset: 30,
+                rotatingPointOffset: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 40 : 30,
               });
               obj.setCoords();
               fabCanvas.add(obj);
@@ -6320,7 +6322,7 @@ function edAddClipart(id, x, y){
             cornerColor: '#ffffff',
             cornerStrokeColor: '#f59e0b',
             cornerStyle: 'circle',
-            cornerSize: 12,
+            cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 22 : 12, // ★ N3.15.7 mobile UP
             transparentCorners: false,
             padding: 4,
           });
@@ -9823,9 +9825,12 @@ function _3d_inlineRefresh(){
                 yLines.push(r.top, r.top + r.height, r.top + r.height / 2);
               });
               const candidates = [];
-              // ★ 2026-05-10 v2: スクリーンピクセル基準 + 強いヒステリシス (3倍) で 1-2mm 震え防止
+              // ★ N3.15.7 2026-05-10: snap を 弱く + 細かく
+              //   引っ張り中: ~8 screen px (狭い → スムーズに動ける)
+              //   吸着中: ~12 screen px (1.5倍 → すぐ抜けられる)
+              //   → ユーザー要望「スムーズに動きつつ止まる所は止まる」
               const _mZ_pinch = (typeof _mobileZoomLevel !== 'undefined' && _mobileZoomLevel) ? _mobileZoomLevel : 1;
-              const _screenPx_pinch = partRef._lastScaleSnap ? 60 : 20;
+              const _screenPx_pinch = partRef._lastScaleSnap ? 12 : 8;
               const SNAP_PX = _screenPx_pinch / Math.max(0.1, _mZ_pinch);
               // X 軸: 自分の右端 (cx + halfW) または 左端 (cx - halfW) が xLines に近い ratio
               xLines.forEach(L => {
@@ -10865,8 +10870,52 @@ function _3d_inlineRefresh(){
       _m_renderObjectEditUI(host, sel);
     }
 
+    // ── ★ N3.15.7 2026-05-10: パーツ整列 (PC の alignSel 6種を移植) ──
+    //   単体選択 = キャンバス基準 / 複数選択 = 選択範囲基準 (PC alignSel と同じ)
+    _m_renderPartsAlignUI(host, sel);
+
     // ── ③ サイズ・不透明度 (共通) ──
     _m_renderCommonUI(host, sel);
+  }
+
+  // ★ N3.15.7 2026-05-10: パーツ整列 UI (PC の alignSel に移譲)
+  function _m_renderPartsAlignUI(host, sel){
+    const isMulti = sel && sel.type === 'activeSelection';
+    const sec = document.createElement('div');
+    sec.className = 'm-edit-section';
+    sec.innerHTML = '<div class="m-edit-label">パーツ整列 <span style="opacity:.6;font-size:10px;">' + (isMulti ? '(選択範囲基準)' : '(キャンバス基準)') + '</span></div>';
+    // 6個ボタンの 2行 grid (横3 / 縦3)
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;';
+    // 横方向 3つ
+    const _alignBtn = (mode, svgIcon, lbl) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'm-toggle-btn';
+      b.style.cssText = 'padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;';
+      b.innerHTML = svgIcon + '<div style="font-size:9px;">' + lbl + '</div>';
+      b.addEventListener('click', () => {
+        try { if(typeof alignSel === 'function') alignSel(mode); } catch(e){ console.warn(e); }
+      });
+      return b;
+    };
+    // 横整列 (3個)
+    const ICO_W = 'width:24px;height:24px;display:block;';
+    const svgL = '<svg viewBox="0 0 24 24" style="' + ICO_W + '" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="3" x2="3" y2="21"/><rect x="5" y="6" width="11" height="4" fill="currentColor" opacity=".7"/><rect x="5" y="14" width="7" height="4" fill="currentColor" opacity=".7"/></svg>';
+    const svgC = '<svg viewBox="0 0 24 24" style="' + ICO_W + '" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="3" x2="12" y2="21"/><rect x="6.5" y="6" width="11" height="4" fill="currentColor" opacity=".7"/><rect x="8.5" y="14" width="7" height="4" fill="currentColor" opacity=".7"/></svg>';
+    const svgR = '<svg viewBox="0 0 24 24" style="' + ICO_W + '" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="21" y1="3" x2="21" y2="21"/><rect x="8" y="6" width="11" height="4" fill="currentColor" opacity=".7"/><rect x="12" y="14" width="7" height="4" fill="currentColor" opacity=".7"/></svg>';
+    grid.appendChild(_alignBtn('left',    svgL, '左揃え'));
+    grid.appendChild(_alignBtn('centerH', svgC, '水平中央'));
+    grid.appendChild(_alignBtn('right',   svgR, '右揃え'));
+    // 縦整列 (3個)
+    const svgT = '<svg viewBox="0 0 24 24" style="' + ICO_W + '" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="3" x2="21" y2="3"/><rect x="6" y="5" width="4" height="11" fill="currentColor" opacity=".7"/><rect x="14" y="5" width="4" height="7" fill="currentColor" opacity=".7"/></svg>';
+    const svgM = '<svg viewBox="0 0 24 24" style="' + ICO_W + '" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="12" x2="21" y2="12"/><rect x="6" y="6.5" width="4" height="11" fill="currentColor" opacity=".7"/><rect x="14" y="8.5" width="4" height="7" fill="currentColor" opacity=".7"/></svg>';
+    const svgB = '<svg viewBox="0 0 24 24" style="' + ICO_W + '" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="21" x2="21" y2="21"/><rect x="6" y="8" width="4" height="11" fill="currentColor" opacity=".7"/><rect x="14" y="12" width="4" height="7" fill="currentColor" opacity=".7"/></svg>';
+    grid.appendChild(_alignBtn('top',     svgT, '上揃え'));
+    grid.appendChild(_alignBtn('centerV', svgM, '垂直中央'));
+    grid.appendChild(_alignBtn('bottom',  svgB, '下揃え'));
+    sec.appendChild(grid);
+    host.appendChild(sec);
   }
 
   function _m_renderTextEditUI(host, sel){
@@ -11033,32 +11082,44 @@ function _3d_inlineRefresh(){
     sec5.appendChild(tg);
     host.appendChild(sec5);
 
-    // ── 整列 (キャンバス基準) ──
-    // ★ N3.15.6 2026-05-10: 単行 auto-width IText の場合、 textAlign は視覚効果なし
-    //   → 「キャンバス内での整列」 として機能させる:
-    //     左寄せ = キャンバス左端へ、 中央 = キャンバス中央へ、 右寄せ = キャンバス右端へ
-    //     (PC のキャンバス整列ボタンと同じ挙動)
+    // ── テキスト基準 整列 (originX 変更 + 位置維持) ──
+    // ★ N3.15.7 2026-05-10: 「左基準で書く / 中央基準で書く / 右基準で書く」 を切替
+    //   その場 (今の文字位置) から離れずに、 originX (basePoint) を変更
+    //   → 後でテキストを編集した時、 基準点を中心に左右に伸び縮みする
     const sec6 = document.createElement('div');
     sec6.className = 'm-edit-section';
-    sec6.innerHTML = '<div class="m-edit-label">キャンバス内 整列</div>';
+    sec6.innerHTML = '<div class="m-edit-label">テキスト基準</div>';
     const algn = document.createElement('div');
     algn.className = 'm-toggle-row';
-    [['left','⬅','左寄せ'],['center','↔','中央'],['right','➡','右寄せ']].forEach(([a, ico, lbl]) => {
+    [['left','⬅','左基準'],['center','↔','中央基準'],['right','➡','右基準']].forEach(([a, ico, lbl]) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'm-toggle-btn';
+      const isAct = (sel.textAlign === a) && (sel.originX === a);
+      b.className = 'm-toggle-btn' + (isAct ? ' act' : '');
       b.innerHTML = '<div style="font-size:16px;">' + ico + '</div><div style="font-size:9px;margin-top:2px;">' + lbl + '</div>';
       b.addEventListener('click', () => {
         try {
-          // 1. 多行テキストの場合は textAlign も設定 (視覚効果あり)
-          sel.set('textAlign', a);
-          // 2. キャンバス内整列: bbox を キャンバス左端/中央/右端 へ移動
-          const cw = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+          // 1. 現在のキャンバス上での基準点座標 (新しい originX に対応する点) を計算
           const br = sel.getBoundingRect(true);
-          const dx = (a === 'left')  ? (0 - br.left)
-                   : (a === 'right') ? (cw - (br.left + br.width))
-                                     : ((cw - br.width) / 2 - br.left);
-          sel.set('left', (sel.left || 0) + dx);
+          let basePtX;
+          if(a === 'left')       basePtX = br.left;
+          else if(a === 'right') basePtX = br.left + br.width;
+          else                   basePtX = br.left + br.width / 2;
+          // 2. 縦は今の中央を維持
+          const oy = sel.originY || 'top';
+          let basePtY;
+          if(oy === 'top')         basePtY = br.top;
+          else if(oy === 'bottom') basePtY = br.top + br.height;
+          else                     basePtY = br.top + br.height / 2;
+          // 3. textAlign + originX 同時変更
+          sel.set({ textAlign: a, originX: a });
+          // 4. setPositionByOrigin で 基準点を維持しつつ位置確定
+          if(typeof sel.setPositionByOrigin === 'function'){
+            sel.setPositionByOrigin(new fabric.Point(basePtX, basePtY), a, oy);
+          } else {
+            // フォールバック: left を直接調整
+            sel.set('left', basePtX);
+          }
           sel.setCoords();
         } catch(_){}
         _m_fireModified(sel);
@@ -12988,7 +13049,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.15.6';
+    _vb.textContent = 'N3.15.7';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
