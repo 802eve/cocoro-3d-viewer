@@ -3277,6 +3277,29 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderModeBadge();
   initGridZooms();
   initSplitters();
+  // ★ N3.15.6 2026-05-10: モバイル スライダー (m-slider) のバー部分タップを無効化
+  //   ハンドル付近 (中心 ±28px) のみ有効 → 誤タップで値が飛ぶ問題を防止
+  const _disableSliderBarTap = (e) => {
+    const t = e.target;
+    if(!t || !t.matches || !t.matches('input[type="range"].m-slider')) return;
+    try {
+      const rect = t.getBoundingClientRect();
+      const min = parseFloat(t.min) || 0;
+      const max = parseFloat(t.max) || 100;
+      const val = parseFloat(t.value) || 0;
+      const ratio = (max > min) ? (val - min) / (max - min) : 0;
+      const thumbX = rect.left + ratio * rect.width;
+      const clickX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+      if(Math.abs(clickX - thumbX) > 28){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    } catch(_){}
+  };
+  document.addEventListener('pointerdown', _disableSliderBarTap, true);
+  document.addEventListener('mousedown',   _disableSliderBarTap, true);
+  document.addEventListener('touchstart',  _disableSliderBarTap, { capture: true, passive: false });
 });
 
 // ── リサイズ用スプリッター ──
@@ -4715,8 +4738,11 @@ function setupSnapGuides(){
       }
       return;
     }
-    // ★ 2026-05-10: 角/辺ハンドルでスケール中、 他パーツの端と一致する所でスナップ吸着
-    //   angle != 0 のときは boundingRect 計算が複雑になるのでスキップ (ガイドのみ)
+    // ★ 2026-05-10 N3.15.6: 1本指 スケールスナップ無効化 (実機テストで震え・暴発・赤線残り発生)
+    //   理由: fabric の内部スケール計算と obj.scaleX/left オーバーライドが衝突
+    //   2本指ピンチ snap は別経路で安定動作するため そちらに任せる
+    //   将来再実装する場合は mouse:move キャプチャ で touch 座標自体を補正する方法が必要
+    if(false){
     const obj = opt.target;
     if(obj && (!obj.angle || obj.angle === 0)){
       try {
@@ -4725,24 +4751,6 @@ function setupSnapGuides(){
         let isLeft   = /^(ml|tl|bl)$/.test(corner);
         let isBottom = /^(mb|bl|br)$/.test(corner);
         let isTop    = /^(mt|tl|tr)$/.test(corner);
-        // ★ フォールバック: __corner が空 (mobile touch等) なら scale/位置 変化方向 から推定
-        if(!isRight && !isLeft && !isBottom && !isTop){
-          if(obj._scaleStartSnap === undefined){
-            obj._scaleStartSnap = { sx: obj.scaleX || 1, sy: obj.scaleY || 1, left: obj.left || 0, top: obj.top || 0 };
-          }
-          const ss = obj._scaleStartSnap;
-          const dsx = (obj.scaleX || 1) - ss.sx;
-          const dsy = (obj.scaleY || 1) - ss.sy;
-          const dleft = (obj.left || 0) - ss.left;
-          const dtop  = (obj.top  || 0) - ss.top;
-          // X軸: scale 変化があれば、 left も動いた = 左端ハンドル, 動かない = 右端ハンドル
-          if(Math.abs(dsx) > 0.001){
-            if(Math.abs(dleft) > 0.5) isLeft = true; else isRight = true;
-          }
-          if(Math.abs(dsy) > 0.001){
-            if(Math.abs(dtop) > 0.5) isTop = true; else isBottom = true;
-          }
-        }
         if(isRight || isLeft || isBottom || isTop){
           const myRect = obj.getBoundingRect(true);
           const cwTotal = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
@@ -4836,6 +4844,9 @@ function setupSnapGuides(){
         }
       } catch(e){ /* fail silently */ }
     }
+    } /* end if(false) — 1本指 snap 無効化 */
+    // ★ N3.15.6: 残った 赤線を確実にクリア (前回から残ってる場合)
+    try { if(window._scaleSnapLines){ window._scaleSnapLines = null; } } catch(_){}
     // ガイドライン表示
     _checkSnapGuideOnly(opt.target);
   });
@@ -11022,18 +11033,38 @@ function _3d_inlineRefresh(){
     sec5.appendChild(tg);
     host.appendChild(sec5);
 
-    // ── 整列 ──
+    // ── 整列 (キャンバス基準) ──
+    // ★ N3.15.6 2026-05-10: 単行 auto-width IText の場合、 textAlign は視覚効果なし
+    //   → 「キャンバス内での整列」 として機能させる:
+    //     左寄せ = キャンバス左端へ、 中央 = キャンバス中央へ、 右寄せ = キャンバス右端へ
+    //     (PC のキャンバス整列ボタンと同じ挙動)
     const sec6 = document.createElement('div');
     sec6.className = 'm-edit-section';
-    sec6.innerHTML = '<div class="m-edit-label">整列</div>';
+    sec6.innerHTML = '<div class="m-edit-label">キャンバス内 整列</div>';
     const algn = document.createElement('div');
     algn.className = 'm-toggle-row';
-    ['left','center','right'].forEach(a => {
+    [['left','⬅','左寄せ'],['center','↔','中央'],['right','➡','右寄せ']].forEach(([a, ico, lbl]) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'm-toggle-btn' + (sel.textAlign === a ? ' act' : '');
-      b.textContent = a === 'left' ? '⬅' : a === 'center' ? '↔' : '➡';
-      b.addEventListener('click', () => { sel.set('textAlign', a); _m_fireModified(sel); m_renderActiveTabContent(); });
+      b.className = 'm-toggle-btn';
+      b.innerHTML = '<div style="font-size:16px;">' + ico + '</div><div style="font-size:9px;margin-top:2px;">' + lbl + '</div>';
+      b.addEventListener('click', () => {
+        try {
+          // 1. 多行テキストの場合は textAlign も設定 (視覚効果あり)
+          sel.set('textAlign', a);
+          // 2. キャンバス内整列: bbox を キャンバス左端/中央/右端 へ移動
+          const cw = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+          const br = sel.getBoundingRect(true);
+          const dx = (a === 'left')  ? (0 - br.left)
+                   : (a === 'right') ? (cw - (br.left + br.width))
+                                     : ((cw - br.width) / 2 - br.left);
+          sel.set('left', (sel.left || 0) + dx);
+          sel.setCoords();
+        } catch(_){}
+        _m_fireModified(sel);
+        fabCanvas.requestRenderAll();
+        m_renderActiveTabContent();
+      });
       algn.appendChild(b);
     });
     sec6.appendChild(algn);
@@ -12957,7 +12988,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.15.5';
+    _vb.textContent = 'N3.15.6';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
