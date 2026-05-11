@@ -2490,6 +2490,11 @@ async function _loadAdminFromGitHub(){
     try { if(typeof renderClip === 'function') renderClip(); } catch(_){}
     try { if(typeof renderSidebar === 'function') renderSidebar(); } catch(_){}
     try { if(typeof renderSb === 'function') renderSb(); } catch(_){}
+    // ★ N3.16.20: Mobile picker grid と Mobile launcher も refresh
+    // (admin で登録した新テンプレが mobile で表示されないバグ修正)
+    try { if(typeof _renderPickerGrid === 'function') _renderPickerGrid(); } catch(_){}
+    try { if(typeof _renderPickerToolbar === 'function') _renderPickerToolbar(); } catch(_){}
+    try { if(typeof m_renderHomeTpls === 'function') m_renderHomeTpls(); } catch(_){}
     console.log('[admin] GitHub から取得 (tpl=' + merged.templates.length + ' clip=' + merged.cliparts.length + ')');
   } catch(e) {
     console.warn('admin load from github fail:', e);
@@ -8656,6 +8661,13 @@ function _toggleCropShape(){
       left: cx - side/2, top: cy - side/2,
       lockUniScaling: true,  // 非一様 scaling 禁止
     });
+    // ★ N3.16.19: サイドハンドル (左右上下中点) を完全に非表示
+    // lockUniScaling だけでは mobile fabric だと 片軸スケール抜け道がある
+    // → 角ハンドル (4隅) のみ表示 → 必ず uniform scale (正方形維持)
+    _cropState.cropRect.setControlsVisibility({
+      mt: false, mb: false, ml: false, mr: false,
+      tl: true, tr: true, bl: true, br: true,
+    });
     _cropState.cropRect.setCoords();
     _cropState.circleIndicator.set({ visible: true, left: cx, top: cy, radius: side/2 });
     _cropState.circleIndicator.setCoords();
@@ -8663,6 +8675,11 @@ function _toggleCropShape(){
   } else {
     // 矩形モードに戻す
     _cropState.cropRect.set({ lockUniScaling: false });
+    // ★ N3.16.19: サイドハンドル を 再表示
+    _cropState.cropRect.setControlsVisibility({
+      mt: true, mb: true, ml: true, mr: true,
+      tl: true, tr: true, bl: true, br: true,
+    });
     _cropState.circleIndicator.set({ visible: false });
     if(_cropState.btnShape) _cropState.btnShape.innerHTML = '□';
   }
@@ -13850,7 +13867,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.18';
+    _vb.textContent = 'N3.16.20';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
