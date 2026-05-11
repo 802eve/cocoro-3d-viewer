@@ -8811,26 +8811,30 @@ async function aiRemoveBackground(img, triggerBtn){
     _setBtn('<span class="ai-spin">✨</span> 適用中...', true);
     const resultDataUrl = 'data:' + (json.mime || 'image/png') + ';base64,' + json.image;
     await new Promise((resolve, reject) => {
-      // ★ N3.16.11 米粒バグ 4次修正:
-      // - N3.16.10 の new Image() は mobile chrome の大 data URL load 制限で失敗
-      // - fabric.Image.fromURL に戻す (load は確実成功)
-      // - fromURL 後に newImg.width/height を natural サイズに 明示上書き (米粒対策)
-      // - setCoords() で bbox cache 更新
-      // - 最終 fabric 状態 (finalImgW, finalScaleX, finalDispW) を debug 出力
-      fabric.Image.fromURL(resultDataUrl, (newImg) => {
-        if(!newImg){ reject(new Error('fabric.Image load failed')); return; }
-        const nEl = newImg._element || newImg.getElement();
-        const _natW = (nEl && (nEl.naturalWidth || nEl.width)) || newImg.width || tw;
-        const _natH = (nEl && (nEl.naturalHeight || nEl.height)) || newImg.height || th;
+      // ★ N3.16.13 米粒/白抜けバグ 5次修正:
+      // - fromURL で取得した HTMLImageElement を 一度 off-screen canvas に drawImage
+      // - canvas を そのまま fabric.Image の source に渡す (pixels 確実化)
+      // - canvas 元なので width = canvas.width が必ず正しい → 米粒問題解消
+      // - 透明判定: 画面右上に 結果画像 (生 data URL) を 15秒オーバーレイ表示
+      fabric.Image.fromURL(resultDataUrl, (loadedImg) => {
+        if(!loadedImg){ reject(new Error('fabric.Image load failed')); return; }
+        const loadedEl = loadedImg.getElement();
+        const _natW = (loadedEl && (loadedEl.naturalWidth || loadedEl.width)) || loadedImg.width || tw;
+        const _natH = (loadedEl && (loadedEl.naturalHeight || loadedEl.height)) || loadedImg.height || th;
+        // off-screen canvas へ描画 (pixels 確実 decode)
+        const tempC = document.createElement('canvas');
+        tempC.width = _natW;
+        tempC.height = _natH;
+        const tempCtx = tempC.getContext('2d');
+        try { tempCtx.drawImage(loadedEl, 0, 0, _natW, _natH); } catch(_){}
         // 元 img の display 寸法
         const oldDisplayW = img.getScaledWidth();
         const oldDisplayH = img.getScaledHeight();
-        // 新スケール (アスペクト維持)
         let newScale = Math.min(oldDisplayW / _natW, oldDisplayH / _natH);
         const _aiDbg = {
           origDispW: Math.round(oldDisplayW), origDispH: Math.round(oldDisplayH),
           newNatW: _natW, newNatH: _natH,
-          newImgW_before: newImg.width, newImgH_before: newImg.height,
+          loadedImgW: loadedImg.width, loadedImgH: loadedImg.height,
           origScaleX: (img.scaleX || 1).toFixed(3),
           origNatW: (elem.naturalWidth || elem.width || 0),
           sentTw: tw, sentTh: th,
@@ -8844,17 +8848,13 @@ async function aiRemoveBackground(img, triggerBtn){
           _aiDbg.fallbackScale = newScale.toFixed(4);
         }
         const oldCenter = img.getCenterPoint();
-        // ★ N3.16.12: width/height も set() 経由で渡す (proper setter で cache 自動無効化)
-        // + objectCaching:false (古い cache を使わせない) + dirty:true (強制 re-render)
-        newImg.set({
-          width: _natW,
-          height: _natH,
+        // ★ canvas を 直接 fabric.Image の source に
+        const newImg = new fabric.Image(tempC, {
           left: oldCenter.x, top: oldCenter.y,
           originX: 'center', originY: 'center',
           scaleX: newScale, scaleY: newScale,
           angle: img.angle || 0,
           selectable: true, evented: true, hasControls: true,
-          objectCaching: false,
           cornerSize: window._isMobileTouch ? 32 : 12,
           cornerStyle: 'circle',
           cornerColor: '#ffffff',
@@ -8863,11 +8863,9 @@ async function aiRemoveBackground(img, triggerBtn){
           borderColor: '#f59e0b',
           padding: 4,
         });
-        newImg.dirty = true;
-        // bbox cache を 強制更新
-        try { newImg.setCoords(); } catch(_){}
         newImg._partType = 'image';
         newImg._partLabel = (img._partLabel || '画像').replace(/\s*\((?:円形)?トリミング\)\s*$/, '') + ' (AI 切り抜き)';
+        try { newImg.setCoords(); } catch(_){}
         // 旧画像と差し替え
         const idx = fabCanvas.getObjects().indexOf(img);
         fabCanvas.remove(img);
@@ -8878,22 +8876,34 @@ async function aiRemoveBackground(img, triggerBtn){
         }
         fabCanvas.setActiveObject(newImg);
         fabCanvas.requestRenderAll();
-        // ★ 最終 fabric 状態をデバッグに追加 (米粒/白抜けの真犯人 特定)
         _aiDbg.finalImgW = newImg.width;
         _aiDbg.finalImgH = newImg.height;
         _aiDbg.finalScaleX = (newImg.scaleX || 0).toFixed(4);
         _aiDbg.finalDispW = Math.round(newImg.getScaledWidth());
         _aiDbg.finalDispH = Math.round(newImg.getScaledHeight());
-        _aiDbg.elNatW = nEl && nEl.naturalWidth;
-        _aiDbg.elNatH = nEl && nEl.naturalHeight;
-        _aiDbg.elComplete = nEl && nEl.complete;
-        _aiDbg.objCache = newImg.objectCaching;
+        _aiDbg.canvasW = tempC.width;
+        _aiDbg.canvasH = tempC.height;
+        _aiDbg.elComplete = loadedEl && loadedEl.complete;
         console.log('[AI-removebg] final state', _aiDbg);
         try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
         try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
         try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
-        // デバッグモード: URL ?aidebug=1 で alert 表示
+        // ★ デバッグオーバーレイ: 結果画像を画面右上 (15秒) — 透明 vs 内容アリ を目視判定
         if(/[?&]aidebug=1/.test(location.search)){
+          try {
+            const dbgDiv = document.createElement('div');
+            dbgDiv.style.cssText = 'position:fixed; top:60px; right:8px; width:160px; z-index:99999; border:3px solid #ff3333; background:linear-gradient(45deg,#f0f0f0 25%,#bbb 25%,#bbb 50%,#f0f0f0 50%,#f0f0f0 75%,#bbb 75%,#bbb) 0 0/14px 14px; padding:0; font-family:monospace';
+            const dbgLabel = document.createElement('div');
+            dbgLabel.style.cssText = 'background:#ff3333; color:white; font-size:10px; padding:2px 4px; line-height:1.3';
+            dbgLabel.textContent = 'remove.bg ' + _natW + 'x' + _natH;
+            const dbgImg = new Image();
+            dbgImg.src = resultDataUrl;
+            dbgImg.style.cssText = 'width:100%; height:auto; display:block';
+            dbgDiv.appendChild(dbgLabel);
+            dbgDiv.appendChild(dbgImg);
+            document.body.appendChild(dbgDiv);
+            setTimeout(() => { try { dbgDiv.remove(); } catch(_){} }, 15000);
+          } catch(_){}
           alert('AI scale debug:\n' + JSON.stringify(_aiDbg, null, 2));
         }
         resolve();
@@ -13789,7 +13799,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.12';
+    _vb.textContent = 'N3.16.13';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
