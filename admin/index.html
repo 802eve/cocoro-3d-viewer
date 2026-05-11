@@ -389,6 +389,41 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ★ 2026-05-11: 編集モーダル -->
+<div id="editModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h3 id="editModalTitle" style="margin:0;font-size:16px;">編集</h3>
+      <button class="btn" onclick="closeEditModal()">✕</button>
+    </div>
+    <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;">
+      <div id="editModalThumb" style="width:100px;height:100px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+        <div><label style="font-size:11px;color:var(--t3);">名前</label>
+          <input type="text" class="input" id="editName" style="width:100%;"></div>
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;"><label style="font-size:11px;color:var(--t3);">カテゴリ</label>
+            <input type="text" class="input" id="editCat" list="" style="width:100%;"></div>
+          <div style="width:80px;"><label style="font-size:11px;color:var(--t3);">サムネ絵文字</label>
+            <input type="text" class="input" id="editThumb" maxlength="4" style="width:100%;"></div>
+        </div>
+        <div id="editStyleWrap"><label style="font-size:11px;color:var(--t3);">スタイル (任意)</label>
+          <input type="text" class="input" id="editStyle" placeholder="モダン/ヴィンテージ等" style="width:100%;"></div>
+        <div id="editTagsWrap"><label style="font-size:11px;color:var(--t3);">タグ (カンマ区切り)</label>
+          <input type="text" class="input" id="editTags" placeholder="例: sport, modern" style="width:100%;"></div>
+      </div>
+    </div>
+    <div id="editPartsWrap" style="display:none;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;">パーツ名 (テンプレートのみ)</div>
+      <div id="editPartsList" style="max-height:240px;overflow-y:auto;"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--bd);padding-top:12px;">
+      <button class="btn" onclick="closeEditModal()">キャンセル</button>
+      <button class="btn primary" onclick="saveEditModal()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- fabric.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script>
@@ -584,6 +619,125 @@ function _autoCloudBulkSync(type, items, label){
     else toast('☁ ' + (label||'一括同期') + ' 失敗', true);
   });
 }
+
+// ★ 2026-05-11: 保存済みアイテム編集モーダル
+let _editingItem = null;   // { type: 'template'|'clipart', id: '...' }
+function openEditModal(type, item){
+  _editingItem = { type: type, id: item.id };
+  const isTpl = (type === 'template');
+  document.getElementById('editModalTitle').textContent = isTpl ? '🎨 テンプレート編集' : '✨ クリップアート編集';
+  // サムネ
+  const thumbHost = document.getElementById('editModalThumb');
+  thumbHost.innerHTML = '';
+  if(item.svg){
+    const blob = new Blob([item.svg], {type:'image/svg+xml'});
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(blob);
+    img.style.cssText = 'max-width:100%;max-height:100%;';
+    thumbHost.appendChild(img);
+  } else {
+    thumbHost.textContent = item.thumb || (isTpl ? '🎨' : '✨');
+    thumbHost.style.fontSize = '40px';
+  }
+  // フィールド
+  document.getElementById('editName').value = item.name || '';
+  document.getElementById('editCat').value = item.cat || '';
+  document.getElementById('editThumb').value = item.thumb || '';
+  document.getElementById('editStyle').value = item.style || '';
+  document.getElementById('editTags').value = (item.tags || []).join(', ');
+  // テンプレートだけ表示
+  document.getElementById('editStyleWrap').style.display = isTpl ? '' : 'none';
+  document.getElementById('editTagsWrap').style.display = isTpl ? '' : 'none';
+  // カテゴリ datalist
+  const catInp = document.getElementById('editCat');
+  catInp.setAttribute('list', isTpl ? 'catList' : 'clipCatList');
+  // パーツ名リスト (テンプレートのみ)
+  const partsWrap = document.getElementById('editPartsWrap');
+  const partsList = document.getElementById('editPartsList');
+  partsList.innerHTML = '';
+  if(isTpl && item.parts && Object.keys(item.parts).length){
+    partsWrap.style.display = '';
+    Object.keys(item.parts).sort((a,b) => +a - +b).forEach(idx => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:4px;margin-bottom:4px;';
+      row.innerHTML = '<div style="width:40px;font-size:11px;color:var(--t3);">#' + idx + '</div>';
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'input';
+      inp.dataset.partIdx = idx;
+      inp.value = item.parts[idx] || '';
+      inp.style.cssText = 'flex:1;font-size:12px;';
+      row.appendChild(inp);
+      partsList.appendChild(row);
+    });
+  } else {
+    partsWrap.style.display = 'none';
+  }
+  // 表示
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'flex';
+}
+function closeEditModal(){
+  document.getElementById('editModal').style.display = 'none';
+  _editingItem = null;
+}
+function saveEditModal(){
+  if(!_editingItem) return;
+  const { type, id } = _editingItem;
+  const isTpl = (type === 'template');
+  const newName = document.getElementById('editName').value.trim();
+  if(!newName){ toast('名前を入力してください', true); return; }
+  const newCat = document.getElementById('editCat').value.trim() || 'その他';
+  const newThumb = document.getElementById('editThumb').value.trim() || (isTpl ? '🎨' : '✨');
+  const newStyle = document.getElementById('editStyle').value.trim() || '';
+  const newTags = document.getElementById('editTags').value.split(',').map(s => s.trim()).filter(Boolean);
+  // パーツ名
+  const newParts = {};
+  if(isTpl){
+    document.querySelectorAll('#editPartsList input[data-part-idx]').forEach(inp => {
+      const v = inp.value.trim();
+      if(v) newParts[inp.dataset.partIdx] = v;
+    });
+  }
+  // データ更新
+  const data = loadAll();
+  const field = isTpl ? 'templates' : 'cliparts';
+  const idx = (data[field] || []).findIndex(x => x.id === id);
+  if(idx < 0){ toast('対象が見つかりません', true); return; }
+  // 名前重複チェック (自分以外)
+  const dup = (data[field] || []).find(x => x.id !== id && x.name === newName);
+  if(dup){ toast('同じ名前のアイテムが既に存在します', true); return; }
+  const item = data[field][idx];
+  item.name = newName;
+  item.cat = newCat;
+  item.thumb = newThumb;
+  if(isTpl){
+    item.style = newStyle;
+    item.tags = newTags;
+    item.parts = newParts;
+  }
+  item.updated = Date.now();
+  saveAll(data);
+  // 新カテゴリ自動登録
+  const cats = loadCats();
+  const catArr = isTpl ? cats.tpl : cats.clip;
+  let catsChanged = false;
+  if(newCat && newCat !== 'その他' && catArr.indexOf(newCat) < 0){
+    catArr.push(newCat);
+    saveCats(cats);
+    refreshCatDatalists();
+    catsChanged = true;
+  }
+  toast('✓ 保存しました: ' + newName);
+  closeEditModal();
+  if(isTpl) renderSavedTpl(); else renderSavedClip();
+  // クラウド自動同期
+  _autoCloudSyncItem(type, item, newName);
+  if(catsChanged) _autoCloudSyncCats(cats);
+}
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.saveEditModal = saveEditModal;
 
 // SVG content を GitHub Pages から fetch して dataUri 化 (起動時の同期で使用)
 // ★ 既存仕様: cliparts/templates の SVG content は `svg` フィールドに格納される
@@ -1195,6 +1349,13 @@ function renderTplPartsList(){
     const row = document.createElement('div');
     row.className = 'part-row';
     row.dataset.idx = String(i);
+    row.style.cursor = 'pointer';
+    row.title = 'クリックでプレビューのパーツをハイライト';
+    // ★ 2026-05-11: 行全体クリックでハイライト (input/button クリックは除外)
+    row.addEventListener('click', (e) => {
+      if(e.target.closest('input, button')) return;
+      highlightPart(i);
+    });
 
     const ic = document.createElement('div');
     ic.className = 'ic';
@@ -1217,30 +1378,76 @@ function renderTplPartsList(){
     inp.placeholder = 'パーツ名 (例: 店名)';
     inp.value = p.customName || '';
     inp.addEventListener('input', () => { p.customName = inp.value; });
+    // ★ 2026-05-11: 入力欄フォーカスでも該当パーツをハイライト
+    inp.addEventListener('focus', () => highlightPart(i));
     row.appendChild(inp);
 
     const fb = document.createElement('button');
     fb.className = 'focus-btn';
     fb.textContent = '👁';
     fb.title = 'プレビューでハイライト';
-    fb.addEventListener('click', () => highlightPart(i));
+    fb.addEventListener('click', (e) => { e.stopPropagation(); highlightPart(i); });
     row.appendChild(fb);
 
     host.appendChild(row);
   });
 }
 
+// ★ 2026-05-11: ハイライト持続 (別 row クリックされるまで or リセット時にクリア)
+let _highlightOverlay = null;
+let _highlightTimer = null;
 function highlightPart(i){
   if(!_curTplSvg || !_curTplCanvas) return;
   const p = _curTplSvg.partsInfo[i];
   if(!p || !p._ref) return;
   document.querySelectorAll('.part-row').forEach(r => r.classList.remove('highlight'));
-  document.querySelector('.part-row[data-idx="'+i+'"]').classList.add('highlight');
-  _curTplCanvas.setActiveObject(p._ref);
-  _curTplCanvas.requestRenderAll();
-  setTimeout(() => {
-    if(_curTplCanvas){ _curTplCanvas.discardActiveObject(); _curTplCanvas.requestRenderAll(); }
-  }, 1500);
+  const row = document.querySelector('.part-row[data-idx="'+i+'"]');
+  if(row){
+    row.classList.add('highlight');
+    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  // 既存ハイライト枠を削除
+  if(_highlightOverlay){
+    try { _curTplCanvas.remove(_highlightOverlay); } catch(_){}
+    _highlightOverlay = null;
+  }
+  if(_highlightTimer){ clearTimeout(_highlightTimer); _highlightTimer = null; }
+  // 対象パーツの bbox を取得 → 赤枠 + 点滅で描画
+  const ref = p._ref;
+  try {
+    const br = ref.getBoundingRect(true);
+    _highlightOverlay = new fabric.Rect({
+      left: br.left - 4, top: br.top - 4,
+      width: br.width + 8, height: br.height + 8,
+      fill: 'rgba(239,68,68,0.10)',
+      stroke: '#ef4444',
+      strokeWidth: 3,
+      strokeDashArray: [6, 4],
+      selectable: false, evented: false,
+      excludeFromExport: true,
+    });
+    _highlightOverlay._isHighlight = true;
+    _curTplCanvas.add(_highlightOverlay);
+    _curTplCanvas.requestRenderAll();
+    // 点滅 (1秒間 強→弱→強 を 2回)
+    let blink = 0;
+    const blinkTick = () => {
+      if(!_highlightOverlay) return;
+      _highlightOverlay.set({ opacity: (blink % 2 === 0) ? 1 : 0.4 });
+      _curTplCanvas.requestRenderAll();
+      blink++;
+      if(blink < 4) _highlightTimer = setTimeout(blinkTick, 250);
+    };
+    blinkTick();
+  } catch(e){ console.warn('highlight failed', e); }
+}
+function clearHighlightOverlay(){
+  if(_highlightTimer){ clearTimeout(_highlightTimer); _highlightTimer = null; }
+  if(_highlightOverlay && _curTplCanvas){
+    try { _curTplCanvas.remove(_highlightOverlay); _curTplCanvas.requestRenderAll(); } catch(_){}
+  }
+  _highlightOverlay = null;
+  document.querySelectorAll('.part-row').forEach(r => r.classList.remove('highlight'));
 }
 
 function escapeHtml(s){
@@ -1319,6 +1526,7 @@ function resetTplForm(){
   document.getElementById('tplMetaPanel').style.display = 'none';
   document.getElementById('tplPartsPanel').style.display = 'none';
   document.getElementById('tplSavePanel').style.display = 'none';
+  try { clearHighlightOverlay(); } catch(_){}
   document.getElementById('tplPartsList').innerHTML = '';
   document.getElementById('tplPreviewStat').textContent = '';
   document.getElementById('fileTpl').value = '';
@@ -1611,6 +1819,12 @@ function renderSavedTpl(){
       + ' / パーツ' + Object.keys(t.parts || {}).length + ' / ' + new Date(t.created).toLocaleString('ja-JP') + '</div>';
     r.appendChild(meta);
     const acts = document.createElement('div'); acts.className = 'acts';
+    // ★ 2026-05-11: 編集ボタン追加
+    const ed = document.createElement('button');
+    ed.className = 'btn'; ed.textContent = '✏ 編集';
+    ed.title = '名前/カテゴリ/パーツ名等を編集';
+    ed.addEventListener('click', () => openEditModal('template', t));
+    acts.appendChild(ed);
     const dl = document.createElement('button');
     dl.className = 'btn'; dl.textContent = 'SVG⬇';
     dl.title = 'SVG ダウンロード';
@@ -1694,6 +1908,11 @@ function renderSavedClip(){
       + '<div class="sub">' + escapeHtml(t.cat) + ' / ' + new Date(t.created).toLocaleString('ja-JP') + '</div>';
     r.appendChild(meta);
     const acts = document.createElement('div'); acts.className = 'acts';
+    // ★ 2026-05-11: 編集ボタン追加
+    const ed = document.createElement('button'); ed.className = 'btn'; ed.textContent = '✏ 編集';
+    ed.title = '名前/カテゴリ/サムネを編集';
+    ed.addEventListener('click', () => openEditModal('clipart', t));
+    acts.appendChild(ed);
     const dl = document.createElement('button'); dl.className = 'btn'; dl.textContent = 'SVG⬇';
     dl.addEventListener('click', () => downloadSvg(t.svg, (t.name||'clip') + '.svg'));
     acts.appendChild(dl);
