@@ -8811,44 +8811,40 @@ async function aiRemoveBackground(img, triggerBtn){
     _setBtn('<span class="ai-spin">✨</span> 適用中...', true);
     const resultDataUrl = 'data:' + (json.mime || 'image/png') + ';base64,' + json.image;
     await new Promise((resolve, reject) => {
-      fabric.Image.fromURL(resultDataUrl, (newImg) => {
-        if(!newImg){ reject(new Error('fabric.Image load failed')); return; }
-        // ★ N3.16.9 米粒バグ 2次修正:
-        // - getScaledWidth/Height で 元 display 寸法を取得 (viewport zoom 無視で安全)
-        // - 新 img の natural は naturalWidth フォールバック付き
-        // - 異常スケール (極小/極大/NaN) 検出時は フォールバック (m_addImage 風 auto-fit)
-        // - デバッグログ console + (?aidebug=1 で alert 表示)
-        const nEl = newImg._element || newImg.getElement();
-        let newNaturalW = (nEl && (nEl.naturalWidth || nEl.width)) || newImg.width || 0;
-        let newNaturalH = (nEl && (nEl.naturalHeight || nEl.height)) || newImg.height || 0;
-        if(!newNaturalW) newNaturalW = tw;
-        if(!newNaturalH) newNaturalH = th;
-        // 元 img の display 寸法 (getScaledWidth は viewport zoom 無視, crop 反映済み)
+      // ★ N3.16.10 米粒バグ 3次修正:
+      // - fabric.Image.fromURL → ネイティブ Image() に変更 (load timing 確実化)
+      // - fabric.Image コンストラクタに width/height を明示渡し
+      // - setCoords() で bbox cache 更新
+      // - 最終 fabric 状態 (finalImgW, finalScaleX, finalDispW) も debug 出力
+      const tempImg = new Image();
+      tempImg.onload = function(){
+        const _natW = tempImg.naturalWidth || tempImg.width || tw;
+        const _natH = tempImg.naturalHeight || tempImg.height || th;
+        // 元 img の display 寸法
         const oldDisplayW = img.getScaledWidth();
         const oldDisplayH = img.getScaledHeight();
-        // 元の display 寸法に「収まる」 スケール (アスペクト維持)
-        let newScale = Math.min(oldDisplayW / newNaturalW, oldDisplayH / newNaturalH);
+        // 新スケール (アスペクト維持)
+        let newScale = Math.min(oldDisplayW / _natW, oldDisplayH / _natH);
         const _aiDbg = {
           origDispW: Math.round(oldDisplayW), origDispH: Math.round(oldDisplayH),
-          newNatW: newNaturalW, newNatH: newNaturalH,
+          newNatW: _natW, newNatH: _natH,
           origScaleX: (img.scaleX || 1).toFixed(3),
           origNatW: (elem.naturalWidth || elem.width || 0),
           sentTw: tw, sentTh: th,
           calcScale: newScale.toFixed(4),
         };
-        console.log('[AI-removebg] scale debug', _aiDbg);
-        // 異常値検出 (米粒 / 巨大 / NaN / Infinity)
+        // 異常値検出 → m_addImage 風 auto-fit
         if(!isFinite(newScale) || newScale < 0.01 || newScale > 50){
-          console.warn('[AI-removebg] newScale out of range:', newScale, '→ auto-fit fallback');
-          // m_addImage 風 auto-fit: キャンバスの半分くらいに収める
           const cw = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
           const ch = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
-          newScale = Math.min((cw * 0.5) / newNaturalW, (ch * 0.5) / newNaturalH, 1);
+          newScale = Math.min((cw * 0.5) / _natW, (ch * 0.5) / _natH, 1);
           _aiDbg.fallbackScale = newScale.toFixed(4);
         }
-        // 中心位置 (絶対座標) を保持
         const oldCenter = img.getCenterPoint();
-        newImg.set({
+        // ★ fabric.Image を直接構築 (fromURL 介さず) + width/height 明示
+        const newImg = new fabric.Image(tempImg, {
+          width: _natW,
+          height: _natH,
           left: oldCenter.x, top: oldCenter.y,
           originX: 'center', originY: 'center',
           scaleX: newScale, scaleY: newScale,
@@ -8864,6 +8860,8 @@ async function aiRemoveBackground(img, triggerBtn){
         });
         newImg._partType = 'image';
         newImg._partLabel = (img._partLabel || '画像').replace(/\s*\((?:円形)?トリミング\)\s*$/, '') + ' (AI 切り抜き)';
+        // bbox cache を 強制更新 (mobile fabric は cache stale 問題あり)
+        try { newImg.setCoords(); } catch(_){}
         // 旧画像と差し替え
         const idx = fabCanvas.getObjects().indexOf(img);
         fabCanvas.remove(img);
@@ -8874,15 +8872,26 @@ async function aiRemoveBackground(img, triggerBtn){
         }
         fabCanvas.setActiveObject(newImg);
         fabCanvas.requestRenderAll();
+        // ★ 最終 fabric 状態をデバッグに追加 (米粒の真犯人 特定)
+        _aiDbg.finalImgW = newImg.width;
+        _aiDbg.finalImgH = newImg.height;
+        _aiDbg.finalScaleX = (newImg.scaleX || 0).toFixed(4);
+        _aiDbg.finalDispW = Math.round(newImg.getScaledWidth());
+        _aiDbg.finalDispH = Math.round(newImg.getScaledHeight());
+        console.log('[AI-removebg] final state', _aiDbg);
         try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
         try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
         try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
-        // デバッグモード: URL ?aidebug=1 で 計算値を alert 表示 (モバイル向け)
+        // デバッグモード: URL ?aidebug=1 で alert 表示
         if(/[?&]aidebug=1/.test(location.search)){
           alert('AI scale debug:\n' + JSON.stringify(_aiDbg, null, 2));
         }
         resolve();
-      }, { crossOrigin: 'anonymous' });
+      };
+      tempImg.onerror = function(){
+        reject(new Error('image load failed (data URL invalid?)'));
+      };
+      tempImg.src = resultDataUrl;
     });
     _setBtn(origBtnHtml, false);
     const remaining = (typeof json.remaining === 'number') ? ('\n本日の残り回数: ' + json.remaining) : '';
@@ -13774,7 +13783,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.9';
+    _vb.textContent = 'N3.16.10';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
