@@ -8478,7 +8478,15 @@ function startCropMode(img){
     top: img.top,
     originX: img.originX,
     originY: img.originY,
+    // ★ N3.16.18: 既存 clipPath も保存 (再クロップ時のずれ対策で 一旦クリアする)
+    clipPath: img.clipPath || null,
+    _cropShape: img._cropShape || 'rect',
   };
+  // ★ N3.16.18: 既存 clipPath があれば 一旦クリア
+  // → プレビュー中は FULL 画像を 半透明表示できる + 新クロップ位置と整合性 取れる
+  if(img.clipPath){
+    img.clipPath = null;
+  }
   // 2. 元画像 (FULL) の bbox を求めるため一旦中央オリジンに正規化 + 現在の中心を取得
   const curBr = img.getBoundingRect(true);
   const curCenterX = curBr.left + curBr.width / 2;
@@ -8547,6 +8555,8 @@ function startCropMode(img){
     selectable: true, evented: true,
     // ★ N3.16.2: ピクセル判定 OFF (透明部分でも 掴める)
     perPixelTargetFind: false,
+    // ★ N3.16.18: 履歴に保存しない (undo で残ってしまうバグ対策)
+    excludeFromExport: true,
   });
   cropRect._isCropRect = true;
   fabCanvas.add(cropRect);
@@ -8562,6 +8572,8 @@ function startCropMode(img){
     originX: 'center', originY: 'center',
     selectable: false, evented: false,
     visible: false,  // 初期は矩形モード
+    // ★ N3.16.18: 履歴に保存しない (undo で残ってしまうバグ対策)
+    excludeFromExport: true,
   });
   circleIndicator._isCropCircleIndicator = true;
   fabCanvas.add(circleIndicator);
@@ -13838,7 +13850,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.17';
+    _vb.textContent = 'N3.16.18';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
