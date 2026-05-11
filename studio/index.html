@@ -8785,7 +8785,11 @@ function applyCropMode(){
     try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
     try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
   } catch(e){
+    // ★ N3.16.21: エラーを可視化 (mobile で console 見えないため alert で表示)
+    const msg = (e && e.message) || String(e);
+    const stack = (e && e.stack) ? String(e.stack).substring(0, 400) : '';
     console.warn('crop apply failed:', e);
+    alert('クロップ適用エラー:\n' + msg + (stack ? ('\n\n' + stack) : '') + '\n\n元画像に戻します');
     cancelCropMode();
   }
 }
@@ -13867,7 +13871,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.20';
+    _vb.textContent = 'N3.16.21';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
