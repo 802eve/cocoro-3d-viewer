@@ -8811,11 +8811,9 @@ async function aiRemoveBackground(img, triggerBtn){
     _setBtn('<span class="ai-spin">✨</span> 適用中...', true);
     const resultDataUrl = 'data:' + (json.mime || 'image/png') + ';base64,' + json.image;
     await new Promise((resolve, reject) => {
-      // ★ N3.16.13 米粒/白抜けバグ 5次修正:
-      // - fromURL で取得した HTMLImageElement を 一度 off-screen canvas に drawImage
-      // - canvas を そのまま fabric.Image の source に渡す (pixels 確実化)
-      // - canvas 元なので width = canvas.width が必ず正しい → 米粒問題解消
-      // - 透明判定: 画面右上に 結果画像 (生 data URL) を 15秒オーバーレイ表示
+      // ★ N3.16.14 白抜けバグ 6次修正:
+      // - canvas pixel alpha チェック (常時) → 全透明なら remove.bg 失敗としてエラー表示
+      // - 全透明なら 元画像を残す (誤って空 image に差し替えない)
       fabric.Image.fromURL(resultDataUrl, (loadedImg) => {
         if(!loadedImg){ reject(new Error('fabric.Image load failed')); return; }
         const loadedEl = loadedImg.getElement();
@@ -8827,6 +8825,25 @@ async function aiRemoveBackground(img, triggerBtn){
         tempC.height = _natH;
         const tempCtx = tempC.getContext('2d');
         try { tempCtx.drawImage(loadedEl, 0, 0, _natW, _natH); } catch(_){}
+        // ★ pixel alpha check — 全部透明 = remove.bg 失敗
+        let opaqueCount = 0, centerAlpha = -1;
+        try {
+          const cx = Math.floor(_natW/2), cy = Math.floor(_natH/2);
+          centerAlpha = tempCtx.getImageData(cx, cy, 1, 1).data[3];
+          // 50 ランダムサンプリングで不透明 pixels 確認
+          for(let i = 0; i < 50; i++){
+            const x = Math.floor(Math.random() * _natW);
+            const y = Math.floor(Math.random() * _natH);
+            if(tempCtx.getImageData(x, y, 1, 1).data[3] > 10) opaqueCount++;
+          }
+        } catch(e){ console.warn('[AI-removebg] getImageData failed', e); }
+        console.log('[AI-removebg] pixel check', { centerAlpha, opaqueCount, of: 50, natW: _natW, natH: _natH });
+        // 全透明 (or 1個未満) なら 元画像を残してエラー alert
+        if(opaqueCount === 0 && centerAlpha === 0){
+          alert('AI 切り抜き 失敗:\n返却画像が全部透明でした。 remove.bg が 被写体を検出できなかった可能性があります。\n\n試してみてください:\n・別の画像 (人物が中央にハッキリ写ってるもの)\n・画像が暗すぎ/明るすぎない\n・前景と背景の差がある\n\n元画像はそのまま残します。');
+          resolve();
+          return;
+        }
         // 元 img の display 寸法
         const oldDisplayW = img.getScaledWidth();
         const oldDisplayH = img.getScaledHeight();
@@ -8884,6 +8901,8 @@ async function aiRemoveBackground(img, triggerBtn){
         _aiDbg.canvasW = tempC.width;
         _aiDbg.canvasH = tempC.height;
         _aiDbg.elComplete = loadedEl && loadedEl.complete;
+        _aiDbg.centerAlpha = centerAlpha;
+        _aiDbg.opaqueOf50 = opaqueCount;
         console.log('[AI-removebg] final state', _aiDbg);
         try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
         try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
@@ -13799,7 +13818,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.13';
+    _vb.textContent = 'N3.16.14';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
