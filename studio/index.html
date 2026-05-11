@@ -8803,9 +8803,15 @@ async function aiRemoveBackground(img, triggerBtn){
       body: JSON.stringify({ action: 'remove_bg', payload: { image_b64: b64 } })
     });
     if(!res.ok) throw new Error('GAS HTTP ' + res.status);
-    const json = await res.json();
-    if(!json || !json.ok){
-      throw new Error(json && json.error || 'unknown error');
+    const json_raw = await res.json();
+    if(!json_raw || !json_raw.ok){
+      throw new Error(json_raw && json_raw.error || 'unknown error');
+    }
+    // ★ N3.16.17 真犯人修正: GAS doPost は { ok:true, data: result } で 2重ラップして返す
+    // → json.data の中に 実際の _apiRemoveBg 戻り値 (image / gasVer / mime 等) が入ってる
+    const json = (json_raw.data && typeof json_raw.data === 'object') ? json_raw.data : json_raw;
+    if(!json.ok && json.error){
+      throw new Error(json.error);
     }
     // 3. 結果画像 を fabric.Image に変換 → 元画像と差し替え (位置・スケール・回転 維持)
     _setBtn('<span class="ai-spin">✨</span> 適用中...', true);
@@ -13832,7 +13838,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.16';
+    _vb.textContent = 'N3.16.17';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
