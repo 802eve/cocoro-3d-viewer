@@ -8811,15 +8811,17 @@ async function aiRemoveBackground(img, triggerBtn){
     _setBtn('<span class="ai-spin">✨</span> 適用中...', true);
     const resultDataUrl = 'data:' + (json.mime || 'image/png') + ';base64,' + json.image;
     await new Promise((resolve, reject) => {
-      // ★ N3.16.10 米粒バグ 3次修正:
-      // - fabric.Image.fromURL → ネイティブ Image() に変更 (load timing 確実化)
-      // - fabric.Image コンストラクタに width/height を明示渡し
+      // ★ N3.16.11 米粒バグ 4次修正:
+      // - N3.16.10 の new Image() は mobile chrome の大 data URL load 制限で失敗
+      // - fabric.Image.fromURL に戻す (load は確実成功)
+      // - fromURL 後に newImg.width/height を natural サイズに 明示上書き (米粒対策)
       // - setCoords() で bbox cache 更新
-      // - 最終 fabric 状態 (finalImgW, finalScaleX, finalDispW) も debug 出力
-      const tempImg = new Image();
-      tempImg.onload = function(){
-        const _natW = tempImg.naturalWidth || tempImg.width || tw;
-        const _natH = tempImg.naturalHeight || tempImg.height || th;
+      // - 最終 fabric 状態 (finalImgW, finalScaleX, finalDispW) を debug 出力
+      fabric.Image.fromURL(resultDataUrl, (newImg) => {
+        if(!newImg){ reject(new Error('fabric.Image load failed')); return; }
+        const nEl = newImg._element || newImg.getElement();
+        const _natW = (nEl && (nEl.naturalWidth || nEl.width)) || newImg.width || tw;
+        const _natH = (nEl && (nEl.naturalHeight || nEl.height)) || newImg.height || th;
         // 元 img の display 寸法
         const oldDisplayW = img.getScaledWidth();
         const oldDisplayH = img.getScaledHeight();
@@ -8828,6 +8830,7 @@ async function aiRemoveBackground(img, triggerBtn){
         const _aiDbg = {
           origDispW: Math.round(oldDisplayW), origDispH: Math.round(oldDisplayH),
           newNatW: _natW, newNatH: _natH,
+          newImgW_before: newImg.width, newImgH_before: newImg.height,
           origScaleX: (img.scaleX || 1).toFixed(3),
           origNatW: (elem.naturalWidth || elem.width || 0),
           sentTw: tw, sentTh: th,
@@ -8841,10 +8844,11 @@ async function aiRemoveBackground(img, triggerBtn){
           _aiDbg.fallbackScale = newScale.toFixed(4);
         }
         const oldCenter = img.getCenterPoint();
-        // ★ fabric.Image を直接構築 (fromURL 介さず) + width/height 明示
-        const newImg = new fabric.Image(tempImg, {
-          width: _natW,
-          height: _natH,
+        // ★ key fix: width/height を natural サイズに 強制上書き
+        // (fabric の fromURL は内部で width を 0 や 想定外の値に することあり)
+        newImg.width = _natW;
+        newImg.height = _natH;
+        newImg.set({
           left: oldCenter.x, top: oldCenter.y,
           originX: 'center', originY: 'center',
           scaleX: newScale, scaleY: newScale,
@@ -8858,10 +8862,10 @@ async function aiRemoveBackground(img, triggerBtn){
           borderColor: '#f59e0b',
           padding: 4,
         });
+        // bbox cache を 強制更新
+        try { newImg.setCoords(); } catch(_){}
         newImg._partType = 'image';
         newImg._partLabel = (img._partLabel || '画像').replace(/\s*\((?:円形)?トリミング\)\s*$/, '') + ' (AI 切り抜き)';
-        // bbox cache を 強制更新 (mobile fabric は cache stale 問題あり)
-        try { newImg.setCoords(); } catch(_){}
         // 旧画像と差し替え
         const idx = fabCanvas.getObjects().indexOf(img);
         fabCanvas.remove(img);
@@ -8887,11 +8891,7 @@ async function aiRemoveBackground(img, triggerBtn){
           alert('AI scale debug:\n' + JSON.stringify(_aiDbg, null, 2));
         }
         resolve();
-      };
-      tempImg.onerror = function(){
-        reject(new Error('image load failed (data URL invalid?)'));
-      };
-      tempImg.src = resultDataUrl;
+      });
     });
     _setBtn(origBtnHtml, false);
     const remaining = (typeof json.remaining === 'number') ? ('\n本日の残り回数: ' + json.remaining) : '';
@@ -13783,7 +13783,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.10';
+    _vb.textContent = 'N3.16.11';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
