@@ -8844,16 +8844,17 @@ async function aiRemoveBackground(img, triggerBtn){
           _aiDbg.fallbackScale = newScale.toFixed(4);
         }
         const oldCenter = img.getCenterPoint();
-        // ★ key fix: width/height を natural サイズに 強制上書き
-        // (fabric の fromURL は内部で width を 0 や 想定外の値に することあり)
-        newImg.width = _natW;
-        newImg.height = _natH;
+        // ★ N3.16.12: width/height も set() 経由で渡す (proper setter で cache 自動無効化)
+        // + objectCaching:false (古い cache を使わせない) + dirty:true (強制 re-render)
         newImg.set({
+          width: _natW,
+          height: _natH,
           left: oldCenter.x, top: oldCenter.y,
           originX: 'center', originY: 'center',
           scaleX: newScale, scaleY: newScale,
           angle: img.angle || 0,
           selectable: true, evented: true, hasControls: true,
+          objectCaching: false,
           cornerSize: window._isMobileTouch ? 32 : 12,
           cornerStyle: 'circle',
           cornerColor: '#ffffff',
@@ -8862,6 +8863,7 @@ async function aiRemoveBackground(img, triggerBtn){
           borderColor: '#f59e0b',
           padding: 4,
         });
+        newImg.dirty = true;
         // bbox cache を 強制更新
         try { newImg.setCoords(); } catch(_){}
         newImg._partType = 'image';
@@ -8876,12 +8878,16 @@ async function aiRemoveBackground(img, triggerBtn){
         }
         fabCanvas.setActiveObject(newImg);
         fabCanvas.requestRenderAll();
-        // ★ 最終 fabric 状態をデバッグに追加 (米粒の真犯人 特定)
+        // ★ 最終 fabric 状態をデバッグに追加 (米粒/白抜けの真犯人 特定)
         _aiDbg.finalImgW = newImg.width;
         _aiDbg.finalImgH = newImg.height;
         _aiDbg.finalScaleX = (newImg.scaleX || 0).toFixed(4);
         _aiDbg.finalDispW = Math.round(newImg.getScaledWidth());
         _aiDbg.finalDispH = Math.round(newImg.getScaledHeight());
+        _aiDbg.elNatW = nEl && nEl.naturalWidth;
+        _aiDbg.elNatH = nEl && nEl.naturalHeight;
+        _aiDbg.elComplete = nEl && nEl.complete;
+        _aiDbg.objCache = newImg.objectCaching;
         console.log('[AI-removebg] final state', _aiDbg);
         try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
         try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
@@ -13783,7 +13789,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.11';
+    _vb.textContent = 'N3.16.12';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
