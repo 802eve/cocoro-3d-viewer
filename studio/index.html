@@ -8784,6 +8784,19 @@ function applyCropMode(){
     try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
     try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
     try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
+    // ★ N3.16.22: ?cropdebug=1 で apply 成功時の値を可視化
+    if(/[?&]cropdebug=1/.test(location.search)){
+      const dbg = {
+        mode: mode,
+        natW: naturalW, natH: naturalH,
+        iBr: { L: Math.round(iBr.left), T: Math.round(iBr.top), W: Math.round(iBr.width), H: Math.round(iBr.height) },
+        cBr: { L: Math.round(cBr.left), T: Math.round(cBr.top), W: Math.round(cBr.width), H: Math.round(cBr.height) },
+        finalCrop: { X: Math.round(finalCropX), Y: Math.round(finalCropY), W: Math.round(finalW), H: Math.round(finalH) },
+        newScale: newScale.toFixed(4),
+        imgAfter: { W: img.width, H: img.height, sX: (img.scaleX||0).toFixed(4), hasClip: !!img.clipPath, clipR: (img.clipPath && img.clipPath.radius) || null },
+      };
+      alert('crop apply 完了:\n' + JSON.stringify(dbg, null, 2));
+    }
   } catch(e){
     // ★ N3.16.21: エラーを可視化 (mobile で console 見えないため alert で表示)
     const msg = (e && e.message) || String(e);
@@ -13871,7 +13884,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.21';
+    _vb.textContent = 'N3.16.22';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
