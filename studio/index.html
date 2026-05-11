@@ -8840,7 +8840,18 @@ async function aiRemoveBackground(img, triggerBtn){
         console.log('[AI-removebg] pixel check', { centerAlpha, opaqueCount, of: 50, natW: _natW, natH: _natH });
         // 全透明 (or 1個未満) なら 元画像を残してエラー alert
         if(opaqueCount === 0 && centerAlpha === 0){
-          alert('AI 切り抜き 失敗:\n返却画像が全部透明でした。 remove.bg が 被写体を検出できなかった可能性があります。\n\n試してみてください:\n・別の画像 (人物が中央にハッキリ写ってるもの)\n・画像が暗すぎ/明るすぎない\n・前景と背景の差がある\n\n元画像はそのまま残します。');
+          // ★ 診断情報を含むエラー alert
+          let diag = '';
+          try {
+            diag = '\n\n[診断情報]\n'
+              + 'GAS バージョン: ' + (json.gasVer || '(旧版 = 再デプロイ未完了)') + '\n'
+              + 'MIME: ' + (json.mime || '?') + '\n'
+              + 'bytes: ' + (json.bytesLen || (json.image && json.image.length) || 0) + '\n'
+              + '送信 bytes: ' + (json.sentLen || '?') + '\n'
+              + 'b64 prefix: "' + (json.image || '').substring(0, 16) + '"\n'
+              + '残り回数: ' + (json.remaining !== undefined ? json.remaining : '?');
+          } catch(_){}
+          alert('AI 切り抜き 失敗:\n返却画像が全部透明でした。' + diag + '\n\n元画像はそのまま残します。');
           resolve();
           return;
         }
@@ -13821,7 +13832,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.15';
+    _vb.textContent = 'N3.16.16';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
