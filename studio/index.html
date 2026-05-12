@@ -8594,9 +8594,43 @@ function startCropMode(img){
     });
     _cropState.circleIndicator.setCoords();
   };
-  cropRect.on('moving', _syncCircle);
-  cropRect.on('scaling', _syncCircle);
-  cropRect.on('modified', _syncCircle);
+  // ★ N3.16.23 2026-05-12: cropRect を img の FULL view bbox 内にクランプ
+  //   AI 切り抜き後の画像は natural サイズが小さく、 cropRect を引き伸ばすと
+  //   片軸だけ natural にクランプされてアスペクト崩れ + 位置/サイズずれが起きる
+  //   → cropRect の bbox を img の bbox 内に強制 = 異常発生しない
+  const _clampCropRect = () => {
+    if(!_cropState || !_cropState.imgFullBr) return;
+    const ibr = _cropState.imgFullBr;
+    const cr = _cropState.cropRect;
+    let crBr = cr.getBoundingRect(true);
+    // サイズ クランプ (image bbox を超えないように scale 縮小)
+    let factor = 1;
+    if(crBr.width > ibr.width)  factor = Math.min(factor, ibr.width  / crBr.width);
+    if(crBr.height > ibr.height) factor = Math.min(factor, ibr.height / crBr.height);
+    if(factor < 1){
+      cr.scaleX *= factor;
+      cr.scaleY *= factor;
+      cr.setCoords();
+      crBr = cr.getBoundingRect(true);
+    }
+    // 位置 クランプ (image bbox 内に収める)
+    let dx = 0, dy = 0;
+    if(crBr.left < ibr.left) dx = ibr.left - crBr.left;
+    else if(crBr.left + crBr.width > ibr.left + ibr.width)
+      dx = ibr.left + ibr.width - crBr.left - crBr.width;
+    if(crBr.top < ibr.top) dy = ibr.top - crBr.top;
+    else if(crBr.top + crBr.height > ibr.top + ibr.height)
+      dy = ibr.top + ibr.height - crBr.top - crBr.height;
+    if(dx || dy){
+      cr.left += dx;
+      cr.top  += dy;
+      cr.setCoords();
+    }
+  };
+  const _onCropChange = () => { _clampCropRect(); _syncCircle(); };
+  cropRect.on('moving', _onCropChange);
+  cropRect.on('scaling', _onCropChange);
+  cropRect.on('modified', _onCropChange);
   // ★ N3.16.2: 選択解除されたら 自動的に cropRect を再選択
   const _autoReselect = () => {
     if(!_cropState) return;
@@ -8635,7 +8669,11 @@ function startCropMode(img){
   toolbar.appendChild(btnApply);
   toolbar.appendChild(btnCancel);
   document.body.appendChild(toolbar);
-  _cropState = { img, cropRect, circleIndicator, origStyles, toolbar, origOtherSelectable, _autoReselect, _syncCircle, mode: 'rect', btnShape };
+  // ★ N3.16.23: imgFullBr (FULL ビュー復元後の image bbox) を保存 — cropRect クランプで使う
+  const imgFullBr = img.getBoundingRect(true);
+  _cropState = { img, cropRect, circleIndicator, origStyles, toolbar, origOtherSelectable, _autoReselect, _syncCircle, _clampCropRect, mode: 'rect', btnShape, imgFullBr };
+  // 初期 cropRect も念のためクランプ (本来 80% 内側なので 問題ないが 安全策)
+  _clampCropRect();
   // ★ N3.16.6: 既に円形トリミング済みの画像を 再編集する場合は 円形モードで起動
   if(img._cropShape === 'circle'){ _toggleCropShape(); }
 }
@@ -8672,6 +8710,11 @@ function _toggleCropShape(){
     _cropState.circleIndicator.set({ visible: true, left: cx, top: cy, radius: side/2 });
     _cropState.circleIndicator.setCoords();
     if(_cropState.btnShape) _cropState.btnShape.innerHTML = '○';
+    // ★ N3.16.23: 円形切替直後にもクランプ (画像 bbox を超えてたら自動縮小)
+    if(typeof _cropState._clampCropRect === 'function'){
+      _cropState._clampCropRect();
+      _cropState._syncCircle();
+    }
   } else {
     // 矩形モードに戻す
     _cropState.cropRect.set({ lockUniScaling: false });
@@ -13884,7 +13927,7 @@ function _3d_inlineRefresh(){
   if (!document.getElementById('_versionBadge')) {
     const _vb = document.createElement('div');
     _vb.id = '_versionBadge';
-    _vb.textContent = 'N3.16.22';
+    _vb.textContent = 'N3.16.23';
     _vb.style.cssText = 'position:fixed;bottom:2px;left:2px;font:bold 10px monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:3px;z-index:999998;pointer-events:none;border:1px solid rgba(0,255,0,.4)';
     if (document.body) {
       document.body.appendChild(_vb);
