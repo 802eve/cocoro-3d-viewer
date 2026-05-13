@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -3289,17 +3289,9 @@ async function _custReviewLoadSvgParts(driveId){
         let gi = 0, ti = 0;
         valid.forEach((obj) => {
           if(obj.type === 'text'){
-            const iText = new fabric.IText(obj.text || '', {
-              left: obj.left, top: obj.top,
-              fontFamily: obj.fontFamily || 'sans-serif',
-              fontSize: obj.fontSize || 32,
-              fontWeight: obj.fontWeight || 'normal',
-              fontStyle: obj.fontStyle || 'normal',
-              fill: obj.fill || '#000',
-              scaleX: obj.scaleX || 1, scaleY: obj.scaleY || 1,
-              angle: obj.angle || 0,
-              originX: obj.originX || 'left', originY: obj.originY || 'top',
-            });
+            // ★ 2026-05-14 v10: 全プロパティを保持して IText に変換 (textAlign/width 等が消えて 右ズレ する問題対策)
+            const srcProps = obj.toObject();
+            const iText = new fabric.IText(srcProps.text || '', srcProps);
             obj = iText;
             obj._partType = 'text'; ti++;
             obj._partLabel = 'テキスト' + ti;
