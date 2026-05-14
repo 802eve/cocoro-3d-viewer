@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1756,6 +1756,137 @@ body.mobile-mode #mShell.in-editor .m-launcher { display: none; }
   backdrop-filter: blur(10px);
 }
 .m-zoom-float button:active { background: rgba(0,0,0,.8); }
+
+/* ★ F2/F3 2026-05-14: お客様デザイン確認モードの専用スタイル
+   - cocoro-banner-active: バナー (緑) が表示中 → m-shell / m-tools-left を 下にずらす
+   - cocoro-customer-confirm: 「確定 / 修正」 待機中 → 編集系 UI 非表示
+   - cocoro-customer-edit: 修正モード → 編集系 UI 表示 + バナー分だけずらす */
+:root { --cocoro-banner-h: 0px; }
+body.cocoro-banner-active .m-shell {
+  top: var(--cocoro-banner-h, 0px) !important;
+  height: calc(100dvh - var(--cocoro-banner-h, 0px)) !important;
+}
+body.cocoro-banner-active .m-tools-left {
+  top: calc(var(--cocoro-banner-h, 0px) + 60px) !important;
+}
+body.cocoro-banner-active .m-zoom-float {
+  /* zoom float は m-main 内 absolute なので m-shell の shift で自動追従 */
+}
+/* ★ F2: 確定/修正 待機中 = 編集 UI 非表示 (誤タップ防止) */
+body.cocoro-customer-confirm .m-tools-left,
+body.cocoro-customer-confirm .m-sheet,
+body.cocoro-customer-confirm .m-sel-tools,
+body.cocoro-customer-confirm #mHdSave {
+  display: none !important;
+}
+/* 確定モードでは header の 3D ボタンも非表示 (確認専用) */
+body.cocoro-customer-confirm #mHd3d { display: none !important; }
+/* 確定モード: m-main を画面いっぱいに広げる (sheet が消えた分) */
+body.cocoro-customer-confirm .m-main {
+  border-bottom: none !important;
+}
+
+/* ★ F1 2026-05-14: 全画面ローディングオーバーレイ (お客様待ち時間 演出)
+   - 暗い半透明 + ブラー
+   - グラデーションリング スピナー
+   - 中央メッセージ + サブテキスト
+   - フェード イン/アウト */
+.cl-overlay {
+  position: fixed; inset: 0;
+  z-index: 999999;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, .82), rgba(0, 0, 0, .92));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+  font-family: var(--ff, system-ui, sans-serif);
+}
+.cl-overlay.cl-show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 36px 44px;
+  background: linear-gradient(135deg, rgba(31, 77, 46, .25), rgba(15, 23, 42, .35));
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 22px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .08);
+  max-width: 88vw;
+  text-align: center;
+  transform: translateY(8px) scale(.96);
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+.cl-overlay.cl-show .cl-card {
+  transform: translateY(0) scale(1);
+}
+.cl-spinner {
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, #10b981 120deg, #34d399 240deg, rgba(255,255,255,0) 360deg);
+  position: relative;
+  animation: cl-spin 1.1s linear infinite;
+}
+.cl-spinner::after {
+  content: '';
+  position: absolute; inset: 6px;
+  background: #0f172a;
+  border-radius: 50%;
+}
+.cl-spinner::before {
+  content: '🎨';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  z-index: 2;
+  animation: cl-spin-rev 1.1s linear infinite;
+}
+@keyframes cl-spin { to { transform: rotate(360deg); } }
+@keyframes cl-spin-rev { to { transform: rotate(-360deg); } }
+.cl-msg {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+}
+.cl-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, .72);
+  font-weight: 500;
+  display: flex; align-items: center; gap: 8px;
+}
+.cl-sub::before, .cl-sub::after {
+  content: ''; flex: 0 0 18px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+}
+.cl-progress {
+  width: 180px; height: 3px;
+  background: rgba(255, 255, 255, .12);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.cl-progress::after {
+  content: '';
+  position: absolute; inset: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, #10b981, #34d399, transparent);
+  border-radius: 999px;
+  animation: cl-progress 1.4s cubic-bezier(.42, 0, .58, 1) infinite;
+}
+@keyframes cl-progress {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(285%); }
+}
 </style>
 </head>
 <body>
@@ -2948,54 +3079,135 @@ function movePart(fromIdx, targetIdx, position){
 
 // ── 初期化 ──
 // ★ 2026-05-12: 社内プラットフォーム連携 ヘルパー
-function _platformPreloadDesign(){
+// ★ F6 2026-05-14: JSON 復元 を最優先 (PNG では位置・テキスト編集不可)
+//   優先順: JSON > SVG > PNG (1枚絵)
+async function _platformPreloadDesign(){
   try {
-    if(!PLATFORM_CONTEXT.designUrl) return;
+    if(!PLATFORM_CONTEXT.designUrl && !PLATFORM_CONTEXT.designJsonDriveId && !PLATFORM_CONTEXT.designSvgDriveId) return;
     // エディタを開く (まだなら)
     if(typeof openEditor === 'function' && !document.getElementById('mShell')?.classList.contains('in-editor') && !document.body.classList.contains('mobile-mode')){
-      // PC: 既存の startBlank っぽい挙動
       try { openEditor(null); } catch(_){}
     } else if(typeof m_startBlank === 'function' && document.body.classList.contains('mobile-mode')){
-      // モバイル: startBlank
       try { m_startBlank(); } catch(_){}
     }
-    // 画像を fabric.Image としてプリロード (CORS 対応で crossOrigin anonymous)
-    setTimeout(() => {
-      if(typeof fabric === 'undefined' || !window.fabCanvas) return;
-      fabric.Image.fromURL(PLATFORM_CONTEXT.designUrl, function(img){
-        if(!img || !img.width || img.width < 10){
-          // 失敗 or 画像サイズ取得失敗 → lh3 → uc にフォールバック
-          const altUrl = PLATFORM_CONTEXT.designUrl.replace('lh3.googleusercontent.com/d/','drive.google.com/uc?id=').replace('=s2000','');
-          if(altUrl !== PLATFORM_CONTEXT.designUrl){
-            console.warn('[platformPreload] retrying with uc URL');
-            fabric.Image.fromURL(altUrl, function(img2){
-              if(!img2){ alert('デザイン画像の読み込みに失敗しました'); return; }
-              _platformAddImageToCanvas(img2);
-            }, { crossOrigin: 'anonymous' });
-          } else {
-            alert('デザイン画像の読み込み失敗');
-          }
+    // canvas 準備待ち
+    await new Promise(res => setTimeout(res, 400));
+    if(typeof fabric === 'undefined' || !window.fabCanvas){
+      console.warn('[platformPreload] fabric not ready');
+      return;
+    }
+    // ★ JSON 優先 (本命: 寸分一致 継続編集)
+    if(PLATFORM_CONTEXT.designJsonDriveId && typeof _custReviewLoadJsonParts === 'function'){
+      try {
+        const ok = await _custReviewLoadJsonParts(PLATFORM_CONTEXT.designJsonDriveId);
+        if(ok){
+          console.log('[platformPreload] JSON 復元 OK');
+          try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
+          try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
           return;
         }
-        _platformAddImageToCanvas(img);
-      }, { crossOrigin: 'anonymous' });
-    }, 400);
+        console.warn('[platformPreload] JSON 復元失敗 → SVG / PNG fallback');
+      } catch(jerr){ console.warn('[platformPreload] JSON err:', jerr); }
+    }
+    // ★ SVG fallback (旧データ)
+    if(PLATFORM_CONTEXT.designSvgDriveId && typeof _custReviewLoadSvgParts === 'function'){
+      try {
+        const ok = await _custReviewLoadSvgParts(PLATFORM_CONTEXT.designSvgDriveId);
+        if(ok){
+          console.log('[platformPreload] SVG 復元 OK');
+          try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
+          try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+          return;
+        }
+        console.warn('[platformPreload] SVG 復元失敗 → PNG fallback');
+      } catch(serr){ console.warn('[platformPreload] SVG err:', serr); }
+    }
+    // ★ 最終 fallback: PNG 1枚絵 (再編集不可だが プレビューは可)
+    if(!PLATFORM_CONTEXT.designUrl){ console.warn('[platformPreload] no design data'); return; }
+    fabric.Image.fromURL(PLATFORM_CONTEXT.designUrl, function(img){
+      if(!img || !img.width || img.width < 10){
+        const altUrl = PLATFORM_CONTEXT.designUrl.replace('lh3.googleusercontent.com/d/','drive.google.com/uc?id=').replace('=s2000','');
+        if(altUrl !== PLATFORM_CONTEXT.designUrl){
+          console.warn('[platformPreload] retrying with uc URL');
+          fabric.Image.fromURL(altUrl, function(img2){
+            if(!img2){ alert('デザイン画像の読み込みに失敗しました'); return; }
+            _platformAddImageToCanvas(img2);
+          }, { crossOrigin: 'anonymous' });
+        } else {
+          alert('デザイン画像の読み込み失敗');
+        }
+        return;
+      }
+      _platformAddImageToCanvas(img);
+    }, { crossOrigin: 'anonymous' });
   } catch(e){ console.warn('platform preload err', e); }
 }
+
+// ★ F1 2026-05-14: 全画面ローディングオーバーレイ ヘルパー
+//   - お客様の待ち時間 (確認モード初期化 / JSON 復元 / 3D起動 / 送信中) を 演出
+//   - "もう触っていいタイミングか" を視覚的に明示 → 操作迷子を防ぐ
+function _showLoadingOverlay(message, sub){
+  let el = document.getElementById('cocoroLoadingOverlay');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'cocoroLoadingOverlay';
+    el.className = 'cl-overlay';
+    el.innerHTML = ''
+      + '<div class="cl-card">'
+      +   '<div class="cl-spinner"></div>'
+      +   '<div class="cl-msg" id="clMsg">読み込み中...</div>'
+      +   '<div class="cl-progress"></div>'
+      +   '<div class="cl-sub" id="clSub">少々お待ちください</div>'
+      + '</div>';
+    document.body.appendChild(el);
+  }
+  const m = el.querySelector('#clMsg');
+  const s = el.querySelector('#clSub');
+  if(m && message) m.textContent = message;
+  if(s){ s.textContent = sub || '少々お待ちください'; }
+  // 1フレーム待ってから transition (CSS) を発火
+  requestAnimationFrame(() => el.classList.add('cl-show'));
+}
+function _hideLoadingOverlay(delay){
+  const el = document.getElementById('cocoroLoadingOverlay');
+  if(!el) return;
+  const _doHide = () => el.classList.remove('cl-show');
+  if(delay && delay > 0) setTimeout(_doHide, delay);
+  else _doHide();
+}
+window._showLoadingOverlay = _showLoadingOverlay;
+window._hideLoadingOverlay = _hideLoadingOverlay;
 
 // ★ 2026-05-13: お客様確認モード — バナー + 確定/修正 ボタン
 let _customerReviewState = null;  // 'pending' | 'editing' | 'confirmed'
 
 async function _initCustomerReviewMode(){
+  // ★ F1 2026-05-14: 待ち時間 演出 (デザイン読込完了まで)
+  try { _showLoadingOverlay('🎨 デザインを読み込み中', 'もうすぐ表示されます'); } catch(_){}
+  // ★ F4 2026-05-14: 新セッションなのでユーザーズーム履歴クリア
+  try { if(typeof window._mobileClearUserZoom === 'function') window._mobileClearUserZoom(); } catch(_){}
   // バナー表示
   if(!document.getElementById('_custReviewBanner')){
     const banner = document.createElement('div');
     banner.id = '_custReviewBanner';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#1f4d2e,#2a5d3e);color:#fff;padding:14px 18px;text-align:center;font-weight:700;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#1f4d2e,#2a5d3e);color:#fff;padding:12px 18px;text-align:center;font-weight:700;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);line-height:1.4;';
     banner.innerHTML = '🎨 お客様デザイン確認モード — 内容を確認してください';
     document.body.appendChild(banner);
-    document.body.style.paddingTop = '44px';
+    // ★ F3 2026-05-14: バナー高さを CSS 変数に注入 → m-shell / m-tools-left が自動でずれる
+    document.body.classList.add('cocoro-banner-active');
+    const _updateBannerH = () => {
+      const h = banner.offsetHeight || 56;
+      document.documentElement.style.setProperty('--cocoro-banner-h', h + 'px');
+    };
+    _updateBannerH();
+    // 折り返し変化対応 (画面回転 / リサイズ)
+    if(typeof ResizeObserver !== 'undefined'){
+      try { new ResizeObserver(_updateBannerH).observe(banner); } catch(_){}
+    }
+    window.addEventListener('resize', _updateBannerH);
   }
+  // ★ F2 2026-05-14: 確定 / 修正 待機状態 → 編集系 UI を非表示 (誤タップ防止)
+  document.body.classList.add('cocoro-customer-confirm');
   // GAS から 現在の状態取得 (locked かどうか確認 + デザイン URL 取得)
   try {
     const j = await _custReviewFetch('getDesignReview', {
@@ -3004,13 +3216,30 @@ async function _initCustomerReviewMode(){
       token: PLATFORM_CONTEXT.reviewToken,
     });
     if(!j.ok){
+      try { _hideLoadingOverlay(); } catch(_){}
       alert('確認リンクが無効または期限切れです: ' + (j.error || '不明'));
       return;
     }
-    _customerReviewState = j.status === 'confirmed' ? 'confirmed' : 'pending';
-    // 既に確定済み なら画面ロック
-    if(j.locked){
+    // ★ G2-B 2026-05-14: 状態 ごとに UI 分岐
+    //   confirmed (locked) → 「✅ 確定済」 ロック画面
+    //   revising  (locked) → 修正版送信済 → 「✓ これで OK」 / 「✎ 再度修正をリクエスト」 (PNG 表示)
+    //   rerequest_pending (locked) → 修正リクエスト中 (待ち画面)
+    //   pending (unlocked) → 通常 (✓ 確定 / ✎ 修正する)
+    _customerReviewState =
+      (j.status === 'confirmed') ? 'confirmed' :
+      (j.status === 'revising')  ? 'revising' :
+      (j.status === 'rerequest_pending') ? 'rerequest_pending' :
+      'pending';
+    // 既に確定済み なら 完了ロック画面
+    if(j.status === 'confirmed' && j.locked){
+      try { _hideLoadingOverlay(); } catch(_){}
       _installCustomerLockedOverlay();
+      return;
+    }
+    // 再修正リクエスト中 → 待機画面
+    if(j.status === 'rerequest_pending'){
+      try { _hideLoadingOverlay(); } catch(_){}
+      _installCustomerRereviewPendingOverlay();
       return;
     }
     // ★ 2026-05-13: キャンバス背景色 + サイズ + 既存デザイン 全部 反映
@@ -3098,6 +3327,7 @@ async function _initCustomerReviewMode(){
     // 確認ボタン (確定/修正) を表示
     _installCustomerReviewBtns();
   } catch(e){
+    try { _hideLoadingOverlay(); } catch(_){}
     alert('サーバとの通信エラー: ' + e.message);
   }
 }
@@ -3115,20 +3345,111 @@ function _installCustomerReviewBtns(){
   if(document.getElementById('_custReviewBtns')) return;
   const box = document.createElement('div');
   box.id = '_custReviewBtns';
-  // ★ 2026-05-13: 右上に縦並び (キャンバス操作の邪魔にならない位置)
-  box.style.cssText = 'position:fixed;top:60px;right:14px;z-index:99999;display:flex;flex-direction:column;gap:8px;padding:0;max-width:calc(100vw - 28px);';
-  box.innerHTML = ''
-    + '<button id="_btnCustConfirm" style="padding:12px 18px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(5,150,105,.5);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
-    + '<span style="font-size:16px;">✓</span>'
-    + '<span>このデザインで確定</span>'
-    + '</button>'
-    + '<button id="_btnCustEdit" style="padding:12px 18px;background:rgba(255,255,255,.97);color:#92400e;border:2px solid #fbbf24;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
-    + '<span style="font-size:14px;">✎</span>'
-    + '<span>修正する</span>'
-    + '</button>';
-  document.body.appendChild(box);
-  document.getElementById('_btnCustConfirm').addEventListener('click', _customerConfirm);
-  document.getElementById('_btnCustEdit').addEventListener('click', _customerStartEdit);
+  // ★ G2-B 2026-05-14: バナー直下にずらす (CSS 変数で 自動オフセット)
+  box.style.cssText = 'position:fixed;top:calc(var(--cocoro-banner-h, 56px) + 8px);right:14px;z-index:99999;display:flex;flex-direction:column;gap:8px;padding:0;max-width:calc(100vw - 28px);';
+  // ★ G2-B 2026-05-14: 状態 (pending / revising) で ボタン文言・処理を分岐
+  if(_customerReviewState === 'revising'){
+    // 修正版送信後 → 「✓ これで OK」 / 「✎ 再度修正をリクエスト」 / 「🎽 3Dで確認」
+    box.innerHTML = ''
+      + '<button id="_btnCustConfirm" style="padding:12px 18px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(5,150,105,.5);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
+      + '<span style="font-size:16px;">✓</span>'
+      + '<span>これで OK (確定)</span>'
+      + '</button>'
+      + '<button id="_btnCustRerevise" style="padding:12px 18px;background:rgba(255,255,255,.97);color:#92400e;border:2px solid #fbbf24;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
+      + '<span style="font-size:14px;">✎</span>'
+      + '<span>再度修正をリクエスト</span>'
+      + '</button>'
+      + '<button id="_btnCustReview3d" style="padding:10px 16px;background:linear-gradient(135deg,#2563eb,#5a4f8a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
+      + '<span style="font-size:16px;">🎽</span>'
+      + '<span>3Dで確認</span>'
+      + '</button>';
+    document.body.appendChild(box);
+    document.getElementById('_btnCustConfirm').addEventListener('click', _customerConfirm);
+    document.getElementById('_btnCustRerevise').addEventListener('click', _customerRequestRerevise);
+    document.getElementById('_btnCustReview3d').addEventListener('click', _customerOpen3dFromPng);
+  } else {
+    // 通常 (pending) → 「✓ 確定」 / 「✎ 修正する」 / 「🎽 3Dで確認」
+    box.innerHTML = ''
+      + '<button id="_btnCustConfirm" style="padding:12px 18px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(5,150,105,.5);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
+      + '<span style="font-size:16px;">✓</span>'
+      + '<span>このデザインで確定</span>'
+      + '</button>'
+      + '<button id="_btnCustEdit" style="padding:12px 18px;background:rgba(255,255,255,.97);color:#92400e;border:2px solid #fbbf24;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
+      + '<span style="font-size:14px;">✎</span>'
+      + '<span>修正する</span>'
+      + '</button>'
+      + '<button id="_btnCustReview3d" style="padding:10px 16px;background:linear-gradient(135deg,#2563eb,#5a4f8a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;white-space:nowrap;line-height:1;">'
+      + '<span style="font-size:16px;">🎽</span>'
+      + '<span>3Dで確認</span>'
+      + '</button>';
+    document.body.appendChild(box);
+    document.getElementById('_btnCustConfirm').addEventListener('click', _customerConfirm);
+    document.getElementById('_btnCustEdit').addEventListener('click', _customerStartEdit);
+    document.getElementById('_btnCustReview3d').addEventListener('click', _customerOpen3dFromPng);
+  }
+}
+
+// ★ G1 2026-05-14: 確認/修正レビュー用 3D起動ヘルパー
+//   PNG 表示モード (確認 + revising) でも 3D が見れるように
+//   現在のキャンバス全体を PNG 化して 3D へ (FORM_CONTEXT は v11.3 で 全項目セット済)
+function _customerOpen3dFromPng(){
+  try {
+    if(typeof _3d_openFromEditor === 'function'){
+      _3d_openFromEditor();
+    } else {
+      alert('3Dビューア機能が見つかりません');
+    }
+  } catch(e){ console.warn('cust review 3d open fail', e); alert('3D表示に失敗しました: ' + e.message); }
+}
+
+// ★ G2-B 2026-05-14: 修正リクエスト中 (社内 unlock 待ち) の待機画面
+function _installCustomerRereviewPendingOverlay(){
+  if(document.getElementById('_custRerevPending')) return;
+  const ov = document.createElement('div');
+  ov.id = '_custRerevPending';
+  ov.style.cssText = 'position:fixed;inset:calc(var(--cocoro-banner-h, 56px)) 0 0 0;z-index:99997;background:rgba(254,243,199,.95);display:flex;align-items:center;justify-content:center;font-family:inherit;padding:14px;';
+  ov.innerHTML = ''
+    + '<div style="background:#fff;padding:32px 36px;border-radius:14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.18);max-width:440px;">'
+    + '<div style="font-size:48px;margin-bottom:14px;">⏳</div>'
+    + '<div style="font-size:18px;font-weight:800;color:#92400e;margin-bottom:8px;">再修正リクエストを受付中です</div>'
+    + '<div style="font-size:13px;color:#555;line-height:1.7;">'
+    + 'ココロ工房で 内容を確認後、 再度編集できる状態にして<br>'
+    + '改めて確認メールをお送りいたします。<br><br>'
+    + 'お急ぎの場合は ココロ工房まで ご連絡ください。'
+    + '</div>'
+    + '<div style="margin-top:18px;font-size:11px;color:#888;">802eve.shop@gmail.com</div>'
+    + '</div>';
+  document.body.appendChild(ov);
+}
+
+// ★ G2-C 2026-05-14: 「再度修正をリクエスト」 押下 → GAS で 状態変更 + 社内通知
+async function _customerRequestRerevise(){
+  const note = prompt('追加で修正したい点があれば 簡単にお書きください (任意・500字まで)\n\nそのままOKでも 送信できます:', '');
+  if(note === null) return; // キャンセル
+  if(!confirm('再度修正したい旨を ココロ工房に 連絡します。\n社内で確認後、 再度 編集できる確認メールが届きます。\n\n送信しますか?')) return;
+  try { _showLoadingOverlay('📨 リクエスト送信中', 'ココロ工房に連絡しています'); } catch(_){}
+  try {
+    const j = await _custReviewFetch('customerRequestRerevise', {
+      orderId: PLATFORM_CONTEXT.orderId,
+      itemIdx: PLATFORM_CONTEXT.itemIdx,
+      token: PLATFORM_CONTEXT.reviewToken,
+      note: (note || '').slice(0, 500),
+    });
+    try { _hideLoadingOverlay(); } catch(_){}
+    if(j.ok){
+      // ボタン群削除 → 待機画面
+      const box = document.getElementById('_custReviewBtns');
+      if(box) box.remove();
+      const banner = document.getElementById('_custReviewBanner');
+      if(banner) banner.innerHTML = '⏳ 再修正リクエストを受付中 — ココロ工房からの返信をお待ちください';
+      _installCustomerRereviewPendingOverlay();
+    } else {
+      alert('リクエスト送信失敗: ' + (j.error || '不明'));
+    }
+  } catch(e){
+    try { _hideLoadingOverlay(); } catch(_){}
+    alert('通信エラー: ' + e.message);
+  }
 }
 
 function _installCustomerLockedOverlay(){
@@ -3176,6 +3497,11 @@ async function _customerConfirm(){
 async function _customerStartEdit(){
   // 状態を 編集モードに
   _customerReviewState = 'editing';
+  // ★ F1 2026-05-14: 修正モード準備 待ち時間 演出
+  try { _showLoadingOverlay('✎ 修正モードを準備中', 'デザインを 編集可能な状態に展開しています'); } catch(_){}
+  // ★ F2 2026-05-14: 編集 UI を解禁 (Undo/Redo / シート / タブ / ハンドル)
+  document.body.classList.remove('cocoro-customer-confirm');
+  document.body.classList.add('cocoro-customer-edit');
   // バナー文言変更
   const banner = document.getElementById('_custReviewBanner');
   if(banner) banner.innerHTML = '✎ 修正モード — 編集後 「修正版を送信」 を 押してください';
@@ -3213,32 +3539,61 @@ async function _customerStartEdit(){
     // 念のため アクティブ選択をクリア (PNG が active のままだと ハンドルが残る)
     try { fabCanvas.discardActiveObject(); fabCanvas.requestRenderAll(); } catch(_){}
   } catch(e){ console.warn('[customerStartEdit] unlock fail:', e); }
-  // 修正版送信ボタン追加 (右上、 邪魔にならない)
-  if(!document.getElementById('_btnCustSendEdit')){
+  // ★ G1 2026-05-14: 修正モードのフローティングボタン群 (縦並び・送信 + 3D確認)
+  if(!document.getElementById('_custEditBtns')){
+    const box = document.createElement('div');
+    box.id = '_custEditBtns';
+    // バナー直下 (CSS 変数で 自動オフセット)
+    box.style.cssText = 'position:fixed;top:calc(var(--cocoro-banner-h, 56px) + 8px);right:14px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 28px);';
+    // 送信ボタン (紫グラデ)
     const sendBtn = document.createElement('button');
     sendBtn.id = '_btnCustSendEdit';
-    sendBtn.style.cssText = 'position:fixed;top:60px;right:14px;z-index:99999;padding:12px 18px;background:linear-gradient(135deg,#7b3fa0,#5a4f8a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.35);display:flex;align-items:center;gap:6px;line-height:1;';
+    sendBtn.style.cssText = 'padding:12px 18px;background:linear-gradient(135deg,#7b3fa0,#5a4f8a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.35);display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;';
     sendBtn.innerHTML = '<span style="font-size:16px;">📥</span><span>修正版を送信</span>';
     sendBtn.addEventListener('click', _customerSendEdit);
-    document.body.appendChild(sendBtn);
+    box.appendChild(sendBtn);
+    // 3Dで確認ボタン (青グラデ)
+    const btn3d = document.createElement('button');
+    btn3d.id = '_btnCustEdit3d';
+    btn3d.style.cssText = 'padding:10px 16px;background:linear-gradient(135deg,#2563eb,#5a4f8a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;';
+    btn3d.innerHTML = '<span style="font-size:16px;">🎽</span><span>3Dで確認</span>';
+    btn3d.addEventListener('click', () => {
+      // 既存 _3d_openFromEditor を流用 — FORM_CONTEXT は v11.3 で 全項目セット済 (cat/location/method/colorHex)
+      try {
+        if(typeof _3d_openFromEditor === 'function') _3d_openFromEditor();
+        else alert('3Dビューア機能が見つかりません');
+      } catch(e){ console.warn('cust 3d open fail', e); alert('3D表示に失敗しました: ' + e.message); }
+    });
+    box.appendChild(btn3d);
+    document.body.appendChild(box);
   }
+  // ★ F1 2026-05-14: 修正モード準備 完了 → ローディング解除 (UI が落ち着くまで 350ms)
+  try { _hideLoadingOverlay(350); } catch(_){}
 }
 
 async function _customerSendEdit(){
   if(!window.fabCanvas){ alert('キャンバスがまだ初期化されてません'); return; }
   const btn = document.getElementById('_btnCustSendEdit');
   if(btn){ btn.disabled = true; btn.innerHTML = '⏳ 送信中...'; }
+  // ★ F1 2026-05-14: 送信中の待ち時間 演出
+  try { _showLoadingOverlay('📥 修正版を送信中', 'デザインを ココロ工房に届けています'); } catch(_){}
   try {
-    // PNG + SVG 書き出し (背景なし)
+    // PNG + SVG 書き出し (背景なし) → 後で JSON だけ 背景込みで書き出す
+    // ★ G3 2026-05-14: ボディ色は JSON に含めて永続化 (PNG/SVG は透明 = 3D合成用)
     const _sbg = fabCanvas.backgroundColor;
     const _sbi = fabCanvas.backgroundImage;
     fabCanvas.backgroundColor = ''; fabCanvas.backgroundImage = null;
     fabCanvas.renderAll();
     const png = fabCanvas.toDataURL({ format: 'png', multiplier: 2 });
     const svg = fabCanvas.toSVG();
+    // ★ G3 2026-05-14: PNG/SVG 書き出し直後に 背景色を 復元 (JSON には背景込みで保存)
+    fabCanvas.backgroundColor = _sbg;
+    fabCanvas.backgroundImage = _sbi;
+    fabCanvas.renderAll();
     // ★ 2026-05-14 v11.2: JSON も送信 (再編集ループでも 位置維持)
     //   ⚠ canvasW/H は CANVAS_BASE_W/H (論理サイズ) を使う (getWidth はズーム倍率込み)
     //   ⚠ viewportTransform を identity に戻してから toJSON
+    //   ⚠ G3: backgroundColor は JSON 内に そのまま保存される (loadFromJSON で 復元される)
     let jsonStr = '';
     try {
       const _svpt = fabCanvas.viewportTransform ? fabCanvas.viewportTransform.slice() : null;
@@ -3260,12 +3615,11 @@ async function _customerSendEdit(){
         canvasH: logicalH,
         printSize: (typeof _printSizeKey !== 'undefined') ? _printSizeKey : '',
         rotated: (typeof _printSizeRotated !== 'undefined') ? !!_printSizeRotated : false,
+        bodyColor: _sbg || '',  // ★ G3: ボディ色を 明示フィールドにも (loadFromJSON で復元しても 念のため backup)
         fabric: fabricJson,
         savedAt: new Date().toISOString(),
       });
     } catch(_){}
-    fabCanvas.backgroundColor = _sbg; fabCanvas.backgroundImage = _sbi;
-    fabCanvas.renderAll();
     const pngB64 = png.replace(/^data:[^;]+;base64,/,'');
     const svgB64 = btoa(unescape(encodeURIComponent(svg)));
     const jsonB64 = jsonStr ? btoa(unescape(encodeURIComponent(jsonStr))) : '';
@@ -3280,16 +3634,20 @@ async function _customerSendEdit(){
       fileName: 'customer-edit-' + Date.now() + '.png',
     });
     if(j.ok){
+      // ★ F1 2026-05-14: 送信完了 → 一旦ローディング解除 (alert の後ろに残らないように)
+      try { _hideLoadingOverlay(); } catch(_){}
       alert('✓ 修正版を送信しました。\nココロ工房側で確認後、 改めて確認メールが届きます。');
       // バナー更新
       const banner = document.getElementById('_custReviewBanner');
       if(banner) banner.innerHTML = '✅ 修正版を送信しました — ココロ工房からの返信をお待ちください';
       if(btn) btn.style.display = 'none';
     } else {
+      try { _hideLoadingOverlay(); } catch(_){}
       alert('送信エラー: ' + (j.error || '不明'));
       if(btn){ btn.disabled = false; btn.innerHTML = '📥 修正版を送信'; }
     }
   } catch(e){
+    try { _hideLoadingOverlay(); } catch(_){}
     alert('通信エラー: ' + e.message);
     if(btn){ btn.disabled = false; btn.innerHTML = '📥 修正版を送信'; }
   }
@@ -3369,6 +3727,16 @@ async function _custReviewLoadJsonParts(jsonDriveId){
         try {
           fabCanvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
           if(typeof fabCanvas.setZoom === 'function') fabCanvas.setZoom(1);
+        } catch(_){}
+        // ★ G3 2026-05-14: ボディ色 (キャンバス背景) を JSON から復元
+        //   loadFromJSON は backgroundColor を 自動復元するが、 旧 JSON にない場合は明示フィールド (wrap.bodyColor) で fallback
+        //   さらに、 PLATFORM_CONTEXT 由来の order ボディ色 (FORM_CONTEXT.colorHex) も最終 fallback
+        try {
+          const restored = fabCanvas.backgroundColor;
+          const fallback = wrap.bodyColor || (window.FORM_CONTEXT && FORM_CONTEXT.colorHex) || '';
+          if((!restored || restored === '' || restored === 'transparent') && fallback && fallback.startsWith && fallback.startsWith('#')){
+            fabCanvas.setBackgroundColor(fallback, fabCanvas.renderAll.bind(fabCanvas));
+          }
         } catch(_){}
         let gi = 0, ti = 0;
         fabCanvas.getObjects().forEach((obj) => {
@@ -3554,6 +3922,8 @@ function _customerLoadPngFullCanvas(designUrl, targetW, targetH, bgColor){
       }
     } catch(_){}
     console.log('[custReview v10] PNG loaded:', { iw, ih, targetW, targetH, scaleX: targetW/iw, scaleY: targetH/ih });
+    // ★ F1 2026-05-14: PNG 表示完了 → ローディング解除 (フィット安定後 350ms)
+    try { _hideLoadingOverlay(350); } catch(_){}
   }, { crossOrigin: 'anonymous' });
 }
 
@@ -3656,6 +4026,7 @@ async function _platformSaveAndReturn(){
         canvasH: logicalH,
         printSize: _printSizeKey || '',
         rotated: !!_printSizeRotated,
+        bodyColor: _savedBg || '',  // ★ G3 2026-05-14: ボディ色を明示フィールドに (loadFromJSON でも復元されるが backup)
         fabric: fabricJson,
         savedAt: new Date().toISOString(),
       });
@@ -3712,8 +4083,10 @@ const PLATFORM_CONTEXT = {
   orderId: '',
   itemIdx: -1,
   printIdx: -1,
-  designUrl: '',        // 既存デザインを プリロード
+  designUrl: '',        // 既存デザインを プリロード (PNG)
   designName: '',
+  designJsonDriveId: '',// ★ F6 2026-05-14: JSON drive ID (本命: 寸分一致 復元)
+  designSvgDriveId: '', // ★ F6 2026-05-14: SVG drive ID (旧データ fallback)
   cloudEmail: '',       // 取引先メール (マイデザイン同期)
   size: '',
 };
@@ -3740,6 +4113,9 @@ function _parseFormContext(){
     PLATFORM_CONTEXT.printIdx       = parseInt(sp.get('printIdx') || '-1', 10);
     PLATFORM_CONTEXT.designUrl      = sp.get('designUrl')  || '';
     PLATFORM_CONTEXT.designName     = sp.get('designName') || '';
+    // ★ F6 2026-05-14: JSON / SVG drive ID (継続編集用)
+    PLATFORM_CONTEXT.designJsonDriveId = sp.get('designJsonDriveId') || '';
+    PLATFORM_CONTEXT.designSvgDriveId  = sp.get('designSvgDriveId')  || '';
     PLATFORM_CONTEXT.cloudEmail     = sp.get('cloudEmail') || '';
     PLATFORM_CONTEXT.size           = sp.get('size')       || '';
     // 色モード判定:
@@ -4134,8 +4510,10 @@ document.addEventListener('DOMContentLoaded',()=>{
       }, 1200);
     } catch(e){ console.warn('platform cloud setup', e); }
   }
-  // designUrl がある場合は、 エディタを開いて 画像をプリロード
-  if(PLATFORM_CONTEXT.active && PLATFORM_CONTEXT.designUrl){
+  // designUrl / designJsonDriveId / designSvgDriveId のいずれかがあれば エディタ起動 + 復元
+  // ★ F6 2026-05-14: customerReview モードでは _initCustomerReviewMode が同等の処理を行うので除外
+  if(PLATFORM_CONTEXT.active && !PLATFORM_CONTEXT.customerReview &&
+     (PLATFORM_CONTEXT.designUrl || PLATFORM_CONTEXT.designJsonDriveId || PLATFORM_CONTEXT.designSvgDriveId)){
     setTimeout(() => _platformPreloadDesign(), 800);
   }
   // 「📥 保存して戻る」 ボタンを 表示
@@ -11075,6 +11453,13 @@ function _3d_launchViewer(cfg){
     alert('3Dに表示するデザインが見つかりません');
     return;
   }
+  // ★ F1 2026-05-14: 別タブの 3D ビューアが立ち上がるまでの待ち時間 演出 (3秒で自動解除)
+  try {
+    if(typeof _showLoadingOverlay === 'function'){
+      _showLoadingOverlay('🎽 3Dビューアを起動中', '別のタブで Tシャツの仕上がりを表示します');
+      setTimeout(() => { try { _hideLoadingOverlay(); } catch(_){} }, 3000);
+    }
+  } catch(_){}
   const json = JSON.stringify(cfg);
   // 古い cocoro3d_ キー掃除（10分以上前）
   try {
@@ -11549,19 +11934,28 @@ function _3d_inlineRefresh(){
   // ★ N2.12: モバイル独自ズーム関数 (PC の setZoomLevel が .ev-cv 依存で動かないため)
   let _mobileZoomLevel = 1;
   let _mobileFitZoom = 1;
+  // ★ F4 2026-05-14: ユーザーが手動ズームしたら _mobileFitCanvas() の自動 fit-zoom リセットを抑制
+  //   これがないと キャンバス load や ResizeObserver / sheet 開閉 のたびに
+  //   _mobileZoomLevel = _mobileFitZoom に戻されて 「ズーム+ボタンが1回しか効かない」 ように見える
+  let _mobileUserZoomed = false;
   window.m_zoomIn = function(){
     _mobileZoomLevel = Math.min(_mobileZoomLevel * 1.25, _mobileFitZoom * 6);
+    _mobileUserZoomed = true;
     _mobileApplyZoom();
   };
   window.m_zoomOut = function(){
     _mobileZoomLevel = Math.max(_mobileZoomLevel / 1.25, _mobileFitZoom * 0.5);
+    _mobileUserZoomed = true;
     _mobileApplyZoom();
   };
   window.m_zoomReset = function(){
     _mobileZoomLevel = _mobileFitZoom;
+    _mobileUserZoomed = false;  // 明示リセット → 以降の自動 fit を許可
     _mobileApplyZoom();
     if(typeof window._mobileResetPan === 'function') window._mobileResetPan();
   };
+  // ★ F4 2026-05-14: 新規デザイン読込時に外部から呼び出し可能 (ズーム履歴クリア)
+  window._mobileClearUserZoom = function(){ _mobileUserZoomed = false; };
   function _mobileApplyZoom(){
     if(!window.fabCanvas) return;
     try {
@@ -12406,7 +12800,11 @@ function _3d_inlineRefresh(){
     } catch(_){}
     const z = Math.min(availW / baseW, availH / baseH);
     _mobileFitZoom = z;
-    _mobileZoomLevel = z;
+    // ★ F4 2026-05-14: ユーザーが手動ズームしてたら fit に戻さない (ズームを尊重)
+    //   m_zoomReset() で 明示リセット された場合のみ fit に戻る
+    if(!_mobileUserZoomed){
+      _mobileZoomLevel = z;
+    }
     // ★ 2026-05-09 強制中央配置パッチ — setProperty important で CSS の !important を上書き
     try {
       const wrapper = document.getElementById('fabCanvas')?.parentElement;
