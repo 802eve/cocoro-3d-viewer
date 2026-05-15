@@ -3796,15 +3796,15 @@ async function _custReviewLoadJsonParts(jsonDriveId){
         try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
         try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
         try {
+          // ★ 2026-05-15: ユーザーズーム状態を初期化 (修正モード突入は新規セッション扱い)
+          if(typeof window._mobileClearUserZoom === 'function') window._mobileClearUserZoom();
           if(typeof _mobileFitCanvas === 'function' && document.body.classList.contains('mobile-mode')){
-            // ★ 2026-05-15: 初回タップで ハンドル巨大化を防ぐため fit を複数タイミングで実行
+            // 初回タップで ハンドル巨大化を防ぐため fit を 2タイミング (短間隔のみ・user zoom 干渉避ける)
             setTimeout(_mobileFitCanvas, 50);
-            setTimeout(_mobileFitCanvas, 300);
-            setTimeout(_mobileFitCanvas, 800);
-            setTimeout(_mobileFitCanvas, 1500);
+            setTimeout(_mobileFitCanvas, 400);
           } else if(typeof zoomFit === 'function'){
             setTimeout(zoomFit, 50);
-            setTimeout(zoomFit, 300);
+            setTimeout(zoomFit, 400);
           }
         } catch(_){}
         console.log('[custReview v11] JSON loaded:', { targetW, targetH, objs: fabCanvas.getObjects().length });
@@ -12206,12 +12206,11 @@ function _3d_inlineRefresh(){
                 yLines.push(r.top, r.top + r.height, r.top + r.height / 2);
               });
               const candidates = [];
-              // ★ N3.15.7 2026-05-10: snap を 弱く + 細かく
-              //   引っ張り中: ~8 screen px (狭い → スムーズに動ける)
-              //   吸着中: ~12 screen px (1.5倍 → すぐ抜けられる)
-              //   → ユーザー要望「スムーズに動きつつ止まる所は止まる」
+              // ★ 2026-05-15: snap を さらに細く (ユーザー要望 「3-4mm 飛びすぎ → 1-1.2mm くらいで十分」)
+              //   引っ張り中: ~4 screen px (狭い → スムーズに動ける)
+              //   吸着中: ~6 screen px (1.5倍 → すぐ抜けられる)
               const _mZ_pinch = (typeof _mobileZoomLevel !== 'undefined' && _mobileZoomLevel) ? _mobileZoomLevel : 1;
-              const _screenPx_pinch = partRef._lastScaleSnap ? 12 : 8;
+              const _screenPx_pinch = partRef._lastScaleSnap ? 6 : 4;
               const SNAP_PX = _screenPx_pinch / Math.max(0.1, _mZ_pinch);
               // X 軸: 自分の右端 (cx + halfW) または 左端 (cx - halfW) が xLines に近い ratio
               xLines.forEach(L => {
@@ -12263,12 +12262,12 @@ function _3d_inlineRefresh(){
           const newScaleY = partStartScaleY * ratio;
           const a = getTouchAngle(e.touches);
           const angleDiffDeg = (a - partStartTouchAngle) * 180 / Math.PI;
-          // ★ 2026-05-09: 0/90/180/270/360° スナップ (±5° 以内なら吸着)
+          // ★ 2026-05-15: 回転 snap 閾値を 5° → 2° に縮小 (ユーザー要望 「snap 過剰」)
           let finalAngle = partStartAngle + angleDiffDeg;
           // 0-360 に正規化
           let normAngle = ((finalAngle % 360) + 360) % 360;
           const SNAP_TARGETS = [0, 90, 180, 270, 360];
-          const SNAP_THRESHOLD = 5;
+          const SNAP_THRESHOLD = 2;
           for(const t of SNAP_TARGETS){
             if(Math.abs(normAngle - t) < SNAP_THRESHOLD){
               // 元の方向 (回転累積) を保持しつつ スナップ
