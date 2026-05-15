@@ -3591,21 +3591,38 @@ async function _customerStartEdit(){
       }, 1000);
     } catch(_){}
   } catch(e){ console.warn('[customerStartEdit] unlock fail:', e); }
-  // ★ G1 2026-05-14 v2 (2026-05-16): エディタ画面の 3Dボタンと重複するので 「3Dで確認」 削除
-  //   「修正版を送信」 のみ表示。 邪魔にならないように 画面下端中央 に変更 (固定位置)
-  if(!document.getElementById('_custEditBtns')){
-    const box = document.createElement('div');
-    box.id = '_custEditBtns';
-    // ★ 画面下端中央 (mobile sheet より上、 PC 下端) — どのモードでも邪魔にならない位置
-    box.style.cssText = 'position:fixed;bottom:calc(var(--m-sheet-h, 76px) + 16px);left:50%;transform:translateX(-50%);z-index:99999;pointer-events:none;';
-    // 送信ボタン (紫グラデ) — 単独表示
+  // ★ G1 2026-05-14 v3 (2026-05-16): デバイス別配置
+  //   - PC: 緑バナー (`_custReviewBanner`) 内 右側に inline 配置
+  //   - モバイル: ↶↷ (m-tools-left) と同じ高さで 右寄せ position:fixed
+  if(!document.getElementById('_btnCustSendEdit')){
     const sendBtn = document.createElement('button');
     sendBtn.id = '_btnCustSendEdit';
-    sendBtn.style.cssText = 'padding:14px 28px;background:linear-gradient(135deg,#7b3fa0,#5a4f8a);color:#fff;border:none;border-radius:24px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(123,63,160,.5);display:flex;align-items:center;gap:8px;line-height:1;white-space:nowrap;pointer-events:auto;';
-    sendBtn.innerHTML = '<span style="font-size:18px;">📥</span><span>修正版を送信</span>';
     sendBtn.addEventListener('click', _customerSendEdit);
-    box.appendChild(sendBtn);
-    document.body.appendChild(box);
+    const _isMob = (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) || document.body.classList.contains('mobile-mode');
+    if(_isMob){
+      // モバイル: ↶↷ ボタン群 (m-tools-left) と 完全に 同じ Y 位置 + 右端 小さめ
+      //   .m-tools-left: top: 60px (通常), banner-active 時は calc(banner_h + 60px)
+      //   高さは .m-tool-btn (36px) と同じ
+      sendBtn.style.cssText = 'position:fixed;top:calc(var(--cocoro-banner-h, 0px) + 60px);right:6px;z-index:108;padding:0 12px;height:36px;background:linear-gradient(135deg,#7b3fa0,#5a4f8a);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(123,63,160,.4);display:flex;align-items:center;gap:4px;line-height:1;white-space:nowrap;';
+      sendBtn.innerHTML = '<span style="font-size:13px;">📥</span><span>修正版を送信</span>';
+      document.body.appendChild(sendBtn);
+    } else {
+      // PC: 緑バナー内 右側に配置 (inline-flex)
+      sendBtn.style.cssText = 'margin-left:auto;padding:8px 18px;background:linear-gradient(135deg,#7b3fa0,#5a4f8a);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;';
+      sendBtn.innerHTML = '<span style="font-size:15px;">📥</span><span>修正版を送信</span>';
+      const banner = document.getElementById('_custReviewBanner');
+      if(banner){
+        // バナーを flex に (text + button 横並び)
+        banner.style.display = 'flex';
+        banner.style.alignItems = 'center';
+        banner.style.gap = '16px';
+        banner.appendChild(sendBtn);
+      } else {
+        // フォールバック (バナーが見つからない場合は 右上 fixed)
+        sendBtn.style.cssText += ';position:fixed;top:14px;right:14px;z-index:99999;';
+        document.body.appendChild(sendBtn);
+      }
+    }
   }
   // ★ F1 2026-05-14: 修正モード準備 完了 → ローディング解除 (UI が落ち着くまで 350ms)
   try { _hideLoadingOverlay(350); } catch(_){}
