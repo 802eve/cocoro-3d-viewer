@@ -9121,16 +9121,129 @@ function renderUsedColorsInline(options){
     }
   } catch(e){}
   if(!colors.length) return titleHtml + warnHtml + '<div style="font-size:10px;color:var(--t3);padding:4px 0">使用中のカラーなし</div>';
+  // ★ 2026-05-15: 使用中のカラー swatch クリック → インクスウォッチモーダル → 一括色置換
+  //   (旧: applyInkColor は選択中パーツに即適用。 新: openColorReplaceModal で 同じ色のパーツ全部を一括置換)
   const colorsHtml = colors.map(c => {
     const nm = inkNameOf(c);
-    const clickAttr = applyable ? `onclick="applyInkColor('${c}')" style="cursor:pointer"` : '';
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;max-width:56px" ${clickAttr} title="${escapeHtml(nm)}">
+    const clickAttr = applyable ? `onclick="openColorReplaceModal('${c}')" style="cursor:pointer"` : '';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;max-width:56px" ${clickAttr} title="${escapeHtml(nm)} — クリックで一括色置換">
       <div style="width:26px;height:26px;background:${c};border-radius:50%;border:2px solid var(--bd);flex-shrink:0"></div>
       <div style="font-size:9px;color:var(--t2);text-align:center;line-height:1.2;white-space:normal;word-break:break-all">${escapeHtml(nm)}</div>
     </div>`;
   }).join('');
   return titleHtml + warnHtml + `<div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0">${colorsHtml}</div>`;
 }
+
+// ★ 2026-05-15: 使用中のカラー → 一括色置換 機能
+// 1. fromHex (使用中のカラー swatch) をクリック → このモーダルが開く
+// 2. 50色 INK_COLORS の一覧表示
+// 3. 新色をクリック → replaceColorGlobally(fromHex, toHex) → 同じ色のパーツ全部を新色に置換
+window.openColorReplaceModal = function(fromHex){
+  if(!fromHex) return;
+  // 既存モーダルがあれば閉じる
+  const _ex = document.getElementById('_inkReplaceModal');
+  if(_ex){ _ex.remove(); }
+  const fromNorm = (typeof normalizeToInk === 'function') ? normalizeToInk(fromHex) : fromHex;
+  const fromName = (typeof inkNameOf === 'function') ? inkNameOf(fromNorm) : fromHex;
+  // モーダル overlay
+  const ov = document.createElement('div');
+  ov.id = '_inkReplaceModal';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit;';
+  ov.addEventListener('click', (e) => { if(e.target === ov) ov.remove(); });
+  // モーダル コンテナ
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;max-width:540px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.4);';
+  // ヘッダー
+  const hd = document.createElement('div');
+  hd.style.cssText = 'padding:14px 18px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:10px;';
+  hd.innerHTML = '<div style="width:28px;height:28px;background:' + fromNorm + ';border-radius:50%;border:2px solid #ccc;flex-shrink:0;"></div>'
+    + '<div style="flex:1;font-size:14px;font-weight:700;color:#374151;">' + escapeHtml(fromName) + ' を別の色に置換</div>'
+    + '<button id="_inkReplaceClose" style="background:none;border:none;font-size:22px;cursor:pointer;color:#666;padding:0;width:32px;height:32px;line-height:1;">✕</button>';
+  box.appendChild(hd);
+  // 説明
+  const desc = document.createElement('div');
+  desc.style.cssText = 'padding:10px 18px 4px;font-size:11px;color:#6b7280;line-height:1.5;';
+  desc.innerHTML = '同じ色を使うパーツが全部 新色に変わります';
+  box.appendChild(desc);
+  // スウォッチグリッド (グループ別)
+  const grid = document.createElement('div');
+  grid.style.cssText = 'padding:10px 18px 18px;overflow-y:auto;';
+  // INK_COLORS をグループ別に
+  const groups = {};
+  if(typeof INK_COLORS !== 'undefined' && Array.isArray(INK_COLORS)){
+    INK_COLORS.forEach(c => {
+      const g = c.group || 'その他';
+      if(!groups[g]) groups[g] = [];
+      groups[g].push(c);
+    });
+  }
+  Object.keys(groups).forEach(gn => {
+    const grpHd = document.createElement('div');
+    grpHd.style.cssText = 'font-size:10px;font-weight:700;color:#9ca3af;margin:10px 0 6px;letter-spacing:.5px;';
+    grpHd.textContent = gn;
+    grid.appendChild(grpHd);
+    const grpRow = document.createElement('div');
+    grpRow.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px;';
+    groups[gn].forEach(c => {
+      const sw = document.createElement('div');
+      sw.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px;border-radius:6px;transition:background .15s;';
+      sw.addEventListener('mouseenter', () => { sw.style.background = '#f3f4f6'; });
+      sw.addEventListener('mouseleave', () => { sw.style.background = ''; });
+      const dot = document.createElement('div');
+      const isSame = (c.hex || '').toLowerCase() === fromNorm.toLowerCase();
+      dot.style.cssText = 'width:34px;height:34px;background:' + c.hex + ';border-radius:50%;border:2px solid ' + (isSame ? '#f59e0b' : '#d1d5db') + ';' + (isSame ? 'box-shadow:0 0 0 2px #fde68a;' : '');
+      sw.appendChild(dot);
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:9px;color:#4b5563;text-align:center;line-height:1.2;word-break:break-all;';
+      lbl.textContent = c.name;
+      sw.appendChild(lbl);
+      sw.title = c.name + (isSame ? ' (現在の色)' : '');
+      sw.addEventListener('click', () => {
+        if(!isSame){
+          try { window.replaceColorGlobally(fromNorm, c.hex); } catch(err){ console.warn('replaceColor err', err); }
+        }
+        ov.remove();
+      });
+      grpRow.appendChild(sw);
+    });
+    grid.appendChild(grpRow);
+  });
+  box.appendChild(grid);
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  // X 閉じる
+  document.getElementById('_inkReplaceClose').addEventListener('click', () => ov.remove());
+};
+
+// ★ 2026-05-15: 一括色置換 — fromHex と同じ色のパーツ全部を toHex に変更
+window.replaceColorGlobally = function(fromHex, toHex){
+  if(!fromHex || !toHex || !window.fabCanvas) return;
+  const fromNorm = (typeof normalizeToInk === 'function') ? normalizeToInk(fromHex) : fromHex;
+  function _matches(fill){
+    if(!fill || typeof fill !== 'string') return false;
+    if(typeof normalizeToInk === 'function'){
+      return normalizeToInk(fill) === fromNorm;
+    }
+    return fill.toLowerCase() === fromNorm.toLowerCase();
+  }
+  function _walk(obj){
+    if(!obj) return;
+    if(obj.type === 'group' && obj.getObjects){
+      obj.getObjects().forEach(_walk);
+      // アーチテキストグループは _archFill も更新
+      if(typeof _isArchTextGroup === 'function' && _isArchTextGroup(obj) && _matches(obj._archFill)){
+        try { obj._archFill = toHex; } catch(_){}
+      }
+    } else if(_matches(obj.fill)){
+      try { obj.set('fill', toHex); } catch(_){}
+    }
+  }
+  fabCanvas.getObjects().forEach(_walk);
+  try { fabCanvas.renderAll(); } catch(_){}
+  try { if(typeof updEdSide === 'function') updEdSide(); } catch(_){}
+  try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+  try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+};
 // 使用中グラデーションを現在選択中のパーツに適用
 
 // ── カラー→インクカラー名変換 ──
