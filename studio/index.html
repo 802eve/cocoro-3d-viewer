@@ -3783,13 +3783,11 @@ async function _custReviewLoadJsonParts(jsonDriveId){
             obj._partType = obj._partType || 'graphic'; gi++;
             obj._partLabel = obj._partLabel || ('パーツ' + gi);
           }
+          // ★ 2026-05-15: ハンドル overrides 削除 — 既存スタジオの fabric prototype デフォルトを使う
+          //   (前は cornerSize 32 + 色オレンジ で 「ハンドルでかい」 違和感の指摘)
           obj.set({
             selectable: (_customerReviewState === 'editing'),
             evented: (_customerReviewState === 'editing'),
-            cornerColor: '#ffffff', cornerStrokeColor: '#f59e0b',
-            borderColor: '#f59e0b', cornerStyle: 'circle',
-            cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 32 : 12,
-            transparentCorners: false,
           });
           obj.setCoords();
         });
@@ -3874,12 +3872,9 @@ async function _custReviewLoadSvgParts(driveId){
             top:    (obj.top    || 0) * scale + offsetY,
             scaleX: (obj.scaleX || 1) * scale,
             scaleY: (obj.scaleY || 1) * scale,
+            // ★ 2026-05-15: SVG fallback loader でも ハンドル overrides 削除 (既存スタジオ仕様準拠)
             selectable: (_customerReviewState === 'editing'),
             evented: (_customerReviewState === 'editing'),
-            cornerColor: '#ffffff', cornerStrokeColor: '#f59e0b',
-            borderColor: '#f59e0b', cornerStyle: 'circle',
-            cornerSize: (typeof _isMobileTouch !== 'undefined' && _isMobileTouch) ? 32 : 12,
-            transparentCorners: false,
           });
           obj.setCoords();
           fabCanvas.add(obj);
