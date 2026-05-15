@@ -3797,10 +3797,14 @@ async function _custReviewLoadJsonParts(jsonDriveId){
         try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
         try {
           if(typeof _mobileFitCanvas === 'function' && document.body.classList.contains('mobile-mode')){
+            // ★ 2026-05-15: 初回タップで ハンドル巨大化を防ぐため fit を複数タイミングで実行
             setTimeout(_mobileFitCanvas, 50);
             setTimeout(_mobileFitCanvas, 300);
+            setTimeout(_mobileFitCanvas, 800);
+            setTimeout(_mobileFitCanvas, 1500);
           } else if(typeof zoomFit === 'function'){
             setTimeout(zoomFit, 50);
+            setTimeout(zoomFit, 300);
           }
         } catch(_){}
         console.log('[custReview v11] JSON loaded:', { targetW, targetH, objs: fabCanvas.getObjects().length });
