@@ -796,6 +796,29 @@ body.mobile-debug #_debugInfo {
 .m-hd-btn:active { background: var(--bgH); transform: scale(.95); }
 .m-hd-btn.pri { background: var(--ac); color: #000; border-color: var(--ac); font-weight: 700; }
 .m-hd-btn.pri:active { background: var(--acH); }
+/* ★ 2026-05-16: 3Dボタン専用 — 「3D」 ラベル + 👕 アイコン を縦並びでコンパクト表示 */
+.m-hd-btn.m-hd-3d {
+  width: auto;
+  min-width: 40px;
+  padding: 0 10px;
+  flex-direction: column;
+  gap: 0;
+  background: linear-gradient(135deg, #2563eb, #7b3fa0);
+  border-color: transparent;
+  color: #fff;
+}
+.m-hd-btn.m-hd-3d .m-hd-3d-label {
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .5px;
+  margin-bottom: 1px;
+}
+.m-hd-btn.m-hd-3d .m-hd-3d-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+.m-hd-btn.m-hd-3d:active { transform: scale(.92); filter: brightness(0.9); }
 
 /* ★ N3.8 2026-05-05: ヘッダー左下のフローティング操作ボタン群 (Undo/Redo)
    N3.10.1 2026-05-07: 横並びに変更 (左=Undo / 右=Redo) */
@@ -1900,7 +1923,7 @@ body.cocoro-customer-confirm .m-main {
   <header class="m-hd">
     <button class="m-hd-btn" id="mHdBack" onclick="m_navBack()" title="戻る">←</button>
     <div class="m-hd-title" id="mHdTitle">デザインスタジオ</div>
-    <button class="m-hd-btn" id="mHd3d" onclick="m_open3d()" title="3Dで確認" style="display:none;">🎽</button>
+    <button class="m-hd-btn m-hd-3d" id="mHd3d" onclick="m_open3d()" title="3Dで確認" style="display:none;"><span class="m-hd-3d-label">3D</span><span class="m-hd-3d-icon">👕</span></button>
     <button class="m-hd-btn pri" id="mHdSave" onclick="m_saveDesign()" title="保存" style="display:none;">💾</button>
   </header>
 
@@ -3568,32 +3591,20 @@ async function _customerStartEdit(){
       }, 1000);
     } catch(_){}
   } catch(e){ console.warn('[customerStartEdit] unlock fail:', e); }
-  // ★ G1 2026-05-14: 修正モードのフローティングボタン群 (縦並び・送信 + 3D確認)
+  // ★ G1 2026-05-14 v2 (2026-05-16): エディタ画面の 3Dボタンと重複するので 「3Dで確認」 削除
+  //   「修正版を送信」 のみ表示。 邪魔にならないように 画面下端中央 に変更 (固定位置)
   if(!document.getElementById('_custEditBtns')){
     const box = document.createElement('div');
     box.id = '_custEditBtns';
-    // バナー直下 (CSS 変数で 自動オフセット)
-    box.style.cssText = 'position:fixed;top:calc(var(--cocoro-banner-h, 56px) + 8px);right:14px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 28px);';
-    // 送信ボタン (紫グラデ)
+    // ★ 画面下端中央 (mobile sheet より上、 PC 下端) — どのモードでも邪魔にならない位置
+    box.style.cssText = 'position:fixed;bottom:calc(var(--m-sheet-h, 76px) + 16px);left:50%;transform:translateX(-50%);z-index:99999;pointer-events:none;';
+    // 送信ボタン (紫グラデ) — 単独表示
     const sendBtn = document.createElement('button');
     sendBtn.id = '_btnCustSendEdit';
-    sendBtn.style.cssText = 'padding:12px 18px;background:linear-gradient(135deg,#7b3fa0,#5a4f8a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.35);display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;';
-    sendBtn.innerHTML = '<span style="font-size:16px;">📥</span><span>修正版を送信</span>';
+    sendBtn.style.cssText = 'padding:14px 28px;background:linear-gradient(135deg,#7b3fa0,#5a4f8a);color:#fff;border:none;border-radius:24px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(123,63,160,.5);display:flex;align-items:center;gap:8px;line-height:1;white-space:nowrap;pointer-events:auto;';
+    sendBtn.innerHTML = '<span style="font-size:18px;">📥</span><span>修正版を送信</span>';
     sendBtn.addEventListener('click', _customerSendEdit);
     box.appendChild(sendBtn);
-    // 3Dで確認ボタン (青グラデ)
-    const btn3d = document.createElement('button');
-    btn3d.id = '_btnCustEdit3d';
-    btn3d.style.cssText = 'padding:10px 16px;background:linear-gradient(135deg,#2563eb,#5a4f8a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;';
-    btn3d.innerHTML = '<span style="font-size:16px;">🎽</span><span>3Dで確認</span>';
-    btn3d.addEventListener('click', () => {
-      // 既存 _3d_openFromEditor を流用 — FORM_CONTEXT は v11.3 で 全項目セット済 (cat/location/method/colorHex)
-      try {
-        if(typeof _3d_openFromEditor === 'function') _3d_openFromEditor();
-        else alert('3Dビューア機能が見つかりません');
-      } catch(e){ console.warn('cust 3d open fail', e); alert('3D表示に失敗しました: ' + e.message); }
-    });
-    box.appendChild(btn3d);
     document.body.appendChild(box);
   }
   // ★ F1 2026-05-14: 修正モード準備 完了 → ローディング解除 (UI が落ち着くまで 350ms)
