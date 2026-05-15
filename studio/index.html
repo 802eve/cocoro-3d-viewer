@@ -6289,9 +6289,14 @@ function setupSnapGuides(){
     try { window._scaleSnapLines = null; fabCanvas.requestRenderAll(); } catch(_){}
   });
   // 2026-04-25: Shift キー押しながら回転で 45度スナップ（Illustrator と同じ挙動）
+  // ★ 2026-05-15: グローバル keydown でも shiftKey 状態を捕捉 (opt.e に shiftKey ない fabric バージョン対策)
+  let _globalShiftDown = false;
+  document.addEventListener('keydown', (e) => { if(e.key === 'Shift') _globalShiftDown = true; });
+  document.addEventListener('keyup',   (e) => { if(e.key === 'Shift') _globalShiftDown = false; });
   fabCanvas.on('object:rotating', (opt) => {
     clearSnap();
-    if(opt && opt.e && opt.e.shiftKey && opt.target){
+    const _shiftHeld = (opt && opt.e && opt.e.shiftKey) || _globalShiftDown;
+    if(_shiftHeld && opt && opt.target){
       const SNAP = 45;
       const cur = opt.target.angle || 0;
       // 負角度や360超の正規化を兼ねる
