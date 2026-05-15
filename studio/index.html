@@ -3695,20 +3695,29 @@ async function _custReviewLoadJsonParts(jsonDriveId){
     try { wrap = JSON.parse(j.json); }
     catch(parseErr){ console.warn('[custReview] json parse fail:', parseErr); return false; }
     if(!wrap || !wrap.fabric){ console.warn('[custReview] json missing fabric data'); return false; }
-    // ★ 2026-05-14 v11.2: 論理サイズは printSize から計算するのを最優先 (旧 JSON の canvasW がズーム倍率込みでも安全)
-    //    fallback: _customerReviewCanvSize (= GAS targetPrint.size 由来) → wrap.canvasW
+    // ★ 2026-05-15 v11.4: targetW/H 優先順位を 修正
+    //    v11.2 で printSize 優先にしてたが、 新規オーダーで staff が ?size= 無しで studio 開いた場合
+    //    JSON は canvasW=900 (default) で保存される。 一方 顧客側 ?size=34cm角内 → printSize="34cm角内" → 1020
+    //    で復元すると mismatch (88% 領域に縮こまる)
+    //    → wrap.canvasW (saver が CANVAS_BASE_W を正直に保存した値) を最優先 が正解
+    //    printSize は 旧 JSON で canvasW がない場合の fallback 用
     let targetW = 0, targetH = 0;
-    try {
-      if(wrap.printSize && typeof _computeCanvasDims === 'function'){
-        const dims = _computeCanvasDims(wrap.printSize, !!wrap.rotated);
-        if(dims && dims.w > 0){ targetW = dims.w; targetH = dims.h; }
-      }
-    } catch(_){}
+    if(wrap.canvasW && wrap.canvasW > 0 && wrap.canvasH && wrap.canvasH > 0){
+      targetW = wrap.canvasW; targetH = wrap.canvasH;
+    }
+    if(!targetW){
+      try {
+        if(wrap.printSize && typeof _computeCanvasDims === 'function'){
+          const dims = _computeCanvasDims(wrap.printSize, !!wrap.rotated);
+          if(dims && dims.w > 0){ targetW = dims.w; targetH = dims.h; }
+        }
+      } catch(_){}
+    }
     if(!targetW){
       const cs = window._customerReviewCanvSize;
       if(cs && cs.w > 0){ targetW = cs.w; targetH = cs.h; }
     }
-    if(!targetW){ targetW = wrap.canvasW || 1020; targetH = wrap.canvasH || 1020; }
+    if(!targetW){ targetW = 1020; targetH = 1020; }
     // canvas を 保存時の size に厳密合わせ
     try {
       fabCanvas.setDimensions({ width: targetW, height: targetH });
