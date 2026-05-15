@@ -6289,20 +6289,33 @@ function setupSnapGuides(){
     try { window._scaleSnapLines = null; fabCanvas.requestRenderAll(); } catch(_){}
   });
   // 2026-04-25: Shift キー押しながら回転で 45度スナップ（Illustrator と同じ挙動）
-  // ★ 2026-05-16: opt.e.shiftKey のみ参照 (グローバルフラグは座標飛びの原因になりうるので削除)
-  //   setCoords() も削除 (fabric が自動で update。 明示呼び出しすると 回転中の中心軸計算が壊れる)
-  fabCanvas.on('object:rotating', (opt) => {
-    clearSnap();
-    if(opt && opt.e && opt.e.shiftKey && opt.target){
-      const SNAP = 45;
-      const cur = opt.target.angle || 0;
-      const snapped = ((Math.round(cur / SNAP) * SNAP) % 360 + 360) % 360;
-      // ★ 既に snap 値ならスキップ (無駄な set で fabric が再計算するのを避ける)
-      if(Math.abs((cur % 360 + 360) % 360 - snapped) < 0.01) return;
-      opt.target.set('angle', snapped);
-      // ★ setCoords() 削除 — fabric の内部 rotate 処理が中心保持してるので 二重呼出しは禁物
-    }
+  // ★ 2026-05-16: fabric native `snapAngle` プロパティを使う方式に変更
+  //   (旧: object:rotating で target.set('angle') していたが 座標飛びの原因)
+  //   snapAngle = 45 にすると fabric の rotate 内部処理で自動 snap → 座標も中心軸保持
+  //   Shift キー keydown で 45 / keyup で 0 (= 通常回転) を 全オブジェクト + prototype に適用
+  function _setSnapAngleAll(deg){
+    try {
+      if(typeof fabric !== 'undefined' && fabric.Object && fabric.Object.prototype){
+        fabric.Object.prototype.snapAngle = deg;
+        fabric.Object.prototype.snapThreshold = deg ? 5 : 0;
+      }
+      if(window.fabCanvas && fabCanvas.getObjects){
+        fabCanvas.getObjects().forEach(o => {
+          try { o.snapAngle = deg; o.snapThreshold = deg ? 5 : 0; } catch(_){}
+        });
+      }
+    } catch(_){}
+  }
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Shift' && !e.repeat) _setSnapAngleAll(45);
   });
+  document.addEventListener('keyup', (e) => {
+    if(e.key === 'Shift') _setSnapAngleAll(0);
+  });
+  // タブを離れた時の保険 (keyup イベント漏れ対策)
+  window.addEventListener('blur', () => _setSnapAngleAll(0));
+  // object:rotating では snap 直接介入しない (fabric native に任せる) — guide 線クリアのみ
+  fabCanvas.on('object:rotating', () => { clearSnap(); });
   fabCanvas.on('mouse:up', () => { clearSnap(); fabCanvas.requestRenderAll(); });
   fabCanvas.on('after:render', drawGuides);
   // Alt+ドラッグで複製
@@ -9041,8 +9054,9 @@ function updEdSide(){
     usedTitle.innerHTML = '<span class="sec-toggle">▼</span>💡 使用中のカラー';
   }
   if(usedEl && !active){
+    // ★ 2026-05-16: 選択なしでも 一括置換可能に (openColorReplaceModal は選択不要)
     usedEl.innerHTML = renderUsedColorsInline({
-      applyable: false,
+      applyable: true,
       showTitle: false
     });
   }
