@@ -6289,20 +6289,18 @@ function setupSnapGuides(){
     try { window._scaleSnapLines = null; fabCanvas.requestRenderAll(); } catch(_){}
   });
   // 2026-04-25: Shift キー押しながら回転で 45度スナップ（Illustrator と同じ挙動）
-  // ★ 2026-05-15: グローバル keydown でも shiftKey 状態を捕捉 (opt.e に shiftKey ない fabric バージョン対策)
-  let _globalShiftDown = false;
-  document.addEventListener('keydown', (e) => { if(e.key === 'Shift') _globalShiftDown = true; });
-  document.addEventListener('keyup',   (e) => { if(e.key === 'Shift') _globalShiftDown = false; });
+  // ★ 2026-05-16: opt.e.shiftKey のみ参照 (グローバルフラグは座標飛びの原因になりうるので削除)
+  //   setCoords() も削除 (fabric が自動で update。 明示呼び出しすると 回転中の中心軸計算が壊れる)
   fabCanvas.on('object:rotating', (opt) => {
     clearSnap();
-    const _shiftHeld = (opt && opt.e && opt.e.shiftKey) || _globalShiftDown;
-    if(_shiftHeld && opt && opt.target){
+    if(opt && opt.e && opt.e.shiftKey && opt.target){
       const SNAP = 45;
       const cur = opt.target.angle || 0;
-      // 負角度や360超の正規化を兼ねる
       const snapped = ((Math.round(cur / SNAP) * SNAP) % 360 + 360) % 360;
+      // ★ 既に snap 値ならスキップ (無駄な set で fabric が再計算するのを避ける)
+      if(Math.abs((cur % 360 + 360) % 360 - snapped) < 0.01) return;
       opt.target.set('angle', snapped);
-      opt.target.setCoords();
+      // ★ setCoords() 削除 — fabric の内部 rotate 処理が中心保持してるので 二重呼出しは禁物
     }
   });
   fabCanvas.on('mouse:up', () => { clearSnap(); fabCanvas.requestRenderAll(); });
@@ -9122,16 +9120,29 @@ function renderUsedColorsInline(options){
   } catch(e){}
   if(!colors.length) return titleHtml + warnHtml + '<div style="font-size:10px;color:var(--t3);padding:4px 0">使用中のカラーなし</div>';
   // ★ 2026-05-15: 使用中のカラー swatch クリック → インクスウォッチモーダル → 一括色置換
-  //   (旧: applyInkColor は選択中パーツに即適用。 新: openColorReplaceModal で 同じ色のパーツ全部を一括置換)
+  //   inline onclick で `#` を含む hex を渡すと iframe/Caja で escape 問題出るので
+  //   data-hex 属性 + 親 click delegation で 確実バインド
   const colorsHtml = colors.map(c => {
     const nm = inkNameOf(c);
-    const clickAttr = applyable ? `onclick="openColorReplaceModal('${c}')" style="cursor:pointer"` : '';
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;max-width:56px" ${clickAttr} title="${escapeHtml(nm)} — クリックで一括色置換">
-      <div style="width:26px;height:26px;background:${c};border-radius:50%;border:2px solid var(--bd);flex-shrink:0"></div>
-      <div style="font-size:9px;color:var(--t2);text-align:center;line-height:1.2;white-space:normal;word-break:break-all">${escapeHtml(nm)}</div>
-    </div>`;
+    const cur = (applyable && c) ? ' data-replace-hex="' + c + '" style="cursor:pointer"' : '';
+    return '<div class="ed-used-color-sw"' + cur + ' title="' + escapeHtml(nm) + ' — クリックで一括色置換">'
+      + '<div style="width:26px;height:26px;background:' + c + ';border-radius:50%;border:2px solid var(--bd);flex-shrink:0"></div>'
+      + '<div style="font-size:9px;color:var(--t2);text-align:center;line-height:1.2;white-space:normal;word-break:break-all">' + escapeHtml(nm) + '</div>'
+      + '</div>';
   }).join('');
-  return titleHtml + warnHtml + `<div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0">${colorsHtml}</div>`;
+  // ★ click delegation 用ヘルパー: 親に on:click で data-replace-hex を読む (1回だけバインド)
+  setTimeout(() => {
+    if(window._usedColorDelegationBound) return;
+    window._usedColorDelegationBound = true;
+    document.addEventListener('click', (ev) => {
+      const t = ev.target && ev.target.closest && ev.target.closest('[data-replace-hex]');
+      if(t){
+        const h = t.getAttribute('data-replace-hex');
+        if(h && typeof window.openColorReplaceModal === 'function') window.openColorReplaceModal(h);
+      }
+    });
+  }, 0);
+  return titleHtml + warnHtml + '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;align-items:flex-start;">' + '<style>.ed-used-color-sw{display:flex;flex-direction:column;align-items:center;gap:2px;max-width:56px;padding:2px;border-radius:6px;}.ed-used-color-sw:hover{background:rgba(0,0,0,0.05);}</style>' + colorsHtml + '</div>';
 }
 
 // ★ 2026-05-15: 使用中のカラー → 一括色置換 機能
