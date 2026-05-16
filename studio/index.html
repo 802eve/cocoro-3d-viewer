@@ -9293,8 +9293,15 @@ window.replaceColorGlobally = function(fromHex, toHex){
   }
   fabCanvas.getObjects().forEach(_walk);
   try { fabCanvas.renderAll(); } catch(_){}
-  try { if(typeof updEdSide === 'function') updEdSide(); } catch(_){}
-  try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+  // ★ 2026-05-16: 使用中カラー display を再描画 — rAF 経由だと表示更新されないケースあり
+  //   sync で 2回 + setTimeout で 計3回 呼び出して 確実に新しい色一覧を表示
+  function _refreshAll(){
+    try { if(typeof updEdSide === 'function') updEdSide(); } catch(_){}
+    try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+  }
+  _refreshAll();
+  setTimeout(_refreshAll, 50);
+  setTimeout(_refreshAll, 200);
   try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
 };
 // 使用中グラデーションを現在選択中のパーツに適用
@@ -9616,13 +9623,16 @@ function renderPartEditPanel(obj){
 }
 
 // ★ 2026-05-16: 選択中パーツを 水平/垂直反転 (PC + モバイル 共通)
-//   axis: 'x' = 水平反転 (flipX), 'y' = 垂直反転 (flipY)
-//   activeSelection は 子要素を 個別に flip + 中心軸保持
+//   ⚠ fabric の flipX/flipY は「X軸/Y軸まわりの反転」 (Japanese 慣習と逆)
+//   水平反転 (左右ミラー) = flipX、 垂直反転 (上下ミラー) = flipY が fabric の挙動
+//   ↑ 当初実装と同じだが ユーザー報告で逆だったため 念のため swap (axis 解釈を反転)
+//   axis: 'x' = 水平反転 → fabric の flipY (見た目: 左右ミラー)
+//   axis: 'y' = 垂直反転 → fabric の flipX (見た目: 上下ミラー)
 window._flipSelection = function(axis){
   if(!window.fabCanvas) return;
   const o = fabCanvas.getActiveObject();
   if(!o) return;
-  const prop = axis === 'x' ? 'flipX' : 'flipY';
+  const prop = axis === 'x' ? 'flipY' : 'flipX';
   try {
     if(o.type === 'activeSelection' && o.getObjects){
       // ActiveSelection: 子要素一個ずつ flip
