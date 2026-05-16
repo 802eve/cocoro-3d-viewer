@@ -9586,6 +9586,9 @@ function renderGroupEditPanel(g){
 function renderPartEditPanel(obj){
   const fill = obj.fill || '#231815';
   const fillStr = (typeof fill === 'string') ? fill : '#1a1a1a';
+  // ★ 2026-05-16: 反転 ボタン用 SVG (▶Ι◁ 水平 / Ξ 垂直)
+  const _svgFlipH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 2 9 12 3 22"></polygon><polygon points="21 2 15 12 21 22"></polygon><line x1="12" y1="2" x2="12" y2="22"></line></svg>';
+  const _svgFlipV = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="2 3 12 9 22 3"></polygon><polygon points="2 21 12 15 22 21"></polygon><line x1="2" y1="12" x2="22" y2="12"></line></svg>';
   return `
     <div class="txt-ed-fld">
       <div class="txt-ed-lbl">カラー</div>
@@ -9598,12 +9601,42 @@ function renderPartEditPanel(obj){
       </button>
       ${renderUsedColorsInline({applyable:true, showTitle:true})}
     </div>
+    <div class="txt-ed-fld">
+      <div class="txt-ed-lbl">反転</div>
+      <div class="txt-ed-row" style="gap:6px">
+        <button class="btn out" style="font-size:11px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="_flipSelection('x')" title="水平反転">${_svgFlipH}<span>水平反転</span></button>
+        <button class="btn out" style="font-size:11px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="_flipSelection('y')" title="垂直反転">${_svgFlipV}<span>垂直反転</span></button>
+      </div>
+    </div>
     <div class="txt-ed-row" style="gap:6px;margin-top:12px">
       <button class="btn out" style="font-size:11px" onclick="duplicateSel()">📋 複製</button>
       <button class="btn out" style="font-size:11px;color:#ef4444;border-color:#663333" onclick="deleteSel()">🗑 削除</button>
     </div>
   `;
 }
+
+// ★ 2026-05-16: 選択中パーツを 水平/垂直反転 (PC + モバイル 共通)
+//   axis: 'x' = 水平反転 (flipX), 'y' = 垂直反転 (flipY)
+//   activeSelection は 子要素を 個別に flip + 中心軸保持
+window._flipSelection = function(axis){
+  if(!window.fabCanvas) return;
+  const o = fabCanvas.getActiveObject();
+  if(!o) return;
+  const prop = axis === 'x' ? 'flipX' : 'flipY';
+  try {
+    if(o.type === 'activeSelection' && o.getObjects){
+      // ActiveSelection: 子要素一個ずつ flip
+      o.getObjects().forEach(c => {
+        try { c.set(prop, !c[prop]); c.setCoords(); } catch(_){}
+      });
+    } else {
+      o.set(prop, !o[prop]);
+    }
+    if(o.setCoords) o.setCoords();
+    fabCanvas.requestRenderAll();
+    fabCanvas.fire('object:modified', { target: o });
+  } catch(e){ console.warn('flip fail', e); }
+};
 
 // ── テキスト操作ヘルパー ──
 function setSelPartLabel(val){
@@ -13607,17 +13640,17 @@ function _3d_inlineRefresh(){
     const sel = (window.fabCanvas && fabCanvas.getActiveObject) ? fabCanvas.getActiveObject() : null;
     // ★ 2026-05-09: フォーム連携モード時は最上部に「使用中のカラー + モード警告」 を表示 (PC 版同等)
     //   選択中アイテムがなくても表示する (色数オーバー警告など 重要情報)
+    // ★ 2026-05-16: free モードでも 使用中のカラーは常時表示 (一括色置換 UI のため)
     try {
-      if(typeof FORM_CONTEXT !== 'undefined' && FORM_CONTEXT && FORM_CONTEXT.mode && FORM_CONTEXT.mode !== 'free'){
-        if(typeof renderUsedColorsInline === 'function'){
-          const banner = document.createElement('div');
-          banner.className = 'm-edit-section';
-          banner.style.cssText = 'background:rgba(255,255,255,.04);border-radius:8px;padding:10px;font-size:11px;line-height:1.5;border:1px solid var(--bd)';
-          banner.innerHTML = renderUsedColorsInline({ applyable: !!sel });
-          host.appendChild(banner);
-        }
+      if(typeof renderUsedColorsInline === 'function'){
+        const banner = document.createElement('div');
+        banner.className = 'm-edit-section';
+        banner.style.cssText = 'background:rgba(255,255,255,.04);border-radius:8px;padding:10px;font-size:11px;line-height:1.5;border:1px solid var(--bd)';
+        // 選択なしでも applyable: true (一括置換は選択不要)
+        banner.innerHTML = renderUsedColorsInline({ applyable: true });
+        host.appendChild(banner);
       }
-    } catch(e){ console.warn('mode banner', e); }
+    } catch(e){ console.warn('used color banner', e); }
     if(!sel){
       const msg = document.createElement('div');
       msg.className = 'm-edit-empty';
@@ -14258,6 +14291,32 @@ function _3d_inlineRefresh(){
     rg.appendChild(_rb('リセット', 0, true));
     sec2.appendChild(rg);
     host.appendChild(sec2);
+
+    // ★ 2026-05-16: 反転 (水平/垂直) ボタン — 回転セクションの直下
+    const secFlip = document.createElement('div');
+    secFlip.className = 'm-edit-section';
+    secFlip.innerHTML = '<div class="m-edit-label">反転</div>';
+    const flipRow = document.createElement('div');
+    flipRow.className = 'm-toggle-row';
+    const _flipBtn = (axis, svgIcon, lbl) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'm-toggle-btn';
+      b.style.cssText = 'padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;';
+      b.innerHTML = svgIcon + '<div style="font-size:9px;">' + lbl + '</div>';
+      b.addEventListener('click', () => {
+        if(typeof window._flipSelection === 'function') window._flipSelection(axis);
+      });
+      return b;
+    };
+    // ▶Ι◁ 水平反転 SVG
+    const _svgFlipH = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 2 9 12 3 22"></polygon><polygon points="21 2 15 12 21 22"></polygon><line x1="12" y1="2" x2="12" y2="22"></line></svg>';
+    // ▼Ξ▲ 垂直反転 SVG
+    const _svgFlipV = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="2 3 12 9 22 3"></polygon><polygon points="2 21 12 15 22 21"></polygon><line x1="2" y1="12" x2="22" y2="12"></line></svg>';
+    flipRow.appendChild(_flipBtn('x', _svgFlipH, '水平反転'));
+    flipRow.appendChild(_flipBtn('y', _svgFlipV, '垂直反転'));
+    secFlip.appendChild(flipRow);
+    host.appendChild(secFlip);
 
     // ★ N3.15.8 2026-05-10: 「キャンバス整列」 セクションは撤去
     //   m_renderEditTab 共通の `_m_renderPartsAlignUI` (パーツ整列 6個) に置き換え済み
