@@ -3524,6 +3524,14 @@ async function _customerConfirm(){
 async function _customerStartEdit(){
   // 状態を 編集モードに
   _customerReviewState = 'editing';
+  // ★ 2026-05-17: 編集開始時の色数を記録 (送信時に変動チェック用)
+  //   _custReviewLoadJsonParts 完了後に確定する必要があるため、 setTimeout で 遅延取得
+  setTimeout(() => {
+    try {
+      const cs = (typeof window._extractCanvasInkColors === 'function') ? window._extractCanvasInkColors() : [];
+      window._customerInitialColorCount = cs.length;
+    } catch(_){ window._customerInitialColorCount = -1; }
+  }, 1500);
   // ★ F1 2026-05-14: 修正モード準備 待ち時間 演出
   try { _showLoadingOverlay('✎ 修正モードを準備中', 'デザインを 編集可能な状態に展開しています'); } catch(_){}
   // ★ F2 2026-05-14: 編集 UI を解禁 (Undo/Redo / シート / タブ / ハンドル)
@@ -3630,6 +3638,24 @@ async function _customerStartEdit(){
 
 async function _customerSendEdit(){
   if(!window.fabCanvas){ alert('キャンバスがまだ初期化されてません'); return; }
+  // ★ 2026-05-17: 送信前の警告 (色数変動 + 再見積り)
+  try {
+    const curColors = (typeof window._extractCanvasInkColors === 'function') ? window._extractCanvasInkColors() : [];
+    const curN = curColors.length;
+    const initN = (typeof window._customerInitialColorCount === 'number') ? window._customerInitialColorCount : -1;
+    let msg = '';
+    if(initN >= 0 && curN !== initN){
+      msg = '⚠ 使用色数が ' + initN + '色 → ' + curN + '色 に変わっています。\n'
+          + 'プリント料金 (シルクなら色数 × 版代等) が変動するため、\n'
+          + '修正版送信後 ココロ工房から 改めて お見積りメールをお送りします。\n\n'
+          + 'このまま送信しますか?';
+    } else {
+      msg = '修正版を送信します。\n'
+          + '内容を確認のうえ、 ココロ工房から 改めて 再お見積り (または 確認) メールが届きます。\n\n'
+          + 'よろしいですか?';
+    }
+    if(!window.confirm(msg)){ return; }
+  } catch(_){}
   const btn = document.getElementById('_btnCustSendEdit');
   if(btn){ btn.disabled = true; btn.innerHTML = '⏳ 送信中...'; }
   // ★ F1 2026-05-14: 送信中の待ち時間 演出
@@ -3680,6 +3706,9 @@ async function _customerSendEdit(){
     const pngB64 = png.replace(/^data:[^;]+;base64,/,'');
     const svgB64 = btoa(unescape(encodeURIComponent(svg)));
     const jsonB64 = jsonStr ? btoa(unescape(encodeURIComponent(jsonStr))) : '';
+    // ★ 2026-05-17: 使用中のインクカラー名を抽出 (社内詳細欄の常時最新化)
+    const inkColors = (typeof window._extractCanvasInkColors === 'function') ? window._extractCanvasInkColors() : [];
+    const inkColorsJoined = inkColors.join(',');
     const j = await _custReviewFetch('customerUpdateDesignWithToken', {
       orderId: PLATFORM_CONTEXT.orderId,
       itemIdx: PLATFORM_CONTEXT.itemIdx,
@@ -3688,6 +3717,7 @@ async function _customerSendEdit(){
       pngB64: pngB64,
       svgB64: svgB64,
       jsonB64: jsonB64,
+      inkColors: inkColorsJoined,
       fileName: 'customer-edit-' + Date.now() + '.png',
     });
     if(j.ok){
@@ -4142,6 +4172,8 @@ async function _platformSaveAndReturn(){
         saveMyDesigns(list);
       }
     } catch(e){ console.warn('mydesign save err', e); }
+    // ★ 2026-05-17: 使用中のインクカラー名 配列 (社内詳細欄 常時最新化)
+    const inkColors = (typeof window._extractCanvasInkColors === 'function') ? window._extractCanvasInkColors() : [];
     // 4. 親ウィンドウに postMessage で送信
     if(window.opener && !window.opener.closed){
       window.opener.postMessage({
@@ -4152,6 +4184,7 @@ async function _platformSaveAndReturn(){
         png: png,
         svg: svg,
         designJson: designJsonStr, // ★ 2026-05-14 v11: JSON 復元用
+        inkColors: inkColors,        // ★ 2026-05-17: 詳細欄カラー名/色数 更新用
         fileName: 'design-' + Date.now() + '.png',
       }, '*');
       alert('✓ 保存しました。 タブを閉じて 社内プラットフォーム に戻ってください。');
@@ -9394,6 +9427,27 @@ function inkNameOf(color){
   if(best && bestD <= 3000) return best.name;     // ほぼ近い色はそのまま名前（#000→ブラックを許容）
   return hex.toUpperCase();                        // 違う色はHEX
 }
+
+// ★ 2026-05-17: キャンバス上の使用中インクカラー名 配列を返す (社内詳細欄 / 顧客修正時の更新用)
+//   inkNameOf で正規化、 重複排除、 順序は出現順
+window._extractCanvasInkColors = function(){
+  try {
+    if(!window.fabCanvas) return [];
+    const seen = new Set();
+    const out = [];
+    function walk(obj){
+      if(!obj) return;
+      if(obj.type === 'group' && obj.getObjects){
+        obj.getObjects().forEach(walk);
+      } else if(obj.fill && typeof obj.fill === 'string'){
+        const nm = (typeof inkNameOf === 'function') ? inkNameOf(obj.fill) : obj.fill;
+        if(nm && !seen.has(nm)){ seen.add(nm); out.push(nm); }
+      }
+    }
+    fabCanvas.getObjects().forEach(walk);
+    return out;
+  } catch(_){ return []; }
+};
 
 // ── テキスト編集パネル ──
 function renderTextEditPanel(t){
