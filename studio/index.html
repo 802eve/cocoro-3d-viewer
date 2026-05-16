@@ -3524,14 +3524,8 @@ async function _customerConfirm(){
 async function _customerStartEdit(){
   // 状態を 編集モードに
   _customerReviewState = 'editing';
-  // ★ 2026-05-17: 編集開始時の色数を記録 (送信時に変動チェック用)
-  //   _custReviewLoadJsonParts 完了後に確定する必要があるため、 setTimeout で 遅延取得
-  setTimeout(() => {
-    try {
-      const cs = (typeof window._extractCanvasInkColors === 'function') ? window._extractCanvasInkColors() : [];
-      window._customerInitialColorCount = cs.length;
-    } catch(_){ window._customerInitialColorCount = -1; }
-  }, 1500);
+  // ★ 2026-05-17 v2: 初期色数の記録は JSON ロード完了後に行う (下方の try ブロック末で実施)
+  window._customerInitialColorCount = -1; // 未確定マーカー
   // ★ F1 2026-05-14: 修正モード準備 待ち時間 演出
   try { _showLoadingOverlay('✎ 修正モードを準備中', 'デザインを 編集可能な状態に展開しています'); } catch(_){}
   // ★ F2 2026-05-14: 編集 UI を解禁 (Undo/Redo / シート / タブ / ハンドル)
@@ -3599,6 +3593,14 @@ async function _customerStartEdit(){
       }, 1000);
     } catch(_){}
   } catch(e){ console.warn('[customerStartEdit] unlock fail:', e); }
+  // ★ 2026-05-17 v2: ロード完了後に 初期色数を記録 (loadFromJSON の renderAll + フォント描画 が落ち着くまで 待つ)
+  setTimeout(() => {
+    try {
+      const cs = (typeof window._extractCanvasInkColors === 'function') ? window._extractCanvasInkColors() : [];
+      window._customerInitialColorCount = cs.length;
+      console.log('[startEdit] initial colors recorded:', cs.length, cs);
+    } catch(_){ window._customerInitialColorCount = -1; }
+  }, 1200);
   // ★ G1 2026-05-14 v3 (2026-05-16): デバイス別配置
   //   - PC: 緑バナー (`_custReviewBanner`) 内 右側に inline 配置
   //   - モバイル: ↶↷ (m-tools-left) と同じ高さで 右寄せ position:fixed
