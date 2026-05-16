@@ -3816,10 +3816,14 @@ async function _custReviewLoadJsonParts(jsonDriveId){
             obj._partLabel = obj._partLabel || ('パーツ' + gi);
           }
           // ★ 2026-05-15: prototype に揃えるため override 削除 (selectable/evented のみ設定)
-          //   prototype 側で cornerSize=22 統一 (モバイル) を共有 → スタジオ全体で一致
+          // ★ 2026-05-17: staff mode (fromPlatform) でも selectable=true に
+          //   (customer review editing OR staff fromPlatform OR customer review なし = 通常スタジオ)
+          const _editable = (_customerReviewState === 'editing')
+            || (typeof PLATFORM_CONTEXT !== 'undefined' && PLATFORM_CONTEXT && PLATFORM_CONTEXT.active && !PLATFORM_CONTEXT.customerReview)
+            || !_customerReviewState; // ← 通常スタジオ起動時 (customerReview フラグ無し)
           obj.set({
-            selectable: (_customerReviewState === 'editing'),
-            evented: (_customerReviewState === 'editing'),
+            selectable: _editable,
+            evented: _editable,
           });
           obj.setCoords();
         });
@@ -9293,15 +9297,22 @@ window.replaceColorGlobally = function(fromHex, toHex){
   }
   fabCanvas.getObjects().forEach(_walk);
   try { fabCanvas.renderAll(); } catch(_){}
-  // ★ 2026-05-16: 使用中カラー display を再描画 — rAF 経由だと表示更新されないケースあり
-  //   sync で 2回 + setTimeout で 計3回 呼び出して 確実に新しい色一覧を表示
+  // ★ 2026-05-16 v2: 使用中カラー display を再描画 — window スコープ明示 + 直接 DOM 更新 も併用
+  //   原因: m_renderActiveTabContent が IIFE 内で window 公開されてなかった (修正済)
   function _refreshAll(){
-    try { if(typeof updEdSide === 'function') updEdSide(); } catch(_){}
-    try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+    try { if(typeof window.updEdSide === 'function') window.updEdSide(); } catch(_){}
+    try { if(typeof window.m_renderActiveTabContent === 'function') window.m_renderActiveTabContent(); } catch(_){}
   }
   _refreshAll();
   setTimeout(_refreshAll, 50);
   setTimeout(_refreshAll, 200);
+  // ★ Bonus: PC の edUsedColors 独立セクション (active=null 時に表示) を直接 innerHTML 更新
+  try {
+    const usedEl = document.getElementById('edUsedColors');
+    if(usedEl && typeof renderUsedColorsInline === 'function'){
+      usedEl.innerHTML = renderUsedColorsInline({ applyable: true, showTitle: false });
+    }
+  } catch(_){}
   try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
 };
 // 使用中グラデーションを現在選択中のパーツに適用
@@ -9608,11 +9619,13 @@ function renderPartEditPanel(obj){
       </button>
       ${renderUsedColorsInline({applyable:true, showTitle:true})}
     </div>
-    <div class="txt-ed-fld">
-      <div class="txt-ed-lbl">反転</div>
-      <div class="txt-ed-row" style="gap:6px">
-        <button class="btn out" style="font-size:11px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="_flipSelection('x')" title="水平反転">${_svgFlipH}<span>水平反転</span></button>
-        <button class="btn out" style="font-size:11px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="_flipSelection('y')" title="垂直反転">${_svgFlipV}<span>垂直反転</span></button>
+    <div class="ev-sec collapsed" style="margin-top:10px">
+      <div class="ev-sec-hd" onclick="toggleSec(this)"><span class="sec-toggle">▼</span>🔄 反転</div>
+      <div class="ev-sec-body">
+        <div class="txt-ed-row" style="gap:6px">
+          <button class="btn out" style="font-size:11px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="_flipSelection('x')" title="水平反転">${_svgFlipH}<span>水平反転</span></button>
+          <button class="btn out" style="font-size:11px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="_flipSelection('y')" title="垂直反転">${_svgFlipV}<span>垂直反転</span></button>
+        </div>
       </div>
     </div>
     <div class="txt-ed-row" style="gap:6px;margin-top:12px">
@@ -13419,6 +13432,8 @@ function _3d_inlineRefresh(){
   //   50色 swatch + クイックボタン + 各種 section の DOM 再構築が無駄に走る。
   //   ピーク時で 60fps 維持できるように 1 frame ごとに 1 回だけ描画する。
   let _mRenderTabRaf = 0;
+  // ★ 2026-05-16: window 公開 (replaceColorGlobally 等 outer scope から呼べるように)
+  window.m_renderActiveTabContent = m_renderActiveTabContent;
   function m_renderActiveTabContent(){
     if(_mRenderTabRaf) cancelAnimationFrame(_mRenderTabRaf);
     _mRenderTabRaf = requestAnimationFrame(() => {
