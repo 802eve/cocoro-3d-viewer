@@ -12587,6 +12587,54 @@ function _3d_inlineRefresh(){
         pinchStartZoom = _mobileZoomLevel;
         return;
       }
+      // ★ H3 2026-05-17: アクティブなし & 同時2本指でない場合、 2本指中心位置のパーツを 自動検出
+      //   お客様修正モードで 2本指のパーツ回転/拡大 ができない問題の修正
+      //   (タップで選択 → 持ち上げ → 2本指 の代わりに 直接 2本指でも 動かせる)
+      if(!activeObj && _elapsedSinceFirst >= 150){
+        try {
+          const tc = getCenter(e.touches);  // viewport (client) 座標
+          // ★ canvas-container の transform (CSS scale + translate) を逆算して canvas 内座標に
+          const cvEl = main.querySelector('.canvas-container') || main.querySelector('canvas');
+          if(cvEl && fabCanvas){
+            const rect = cvEl.getBoundingClientRect();
+            // CSS scale = rect.width / canvas internal width
+            const scaleCss = rect.width / (fabCanvas.getWidth() || 1);
+            const localX = (tc.x - rect.left) / Math.max(0.0001, scaleCss);
+            const localY = (tc.y - rect.top) / Math.max(0.0001, scaleCss);
+            // 全パーツから 含む or 最近接 を探す
+            const objs = fabCanvas.getObjects().filter(o => o && !o._isCustomerReviewSnapshot && o.selectable !== false);
+            let hit = null;
+            let bestD2 = Infinity;
+            for(const o of objs){
+              try {
+                if(typeof o.containsPoint === 'function' && o.containsPoint(new fabric.Point(localX, localY))){
+                  hit = o; break;
+                }
+                const cp = o.getCenterPoint();
+                const d2 = (cp.x - localX) ** 2 + (cp.y - localY) ** 2;
+                if(d2 < bestD2){ bestD2 = d2; hit = hit || null; if(!hit) hit = o; }
+              } catch(_){}
+            }
+            // bestD2 を 重複再評価 (containsPoint hit を 最優先しつつ、 hit が無い時のみ 最近接)
+            if(!hit && objs.length){
+              hit = objs[0];
+              bestD2 = Infinity;
+              for(const o of objs){
+                try {
+                  const cp = o.getCenterPoint();
+                  const d2 = (cp.x - localX) ** 2 + (cp.y - localY) ** 2;
+                  if(d2 < bestD2){ bestD2 = d2; hit = o; }
+                } catch(_){}
+              }
+            }
+            if(hit){
+              fabCanvas.setActiveObject(hit);
+              fabCanvas.requestRenderAll();
+              activeObj = hit;
+            }
+          }
+        } catch(autoSelErr){ console.warn('[2finger] auto-select fail:', autoSelErr); }
+      }
       if(activeObj){
         partActive = true;
         partRef = activeObj;
