@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -3325,11 +3325,9 @@ async function _initCustomerReviewMode(){
       if(window.fabCanvas){
         try {
           fabCanvas.setDimensions({ width: canvSize.w, height: canvSize.h });
-          if(bodyColor && bodyColor !== '#ffffff'){
-            fabCanvas.setBackgroundColor(bodyColor, fabCanvas.renderAll.bind(fabCanvas));
-          } else {
-            fabCanvas.renderAll();
-          }
+          // ★ 2026-05-19: ボディ色は 白でも 常に設定
+          const _bg = (bodyColor && bodyColor.startsWith && bodyColor.startsWith('#')) ? bodyColor : '#ffffff';
+          fabCanvas.setBackgroundColor(_bg, fabCanvas.renderAll.bind(fabCanvas));
           window.CANVAS_BASE_W = canvSize.w;
           window.CANVAS_BASE_H = canvSize.h;
           try { if(typeof zoomFit === 'function') zoomFit(); } catch(_){}
@@ -4000,9 +3998,9 @@ function _customerLoadPngFullCanvas(designUrl, targetW, targetH, bgColor){
     window.CANVAS_BASE_W = targetW;
     window.CANVAS_BASE_H = targetH;
     fabCanvas.setDimensions({ width: targetW, height: targetH });
-    if(bgColor && bgColor.startsWith && bgColor.startsWith('#') && bgColor !== '#ffffff'){
-      fabCanvas.setBackgroundColor(bgColor, fabCanvas.renderAll.bind(fabCanvas));
-    }
+    // ★ 2026-05-19: ボディ色は 白でも 常に設定 (前回 「!== #ffffff」 条件で 抜け落ちてた)
+    const _bg = (bgColor && bgColor.startsWith && bgColor.startsWith('#')) ? bgColor : '#ffffff';
+    fabCanvas.setBackgroundColor(_bg, fabCanvas.renderAll.bind(fabCanvas));
   } catch(e){ console.warn('[custReview v10] setDimensions fail:', e); }
   // ★ Step 2: 既存オブジェクト全削除
   try {
