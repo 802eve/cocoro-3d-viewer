@@ -3300,7 +3300,27 @@ async function _initCustomerReviewMode(){
     // ★ 修正モードで使う target dims を保存 (let が他処理で上書きされても 大丈夫なように)
     window._customerReviewCanvSize = { w: canvSize.w, h: canvSize.h };
     // ボディ色 (背景プレビュー用)
-    const bodyColor = (item.firstColor && (item.firstColor.colorHex || item.firstColor.hex)) || '#ffffff';
+    // ★ 2026-05-19: 古い注文で colorHex 欠落時は カラー名 → hex のマップでフォールバック
+    const _COLOR_NAME_HEX_MAP = {
+      'ホワイト':'#ffffff','オフホワイト':'#f5f1e8','アイボリー':'#f5e8c8',
+      'ブラック':'#000000','スモークブラック':'#1a1a1a',
+      '杢グレー':'#9e9e9e','グレー':'#9e9e9e','ダークグレー':'#555555','チャコール':'#3a3a3a',
+      'レッド':'#d4242a','ブライトレッド':'#e6232a','バーガンディ':'#5a1620',
+      'ピンク':'#ec8aa4','ライトピンク':'#f7c2d0','ホットピンク':'#e84580','フラミンゴピンク':'#f47c8c',
+      'パープル':'#7a3aa3','バイオレット':'#623898',
+      'オレンジ':'#e87018','イエロー':'#ecc524','カナリアイエロー':'#f0d428','デイジー':'#f0c424','ライトイエロー':'#f6e798',
+      'ライトグリーン':'#9bc24a','グリーン':'#2e9a48','ミントグリーン':'#74cba0','アーミーグリーン':'#4a5532','ケリーグリーン':'#1f7a3d','アイビーグリーン':'#3a5e2f',
+      'ネイビー':'#1a2b50','ディープネイビー':'#0e1a36','ジャパンブルー':'#1a3a6e',
+      'ロイヤルブルー':'#1f4ba8','ブルー':'#2e5bb8','ターコイズ':'#22a8b8','オーシャンブルー':'#1a6a9e','メトロブルー':'#264e80','ライトブルー':'#8fc4e4',
+      'オートミール':'#dccfa5','ライトベージュ':'#e2cca8',
+    };
+    let _bodyColor = (item.firstColor && (item.firstColor.colorHex || item.firstColor.hex)) || '';
+    if(!_bodyColor || _bodyColor === '#ffffff'){
+      const _nm = (item.firstColor && (item.firstColor.colorName || item.firstColor.name)) || '';
+      if(_nm && _COLOR_NAME_HEX_MAP[_nm]) _bodyColor = _COLOR_NAME_HEX_MAP[_nm];
+    }
+    if(!_bodyColor) _bodyColor = '#ffffff';
+    const bodyColor = _bodyColor;
     // ★ 2026-05-14 v11.3: FORM_CONTEXT に category/location/method 反映 → 3D 確認ボタンが正しいモデル/箇所を出す
     try {
       FORM_CONTEXT.cat      = item.category || '';
