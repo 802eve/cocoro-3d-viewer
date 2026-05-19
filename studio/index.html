@@ -3573,14 +3573,47 @@ async function _customerStartEdit(){
       // PNG しかない → JSON 優先で復元 (位置完全一致)、 無ければ SVG fallback
       const targetPrint = window._customerReviewTargetPrint || null;
       let loaded = false;
+      // ★ 2026-05-19: ロード成功時は 既存の PNG スナップショットを削除 (JSON/SVG の上に重なるのを防ぐ)
+      const _removePngSnapshot = () => {
+        try {
+          const _objs = window.fabCanvas ? fabCanvas.getObjects().slice() : [];
+          _objs.forEach(o => { if(o._isCustomerReviewSnapshot) fabCanvas.remove(o); });
+          fabCanvas.renderAll();
+        } catch(_){}
+      };
       if(targetPrint && targetPrint.designJsonDriveId){
         loaded = await _custReviewLoadJsonParts(targetPrint.designJsonDriveId);
+        if(loaded) _removePngSnapshot();
       }
       if(!loaded && targetPrint && targetPrint.designSvgDriveId){
         loaded = await _custReviewLoadSvgParts(targetPrint.designSvgDriveId);
+        if(loaded) _removePngSnapshot();
       }
       if(!loaded){
-        alert('修正用のデザインデータが見つかりません。 ココロ工房にご連絡ください。');
+        // ★ 2026-05-19: 最終 fallback — JSON/SVG 無し → 既存 PNG を編集可能化 (移動/回転/拡縮)
+        try {
+          const _objs = window.fabCanvas ? fabCanvas.getObjects() : [];
+          let _png = null;
+          _objs.forEach(o => {
+            if(o._isCustomerReviewSnapshot){
+              o.selectable = true;
+              o.evented = true;
+              o.hoverCursor = 'move';
+              delete o._isCustomerReviewSnapshot;
+              o._partType = 'image';
+              o._partLabel = '元デザイン';
+              _png = o;
+            }
+          });
+          if(_png){
+            fabCanvas.renderAll();
+            loaded = true;
+            console.warn('[customerStartEdit] JSON/SVG not available, fallback to PNG-edit mode');
+          }
+        } catch(fallbackErr){ console.warn('[customerStartEdit] png fallback fail:', fallbackErr); }
+        if(!loaded){
+          alert('修正用のデザインデータが見つかりません。 ココロ工房にご連絡ください。');
+        }
       }
     }
     // 念のため アクティブ選択をクリア (PNG が active のままだと ハンドルが残る)
