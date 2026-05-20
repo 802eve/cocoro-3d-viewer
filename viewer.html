@@ -229,10 +229,13 @@ function _3d_goBackFallback(){
 <div id="adjustOverlay" class="adjust-overlay">
   <div class="adjust-msg">
     <span class="adjust-icon">✥</span>
-    <span class="adjust-text">プリント位置を調整中</span>
-    <span class="adjust-hint">ドラッグで移動</span>
+    <span class="adjust-text" id="adjustText">プリント位置を調整中</span>
+    <span class="adjust-hint" id="adjustHint">ドラッグで移動</span>
   </div>
   <div class="adjust-actions">
+    <button class="adjust-btn adjust-mode" id="adjustModeToggle" type="button" title="位置調整 / 回転 を切り替え">🔄 回転モード</button>
+    <button class="adjust-btn adjust-prev" id="adjustPrintPrev" type="button" title="前のプリント">◀ 前</button>
+    <button class="adjust-btn adjust-next" id="adjustPrintNext" type="button" title="次のプリント">次 ▶</button>
     <button class="adjust-btn adjust-reset" id="adjustReset" type="button">中央に戻す</button>
     <button class="adjust-btn adjust-done" id="adjustDone" type="button">完了</button>
   </div>
@@ -1951,9 +1954,12 @@ let _adjustStartXY = null;    // pointerdown 時の screen 座標
 let _adjustBaseOffset = null; // pointerdown 時点の offset
 const _ADJUST_SENSITIVITY = 280;  // 画面 280px ドラッグ で offset 1.0 (適度な操作感)
 
+let _adjustRotateMode = false;  // ② 回転モード切替: true = ドラッグで OrbitControls 回転
+
 function _enterAdjustMode(area){
   if(!area) return;
   _adjustArea = area;
+  _adjustRotateMode = false;
   controls.enabled = false;
   controls.autoRotate = false;
   document.body.classList.add('adjusting');
@@ -1962,6 +1968,53 @@ function _enterAdjustMode(area){
   // 該当 print の現在 offset を初期値として記録
   const p = state.prints.find(p => p.area === area);
   _adjustBaseOffset = p ? { x: p.offsetX || 0, y: p.offsetY || 0 } : { x:0, y:0 };
+  _updateAdjustOverlayText();
+}
+function _updateAdjustOverlayText(){
+  const txt = document.getElementById('adjustText');
+  const hint = document.getElementById('adjustHint');
+  const tog = document.getElementById('adjustModeToggle');
+  const prints = (state.prints || []).slice();
+  const idx = prints.findIndex(p => p.area === _adjustArea);
+  const totalPrints = prints.length;
+  const areaLabel = {
+    front_center:'前面', back_center:'背中', left_chest:'左胸', right_chest:'右胸',
+    left_sleeve:'左袖', right_sleeve:'右袖',
+    left_sleeve_full:'左袖いっぱい', right_sleeve_full:'右袖いっぱい',
+    left_sleeve_cuff:'左袖先', right_sleeve_cuff:'右袖先',
+    back_upper:'襟下', front_hem:'前裾', back_hem:'背中裾',
+  }[_adjustArea] || _adjustArea;
+  if(txt){
+    if(totalPrints > 1){
+      txt.textContent = '【プリント' + (idx >= 0 ? (idx+1) : '?') + '/' + totalPrints + '】 ' + areaLabel + ' 調整中';
+    } else {
+      txt.textContent = areaLabel + ' を調整中';
+    }
+  }
+  if(hint){
+    hint.textContent = _adjustRotateMode ? '🔄 ドラッグで Tシャツを回転' : '✥ ドラッグでプリント位置を移動';
+  }
+  if(tog){
+    tog.textContent = _adjustRotateMode ? '✥ 位置調整に戻す' : '🔄 回転モード';
+  }
+}
+function _toggleAdjustRotateMode(){
+  _adjustRotateMode = !_adjustRotateMode;
+  controls.enabled = _adjustRotateMode;
+  _updateAdjustOverlayText();
+}
+function _adjustSwitchPrint(delta){
+  const prints = (state.prints || []).slice();
+  if(prints.length < 2) return;
+  let idx = prints.findIndex(p => p.area === _adjustArea);
+  if(idx < 0) idx = 0;
+  let next = (idx + delta + prints.length) % prints.length;
+  _adjustArea = prints[next].area;
+  const p = prints[next];
+  _adjustBaseOffset = p ? { x: p.offsetX || 0, y: p.offsetY || 0 } : { x:0, y:0 };
+  _updateAdjustOverlayText();
+  // 回転して 該当プリントに視点を 向ける
+  try { _focusToArea && _focusToArea(_adjustArea); } catch(_){}
 }
 function _exitAdjustMode(){
   _adjustArea = null;
@@ -1997,6 +2050,11 @@ function _recolorImageSync(img, fromHexes, toHexes){
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth || img.width;
     canvas.height = img.naturalHeight || img.height;
+    // ★ drawPrint が naturalWidth/Height を 読むので canvas に も付与しておく
+    try {
+      Object.defineProperty(canvas, 'naturalWidth', { value: canvas.width, configurable: true });
+      Object.defineProperty(canvas, 'naturalHeight', { value: canvas.height, configurable: true });
+    } catch(_){}
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
     const fromRGB = (fromHexes || []).map(_parseHex2RGB).filter(Boolean);
@@ -2121,6 +2179,7 @@ function _bindAdjustDrag(){
   if(!el) return;
   const onDown = (e) => {
     if(!_adjustArea) return;
+    if(_adjustRotateMode) return; // 回転モード時は OrbitControls に任せる
     _adjustDragging = true;
     document.body.classList.add('dragging');
     _adjustStartXY = { x: e.clientX, y: e.clientY };
@@ -2129,6 +2188,7 @@ function _bindAdjustDrag(){
     e.preventDefault();
   };
   const onMove = (e) => {
+    if(_adjustRotateMode) return;
     if(!_adjustArea || !_adjustDragging || !_adjustStartXY) return;
     // 画面ドラッグ量 → offset 変位
     // X: 画面右ドラッグ = +offsetX (テクスチャ右へ)
@@ -2161,8 +2221,14 @@ _bindAdjustDrag();
 document.addEventListener('DOMContentLoaded', () => {
   const btnDone  = document.getElementById('adjustDone');
   const btnReset = document.getElementById('adjustReset');
+  const btnMode  = document.getElementById('adjustModeToggle');
+  const btnPrev  = document.getElementById('adjustPrintPrev');
+  const btnNext  = document.getElementById('adjustPrintNext');
   if(btnDone)  btnDone.addEventListener('click',  _exitAdjustMode);
   if(btnReset) btnReset.addEventListener('click', _adjustResetCurrent);
+  if(btnMode)  btnMode.addEventListener('click', _toggleAdjustRotateMode);
+  if(btnPrev)  btnPrev.addEventListener('click', () => _adjustSwitchPrint(-1));
+  if(btnNext)  btnNext.addEventListener('click', () => _adjustSwitchPrint(+1));
 });
 
 addEventListener('resize', () => {
