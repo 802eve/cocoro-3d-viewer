@@ -2158,6 +2158,15 @@ async function _switchToColor(newIdx){
   applyState();
 }
 function _notifyOffsetToParent(area, offsetX, offsetY){
+  // ★ 2026-05-21: viewer 内の _viewerLastCfg にも 書き戻し → 色切替時に 新位置を維持
+  try {
+    if(window._viewerLastCfg && Array.isArray(window._viewerLastCfg.prints)){
+      const tgt = window._viewerLastCfg.prints.find(pp => pp.area === area);
+      if(tgt){ tgt.offsetX = offsetX; tgt.offsetY = offsetY; }
+    }
+  } catch(_){}
+  // ★ viewer 内の 小さな 保存ステータス インジケータ (ユーザーが視認できるように)
+  try { _showSaveStatus('💾 保存中...'); } catch(_){}
   try {
     // iframe 親 (form) 用
     parent.postMessage({ type:'tshirt3d-offset', area, offsetX, offsetY }, '*');
@@ -2171,6 +2180,28 @@ function _notifyOffsetToParent(area, offsetX, offsetY){
       window.opener.postMessage({ type:'adjustOffsetSave', area, x: offsetX, y: offsetY, orderId, itemIdx }, '*');
     }
   } catch(e){}
+}
+// ★ viewer 内 保存ステータス インジケータ
+let _saveStatusTimer = null;
+function _showSaveStatus(msg, persistent){
+  let el = document.getElementById('viewerSaveStatus');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'viewerSaveStatus';
+    el.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);color:#fff;padding:8px 18px;border-radius:24px;font-size:12px;font-weight:700;letter-spacing:.05em;z-index:99998;box-shadow:0 4px 18px rgba(0,0,0,.3);font-family:sans-serif;display:none;animation:_savePulse 1.2s ease-in-out infinite;';
+    el.innerHTML = '<style>@keyframes _savePulse{0%,100%{opacity:.9}50%{opacity:1}}</style>';
+    document.body.appendChild(el);
+  }
+  el.lastChild.textContent = msg;
+  el.style.display = 'block';
+  if(_saveStatusTimer) clearTimeout(_saveStatusTimer);
+  if(!persistent){
+    _saveStatusTimer = setTimeout(() => {
+      el.lastChild.textContent = '✓ 保存しました (全カラー共通)';
+      el.style.background = 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)';
+      _saveStatusTimer = setTimeout(() => { el.style.display = 'none'; el.style.background = 'linear-gradient(135deg,#22c55e 0%,#16a34a 100%)'; }, 1500);
+    }, 1300);
+  }
 }
 
 // canvas (renderer.domElement) のドラッグハンドラ
