@@ -1505,6 +1505,11 @@ function loadInputConfig() {
   const cfgParam = params.get('cfg');
   if (cfgParam) {
     _loadConfigFromUrl(cfgParam, isDemo);
+    // ② 2026-05-20: URL パラメーターで adjustMode を受け取って自動起動
+    const adjArea = params.get('adjustArea');
+    if(params.get('adjustMode') === '1' && adjArea){
+      setTimeout(() => { try { _enterAdjustMode(adjArea); } catch(e){ console.warn(e); } }, 1500);
+    }
     return;
   }
 
@@ -1966,7 +1971,17 @@ function _adjustResetCurrent(){
 }
 function _notifyOffsetToParent(area, offsetX, offsetY){
   try {
+    // iframe 親 (form) 用
     parent.postMessage({ type:'tshirt3d-offset', area, offsetX, offsetY }, '*');
+  } catch(e){}
+  try {
+    // popup window opener (社内 platform_ui) 用
+    if(window.opener && !window.opener.closed){
+      const p = new URLSearchParams(location.search);
+      const orderId = p.get('orderId') || '';
+      const itemIdx = parseInt(p.get('itemIdx') || '0', 10);
+      window.opener.postMessage({ type:'adjustOffsetSave', area, x: offsetX, y: offsetY, orderId, itemIdx }, '*');
+    }
   } catch(e){}
 }
 
