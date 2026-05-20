@@ -1783,6 +1783,13 @@ function _loadViaJsonp(orderId, applyFn, onFailCallback){
 }
 
 async function applyExternalConfig(cfg) {
+  // ① 色切替 UI: cfg.allColors があれば 保存しておく
+  if (Array.isArray(cfg.allColors) && cfg.allColors.length){
+    window._viewerAllColors = cfg.allColors;
+    window._viewerCurrentColorIdx = (typeof cfg.currentColorIdx === 'number') ? cfg.currentColorIdx : 0;
+    window._viewerLastCfg = cfg;
+    _renderColorSwitcher();
+  }
   if (cfg.bodyColor) {
     state.bodyColor = cfg.bodyColor;
     document.getElementById('shirtColor').value = cfg.bodyColor;
@@ -1968,6 +1975,68 @@ function _adjustResetCurrent(){
     applyState();
     _notifyOffsetToParent(_adjustArea, 0, 0);
   }
+}
+// ① ビューワー内 ボディ色切替 UI
+function _renderColorSwitcher(){
+  const colors = window._viewerAllColors || [];
+  if(!Array.isArray(colors) || colors.length < 2) return;
+  let panel = document.getElementById('viewerColorSwitcher');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'viewerColorSwitcher';
+    panel.style.cssText = 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:rgba(0,0,0,.78);backdrop-filter:blur(8px);border-radius:14px;padding:8px 12px;display:flex;align-items:center;gap:8px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.4);font-family:sans-serif;color:#fff;flex-wrap:wrap;max-width:90vw;';
+    document.body.appendChild(panel);
+  }
+  const curIdx = window._viewerCurrentColorIdx || 0;
+  panel.innerHTML = '<span style="font-size:11px;font-weight:700;color:#ddd;margin-right:4px;">👕 ボディ色:</span>' + colors.map(function(c, i){
+    const sel = (i === curIdx);
+    const isLight = function(hex){
+      const h = (hex||'').replace('#','');
+      if(h.length !== 6) return false;
+      const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+      return (r*0.299 + g*0.587 + b*0.114) > 170;
+    }(c.hex);
+    return '<button type="button" data-cidx="' + i + '" title="' + (c.name||'') + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:4px;background:' + (sel?'rgba(255,255,255,.15)':'transparent') + ';border:' + (sel?'2px solid #fff':'2px solid transparent') + ';border-radius:8px;cursor:pointer;transition:.15s;">'
+      + '<div style="width:30px;height:30px;border-radius:50%;background:' + c.hex + ';border:1px solid ' + (isLight?'#999':'rgba(255,255,255,.3)') + ';"></div>'
+      + '<div style="font-size:9px;color:#eee;white-space:nowrap;max-width:54px;overflow:hidden;text-overflow:ellipsis;">' + (c.name||'') + '</div>'
+      + '</button>';
+  }).join('');
+  panel.querySelectorAll('button[data-cidx]').forEach(function(b){
+    b.addEventListener('click', function(){
+      const ni = parseInt(b.dataset.cidx, 10);
+      _switchToColor(ni);
+    });
+  });
+}
+async function _switchToColor(newIdx){
+  const colors = window._viewerAllColors || [];
+  if(newIdx < 0 || newIdx >= colors.length) return;
+  window._viewerCurrentColorIdx = newIdx;
+  const target = colors[newIdx];
+  state.bodyColor = target.hex || '#ffffff';
+  const sc = document.getElementById('shirtColor'); if(sc) sc.value = state.bodyColor;
+  // ② inkOverrides を 該当カラーの prints に反映 (要 再ロード)
+  const lastCfg = window._viewerLastCfg || {};
+  if(Array.isArray(lastCfg.prints)){
+    // prints を 再構築: inkColorNames を target.inkOverrides で 上書き
+    const ovrByIdx = target.inkOverrides || {};
+    state.prints = [];
+    for(let i = 0; i < lastCfg.prints.length; i++){
+      const p = lastCfg.prints[i];
+      const img = await loadImage(p.imageDataUrl || p.image || p.url);
+      const inkColorNames = Array.isArray(ovrByIdx[i]) ? ovrByIdx[i].filter(Boolean) : (p.inkColorNames || []);
+      state.prints.push({
+        id: Date.now() + i,
+        area: p.area, method: p.method, size: p.size, image: img,
+        rotated: !!p.rotated,
+        offsetX: (typeof p.offsetX === 'number') ? p.offsetX : 0,
+        offsetY: (typeof p.offsetY === 'number') ? p.offsetY : 0,
+        inkColorNames: inkColorNames,
+      });
+    }
+  }
+  _renderColorSwitcher();
+  applyState();
 }
 function _notifyOffsetToParent(area, offsetX, offsetY){
   try {
