@@ -6436,11 +6436,58 @@ function openPrintStudio(area){
 }
 
 /* ============================================================
+   ★ 2026-05-23: 画像 自動圧縮 (Canvas API)
+   - 1500px max + JPEG/PNG quality 0.92
+   - studioImage が 3-5MB → 300-500KB に
+   - GAS Service Worker (warden_bin) の ~2.5MB ペイロード上限 対策
+   ============================================================ */
+function _compressImageDataUrl(dataUrl, opts){
+  opts = opts || {};
+  const MAX_W = opts.maxWidth || 1500;
+  const QUALITY = opts.quality || 0.92;
+  return new Promise(function(resolve){
+    try {
+      if(!dataUrl || typeof dataUrl !== 'string' || dataUrl.indexOf('data:image/') !== 0){
+        resolve({ dataUrl: dataUrl, compressed: false });
+        return;
+      }
+      var img = new Image();
+      img.onload = function(){
+        var w = img.naturalWidth || img.width;
+        var h = img.naturalHeight || img.height;
+        var needResize = w > MAX_W;
+        if(needResize){
+          var ratio = MAX_W / w;
+          w = MAX_W;
+          h = Math.round(h * ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+        var isPng = dataUrl.indexOf('data:image/png') === 0;
+        var outType = isPng ? 'image/png' : 'image/jpeg';
+        var newDataUrl = canvas.toDataURL(outType, QUALITY);
+        if(newDataUrl.length >= dataUrl.length * 0.95){
+          resolve({ dataUrl: dataUrl, compressed: false, width: w, height: h });
+          return;
+        }
+        resolve({ dataUrl: newDataUrl, compressed: true, width: w, height: h, origLen: dataUrl.length, newLen: newDataUrl.length, outType: outType });
+      };
+      img.onerror = function(){ resolve({ dataUrl: dataUrl, compressed: false }); };
+      img.src = dataUrl;
+    } catch(e){ resolve({ dataUrl: dataUrl, compressed: false }); }
+  });
+}
+
+/* ============================================================
    デザインスタジオ → 3D反映（localStorage 経由・v12 互換）
    ============================================================ */
-function checkDesignToolData(){
+async function checkDesignToolData(){
   try {
-    const data = localStorage.getItem('cocoro_design_data');
+    let data = localStorage.getItem('cocoro_design_data');
     const ts   = localStorage.getItem('cocoro_design_timestamp');
     if(!data || !ts) return;
     // 30分超過は破棄
@@ -6453,6 +6500,20 @@ function checkDesignToolData(){
     const usageRaw   = localStorage.getItem('cocoro_design_usage') || '';
     const svgRaw     = localStorage.getItem('cocoro_design_svg') || '';   // ★ 2026-04-28: SVG を取得
     if(!targetArea){ _clearStudioKeys(); return; }
+    // ★ 2026-05-23: studioImage を 自動圧縮 (1500px max + quality 0.92)
+    //   スタジオは 4000px の高解像度を返すため、 GAS 送信時 413 PAYLOAD_TOO_LARGE 回避
+    //   印刷品質: Tシャツプリント実物 max 15cm @ 300DPI ≒ 1770px なので 1500px で 問題なし
+    try {
+      if(data && data.length > 200 * 1024){
+        const _comp = await _compressImageDataUrl(data);
+        if(_comp && _comp.compressed){
+          const _origKB = Math.round(data.length * 0.75 / 1024);
+          const _newKB = Math.round(_comp.dataUrl.length * 0.75 / 1024);
+          console.log('[compress] studio PNG: ' + _origKB + 'KB → ' + _newKB + 'KB');
+          data = _comp.dataUrl;
+        }
+      }
+    } catch(compErr){ console.warn('[compress] fail', compErr); }
 
     // ★ 2026-04-26: スタジオの内容を「絶対的に」反映する
     //   - 該当 area を持つ全ラインの studioImage を更新 (親以外の reuse 子も最新化)
@@ -7752,13 +7813,102 @@ async function doSubmit(){
   try {
     if(cta){ cta.disabled = true; cta.textContent = '送信中...'; cta.style.opacity = '.7'; }
     _showSubmitLoader();
+    // ★ 2026-05-23: doSubmit 時にも 全 studioImage を 圧縮 (古い snapshot 復元時の保険)
+    //   既に 1500px に圧縮済みなら toDataURL のサイズが ほぼ同じ → スキップで no-op
+    try {
+      for(const ln of (state.lines || [])){
+        if(!ln.printDesigns) continue;
+        for(const area in ln.printDesigns){
+          const d = ln.printDesigns[area];
+          if(d && d.studioImage && d.studioImage.length > 200 * 1024){
+            const _comp = await _compressImageDataUrl(d.studioImage);
+            if(_comp && _comp.compressed){
+              d.studioImage = _comp.dataUrl;
+            }
+          }
+        }
+      }
+    } catch(preErr){ console.warn('[doSubmit] pre-compress fail', preErr); }
     const est = calcEstimate();
     const data = buildSubmitPayload(est);
-    const res = await fetch(GAS_SUBMIT_ENDPOINT, {
+    // ★ 2026-05-23: ペイロード集計 — 2.5MB 超なら 分割アップロード (uploadDesignChunk) を使う
+    let _designBytes = 0;
+    (data.items || []).forEach(it => (it.prints || []).forEach(p => {
+      const uf = p.uploadFiles || {};
+      ['complete','adjust','design'].forEach(cat => {
+        (uf[cat] || []).forEach(f => { _designBytes += (f.base64 || '').length; });
+      });
+    }));
+    const _PAYLOAD_LIMIT = 2.5 * 1024 * 1024;
+    if(_designBytes > _PAYLOAD_LIMIT){
+      // 分割アップロード モード
+      let totalFiles = 0, uploaded = 0, failed = 0;
+      const failNames = [];
+      (data.items || []).forEach(it => (it.prints || []).forEach(p => {
+        const uf = p.uploadFiles || {};
+        ['complete','adjust','design'].forEach(cat => {
+          (uf[cat] || []).forEach(f => { if(f.base64) totalFiles++; });
+        });
+      }));
+      const sessionTag = 'cust' + Date.now().toString(36);
+      for(const it of (data.items || [])){
+        for(const p of (it.prints || [])){
+          const uf = p.uploadFiles || {};
+          for(const cat of ['complete','adjust','design']){
+            const arr = uf[cat] || [];
+            const newArr = [];
+            for(const f of arr){
+              if(!f.base64){ newArr.push(f); continue; }
+              if(cta){ cta.textContent = '📤 アップロード中 ' + uploaded + '/' + totalFiles + '...'; }
+              try {
+                const cr = await fetch(GAS_SUBMIT_ENDPOINT, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'text/plain' },
+                  body: JSON.stringify({ action: 'uploadDesignChunk', payload: {
+                    name: f.name, type: f.type, b64: f.base64, sessionTag: sessionTag,
+                  }}),
+                });
+                const cj = await cr.json();
+                if(cj && cj.success && cj.driveId){
+                  newArr.push({ name: f.name, type: f.type, driveId: cj.driveId });
+                  uploaded++;
+                } else {
+                  failed++; failNames.push(f.name);
+                  console.warn('[chunk] fail', f.name, cj);
+                }
+              } catch(chunkErr){
+                failed++; failNames.push(f.name);
+                console.warn('[chunk] err', f.name, chunkErr);
+              }
+            }
+            uf[cat] = newArr;
+          }
+        }
+      }
+      if(failed > 0){
+        const proceed = confirm('⚠ ' + failed + ' / ' + totalFiles + ' ファイルのアップロードに失敗しました:\n' + failNames.slice(0,5).join(', ') + (failNames.length > 5 ? '...' : '') + '\n\n見積本体だけ 送信しますか?');
+        if(!proceed){
+          if(cta){ cta.disabled = false; cta.textContent = origText || 'この内容で見積を送信 ▶'; cta.style.opacity = ''; }
+          _hideSubmitLoader(true);
+          return;
+        }
+      }
+      if(cta){ cta.textContent = '送信中... (' + uploaded + ' ファイル添付済)'; }
+    }
+    // ★ 2026-05-23: 60秒タイムアウト + 適切なエラー処理
+    const _fetchCall = fetch(GAS_SUBMIT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },  // CORS preflight 回避
       body: JSON.stringify({ action: 'submitOrder', data }),
     });
+    const _timeout = new Promise((resolve) => setTimeout(() => resolve('__TIMEOUT__'), 60 * 1000));
+    const res = await Promise.race([_fetchCall, _timeout]);
+    if(res === '__TIMEOUT__'){
+      _hideSubmitLoader(true);
+      alert('⚠ 送信が 60秒以内に完了しませんでした。\n\n考えられる原因:\n・ペイロード過大\n・ネットワーク不通\n・GAS タイムアウト\n\nもう一度お試しください。');
+      if(cta){ cta.disabled = false; cta.textContent = origText || 'この内容で見積を送信 ▶'; cta.style.opacity = ''; }
+      return;
+    }
     const json = await res.json();
     if(json && json.success && json.orderId){
       // ★ 社内プラットフォーム GAS にも構造化 JSON を送信（二重保険）
