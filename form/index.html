@@ -6544,7 +6544,32 @@ function checkDesignToolData(){
       d.studioImage = data;
       d.studioSvg   = svgRaw || '';                     // ★ 2026-04-28: SVG ベクター版を保持
       d.studioOriginalHexes = parsedUsageHexes || [];   // ★ 元色 hex を保存 (色替え時に置換するため)
-      if(designSize) d.size = designSize;
+      // ★ 2026-05-23 v266: Studio が返した サイズ は 加工箇所の許可サイズ内 でのみ適用
+      //   背景: 左胸 で Studio 起動 → Studio で 34cm キャンバスに変更 → 戻り時 d.size='34cm角内' になり
+      //         左胸 (許可は 5/10/15cm角内 のみ) で 34cm が 不正に確定する 問題
+      //   修正: getAllowedSizeKeys() で 検証 → 許可外なら 既存 d.size を 維持 (or 最大許可サイズに丸める)
+      if(designSize){
+        try {
+          const _locObj = PRINT_LOCATIONS.find(p => p.area === targetArea);
+          const _locName = _locObj ? _locObj.name : '';
+          const _cat = ln.categoryKey || (ln.category && ln.category.key) || '';
+          if(typeof getAllowedSizeKeys === 'function' && _locName && d.method){
+            const _allowed = getAllowedSizeKeys(d.method, _locName, _cat);
+            if(_allowed.includes(designSize)){
+              d.size = designSize;
+            } else if(!d.size && _allowed.length){
+              // 既存 size が無く Studio サイズも不正なら 最大許可サイズ (末尾) に丸める
+              d.size = _allowed[_allowed.length - 1];
+            }
+            // 既存 d.size 有りで Studio サイズ 不正 → 何もしない (既存維持)
+          } else {
+            d.size = designSize;
+          }
+        } catch(sizeErr){
+          console.warn('[checkDesignToolData] size validation fail', sizeErr);
+          d.size = designSize;
+        }
+      }
       if(parsedUsageIds && parsedUsageIds.length){
         d.inkSlots = parsedUsageIds.slice();
         if(d.method === 'シルクスクリーン'){
