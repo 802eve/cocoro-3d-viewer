@@ -7495,9 +7495,66 @@ function renderReview(){
    ★ 2026-04-28: 送信処理 (v12 互換・GAS 受注スプレッドシート連携)
    ============================================================ */
 // state.lines を v12 互換 items 配列に変換
+// ★ 2026-05-23 v263: 色違い (reuse:N) ライン を 親アイテム の colors[] に inkOverrides 付きで マージ
+//   背景: 従来は 各ラインを 個別 item として 送信 → 指示書 / 注文詳細 が 別オーダーとして 認識
+//         → 色違いの インク差分が 表示されない、 colorChangeCost も 加算されない
+//   修正: reuse ラインを 親 item の colors[] に 追加 (inkOverrides[String(pi)] = 上書きインク名)
+//         instruction sheet (parseInt(k, 10) で printIdx 解釈) と 整合
 function buildSubmitItems(){
-  return state.lines.map(l => {
+  // ① 各ライン を 個別 item として build
+  const perLine = state.lines.map((l, idx) => {
     if(!l.product) return null;
+    const item = _buildSubmitItemForLine(l);
+    if(!item) return null;
+    return { item, lineIdx: idx, printSource: l.printSource };
+  }).filter(Boolean);
+  // ② reuse ライン を 親へ マージ
+  const mergeMap = {};  // parentLineIdx → [childEntry]
+  const parents = [];
+  perLine.forEach(entry => {
+    if(entry.printSource && entry.printSource.startsWith('reuse:')){
+      const parentLineIdx = parseInt(entry.printSource.slice(6), 10);
+      if(!isNaN(parentLineIdx)){
+        if(!mergeMap[parentLineIdx]) mergeMap[parentLineIdx] = [];
+        mergeMap[parentLineIdx].push(entry);
+        return;
+      }
+    }
+    parents.push(entry);
+  });
+  parents.forEach(parent => {
+    const children = mergeMap[parent.lineIdx] || [];
+    children.forEach(child => {
+      // child の prints[i].inkColors と parent の prints[i].inkColors を比較
+      // 差分があるスロットだけ inkOverrides[String(pi)] に格納
+      const inkOverrides = {};
+      (child.item.prints || []).forEach((cp, pi) => {
+        const pp = (parent.item.prints || [])[pi];
+        if(!pp) return;
+        const baseInks = pp.inkColors || [];
+        const childInks = cp.inkColors || [];
+        const different = childInks.length !== baseInks.length
+          || childInks.some((ink, i) => ink !== baseInks[i]);
+        if(different && childInks.length){
+          inkOverrides[String(pi)] = childInks.slice();
+        }
+      });
+      const childColor = (child.item.colors || [])[0] || {};
+      parent.item.colors.push({
+        colorName: childColor.colorName || '',
+        colorHex:  childColor.colorHex  || '',
+        totalQty:  childColor.totalQty  || 0,
+        sizes:     childColor.sizes     || {},
+        inkOverrides: Object.keys(inkOverrides).length ? inkOverrides : null,
+      });
+    });
+  });
+  return parents.map(p => p.item);
+}
+
+// 1 ライン → 1 item を 単体生成 (旧 buildSubmitItems の中身そのまま)
+function _buildSubmitItemForLine(l){
+  if(!l.product) return null;
     const eff = effectivePrints(l);  // reuse 解決
     let totalQty = 0;
     Object.values(l.qtyBySize || {}).forEach(n => { totalQty += Number(n) || 0; });
@@ -7594,7 +7651,6 @@ function buildSubmitItems(){
       colors,
       prints,
     };
-  }).filter(Boolean);
 }
 
 // state を v12 互換 payload に変換
