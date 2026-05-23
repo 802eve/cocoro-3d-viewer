@@ -6485,9 +6485,9 @@ function _compressImageDataUrl(dataUrl, opts){
 /* ============================================================
    デザインスタジオ → 3D反映（localStorage 経由・v12 互換）
    ============================================================ */
-async function checkDesignToolData(){
+function checkDesignToolData(){
   try {
-    let data = localStorage.getItem('cocoro_design_data');
+    const data = localStorage.getItem('cocoro_design_data');
     const ts   = localStorage.getItem('cocoro_design_timestamp');
     if(!data || !ts) return;
     // 30分超過は破棄
@@ -6500,20 +6500,8 @@ async function checkDesignToolData(){
     const usageRaw   = localStorage.getItem('cocoro_design_usage') || '';
     const svgRaw     = localStorage.getItem('cocoro_design_svg') || '';   // ★ 2026-04-28: SVG を取得
     if(!targetArea){ _clearStudioKeys(); return; }
-    // ★ 2026-05-23: studioImage を 自動圧縮 (1500px max + quality 0.92)
-    //   スタジオは 4000px の高解像度を返すため、 GAS 送信時 413 PAYLOAD_TOO_LARGE 回避
-    //   印刷品質: Tシャツプリント実物 max 15cm @ 300DPI ≒ 1770px なので 1500px で 問題なし
-    try {
-      if(data && data.length > 200 * 1024){
-        const _comp = await _compressImageDataUrl(data);
-        if(_comp && _comp.compressed){
-          const _origKB = Math.round(data.length * 0.75 / 1024);
-          const _newKB = Math.round(_comp.dataUrl.length * 0.75 / 1024);
-          console.log('[compress] studio PNG: ' + _origKB + 'KB → ' + _newKB + 'KB');
-          data = _comp.dataUrl;
-        }
-      }
-    } catch(compErr){ console.warn('[compress] fail', compErr); }
+    // ★ 2026-05-23 v2: 圧縮は state 更新 *後* に fire-and-forget で 実行
+    //   理由: await を state 更新前に入れると validation が 古い state で 走って NEXT STEP 無効化される
 
     // ★ 2026-04-26: スタジオの内容を「絶対的に」反映する
     //   - 該当 area を持つ全ラインの studioImage を更新 (親以外の reuse 子も最新化)
@@ -6623,6 +6611,24 @@ async function checkDesignToolData(){
     pushPrintsTo3D();
     renderPrintGrid();
     refreshChrome();
+    // ★ 2026-05-23 v2: 圧縮を fire-and-forget で 実行 (state 更新後 → validation 妨害なし)
+    //   完了したら 該当 studioImage を 圧縮版に 置換
+    if(data && data.length > 200 * 1024){
+      _compressImageDataUrl(data).then(comp => {
+        if(comp && comp.compressed){
+          const origKB = Math.round(data.length * 0.75 / 1024);
+          const newKB  = Math.round(comp.dataUrl.length * 0.75 / 1024);
+          console.log('[compress] studio PNG: ' + origKB + 'KB → ' + newKB + 'KB');
+          // state.lines 内の 該当 studioImage を 置換 (まだ元データのままなら)
+          state.lines.forEach(ln => {
+            if(!ln.printDesigns || !ln.printDesigns[targetArea]) return;
+            const d = ln.printDesigns[targetArea];
+            if(d.studioImage === data) d.studioImage = comp.dataUrl;
+          });
+          pushPrintsTo3D();  // 3D viewer も 圧縮版に切替
+        }
+      }).catch(err => console.warn('[compress] async fail', err));
+    }
   } catch(e){
     console.warn('checkDesignToolData failed', e);
   }
