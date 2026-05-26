@@ -3,7 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<meta name="referrer" content="no-referrer">
 <title>Tシャツ3Dビューア（プロダクション版）</title>
+<script>
+// ★ 2026-05-25 アクセスガード: 直 URL アクセスは form/ へ redirect
+//   有効パラメータ: order, orderId, model, embed, dev, item
+//   iframe 埋め込み時 (parent あり) は ガードを 適用しない
+(function(){
+  try {
+    if(window.self !== window.top) return; // iframe 埋め込みは パススルー
+    var qs = (location.search || '').toLowerCase();
+    var allowed = ['order','orderid','model','embed','dev','item','config'];
+    var hasValid = allowed.some(function(k){ return qs.indexOf(k) >= 0; });
+    if(!hasValid){
+      location.replace('form/');
+    }
+  } catch(e){}
+})();
+</script>
 <style>
   :root {
     --bg: #e8e8e8;
