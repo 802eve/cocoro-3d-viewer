@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="COCORO-KOBO">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<meta name="referrer" content="no-referrer">
+<title>COCORO-KOBO ホーム (内部)</title>
+
+<!-- ★ N3.16.0 2026-05-10: PWA manifest + PNG アイコン -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#0e1116;--bg2:#161b22;--bg3:#1f242c;
+    --bd:#2a313b;--bdH:#3a414b;
+    --t:#e6edf3;--t2:#a8b3bf;--t3:#6e7681;
+    --ac:#f59e0b;--rd:#ef4444;--gn:#10b981;--bl:#3b82f6;--pp:#8b5cf6;--pk:#ec4899;
+    --ff: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN','Hiragino Sans',Meiryo,sans-serif;
+  }
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--t);font:14px/1.5 var(--ff);
+    min-height:100vh;min-height:100dvh;
+    background-image:radial-gradient(ellipse at top,rgba(245,158,11,.07),transparent 60%),radial-gradient(ellipse at bottom,rgba(239,68,68,.05),transparent 50%);
+    overflow-x:hidden;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  /* === ヘッダー === */
+  .hd{
+    padding:max(28px,env(safe-area-inset-top) + 16px) 20px 12px;
+    text-align:center;
+  }
+  .hd-logo{
+    width:72px;height:72px;margin:0 auto 14px;
+    background:var(--bg2);border-radius:20px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px var(--bd);
+  }
+  .hd-logo svg{width:50px;height:50px}
+  .hd-ttl{
+    font-size:22px;font-weight:800;letter-spacing:.16em;
+    background:linear-gradient(135deg,var(--ac),var(--rd));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:4px;
+  }
+  .hd-sub{font-size:11px;color:var(--t3);letter-spacing:.2em}
+  /* === グリッド === */
+  .wrap{
+    padding:18px 14px 32px;max-width:680px;margin:0 auto;
+  }
+  .sec-ttl{font-size:11px;color:var(--t3);letter-spacing:.18em;margin:18px 4px 10px;font-weight:700}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+  }
+  @media(min-width:600px){
+    .grid{grid-template-columns:repeat(3,1fr);gap:14px}
+  }
+  /* === アプリカード === */
+  a.app-card{
+    aspect-ratio:1/1.05;
+    background:var(--bg2);border:1px solid var(--bd);border-radius:18px;
+    padding:16px 12px 14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-decoration:none;color:inherit;
+    cursor:pointer;
+    transition:transform .15s,box-shadow .15s,border-color .15s;
+    position:relative;overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+  }
+  a.app-card:active{transform:scale(.96);border-color:var(--ac)}
+  a.app-card::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,var(--c1),var(--c2));
+    opacity:0;transition:opacity .25s;
+  }
+  a.app-card:hover{border-color:var(--bdH);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  a.app-card:hover::before{opacity:.06}
+  .app-ic{
+    width:54px;height:54px;border-radius:14px;
+    background:linear-gradient(135deg,var(--c1),var(--c2));
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:12px;
+    box-shadow:0 6px 14px rgba(0,0,0,.35);
+    position:relative;z-index:1;
+  }
+  .app-ic svg{width:30px;height:30px;color:#fff;fill:#fff;stroke:#fff}
+  .app-name{
+    font-size:13px;font-weight:700;color:var(--t);text-align:center;
+    margin-bottom:3px;line-height:1.2;
+    position:relative;z-index:1;
+  }
+  .app-desc{
+    font-size:10px;color:var(--t3);text-align:center;line-height:1.3;
+    position:relative;z-index:1;
+  }
+  /* === badge === */
+  .badge{
+    position:absolute;top:8px;right:8px;
+    background:var(--rd);color:#fff;font-size:9px;font-weight:700;
+    padding:2px 6px;border-radius:6px;letter-spacing:.04em;
+    z-index:2;
+  }
+  /* === footer === */
+  .ft{
+    padding:24px 16px;text-align:center;color:var(--t3);font-size:10px;
+  }
+  .ft a{color:var(--t3);text-decoration:none}
+  .ft a:hover{color:var(--t2)}
+  /* ===== Password Gate (Lv2) ===== */
+  #gate{position:fixed;inset:0;z-index:9999;background:#0e1116;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px}
+  #gate-box{max-width:360px;width:100%;background:#161b22;border:1px solid #2a313b;border-radius:14px;padding:32px 28px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  #gate-ttl{font-size:18px;font-weight:800;color:#e6edf3;margin-bottom:6px;letter-spacing:.05em}
+  #gate-sub{font-size:12px;color:#6e7681;margin-bottom:20px}
+  #gate-input{width:100%;padding:12px 14px;background:#0e1116;border:1px solid #2a313b;border-radius:8px;color:#e6edf3;font-size:14px;font-family:inherit;outline:none;text-align:center;letter-spacing:.2em}
+  #gate-input:focus{border-color:#f59e0b}
+  #gate-btn{margin-top:14px;width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.08em}
+  #gate-btn:disabled{opacity:.5;cursor:wait}
+  #gate-err{margin-top:10px;font-size:12px;color:#ef4444;min-height:18px}
+  #main-content{display:none}
+  #main-content.authenticated{display:block}
+</style>
+</head>
+<body>
+
+<!-- ===== Password Gate (Lv2: 2026-05-25) ===== -->
+<div id="gate">
+  <div id="gate-box">
+    <div id="gate-ttl">🔒 社内ランチャー</div>
+    <div id="gate-sub">関係者以外 立入禁止</div>
+    <input id="gate-input" type="password" placeholder="パスワード" autocomplete="off"
+      onkeydown="if(event.key==='Enter')_internalCheckGate()">
+    <button id="gate-btn" onclick="_internalCheckGate()">認証</button>
+    <div id="gate-err"></div>
+  </div>
+</div>
+
+<div id="main-content">
+
+<div class="hd">
+  <div class="hd-logo">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 16 L28 16 C28 19 30 21 32 21 C34 21 36 19 36 16 L42 16 L52 22 L48 30 L43 27 L43 50 C43 51 42 52 41 52 L23 52 C22 52 21 51 21 50 L21 27 L16 30 L12 22 Z" fill="#ef4444"/>
+      <circle cx="26" cy="36" r="2.5" fill="#fff"/>
+      <circle cx="38" cy="36" r="2.5" fill="#fff"/>
+    </svg>
+  </div>
+  <div class="hd-ttl">COCORO-KOBO</div>
+  <div class="hd-sub">ココロ工房</div>
+</div>
+
+<div class="wrap">
+
+  <div class="sec-ttl">▸ お客様向け</div>
+  <div class="grid">
+
+    <!-- お見積りフォーム -->
+    <a class="app-card" href="../form/" style="--c1:#3b82f6;--c2:#06b6d4">
+      <div class="app-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="9" y1="13" x2="15" y2="13"/>
+          <line x1="9" y1="17" x2="13" y2="17"/>
+        </svg>
+      </div>
+      <div class="app-name">お見積りフォーム</div>
+      <div class="app-desc">価格・納期を確認</div>
+    </a>
+
+    <!-- デザインスタジオ -->
+    <a class="app-card" href="../studio/" style="--c1:#8b5cf6;--c2:#ec4899">
+      <div class="app-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/>
+          <circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/>
+          <circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/>
+          <circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125 0-.945.762-1.688 1.688-1.688H16.5c3.04 0 5.5-2.46 5.5-5.5C22 6.04 17.52 2 12 2z"/>
+        </svg>
+      </div>
+      <div class="app-name">デザインスタジオ</div>
+      <div class="app-desc">オリジナルデザイン作成</div>
+    </a>
+
+    <!-- 3D ビューア -->
+    <a class="app-card" href="../viewer.html" style="--c1:#10b981;--c2:#06b6d4">
+      <div class="app-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div class="app-name">3D ビューア</div>
+      <div class="app-desc">仕上がりイメージ確認</div>
+    </a>
+
+  </div>
+
+  <div class="sec-ttl">▸ 社内ツール</div>
+  <div class="grid">
+
+    <!-- 社内プラットフォーム (受注管理) -->
+    <a class="app-card" href="https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec" style="--c1:#f59e0b;--c2:#ef4444">
+      <div class="app-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+      </div>
+      <div class="app-name">社内プラットフォーム</div>
+      <div class="app-desc">受注管理・カンバン</div>
+    </a>
+
+    <!-- テンプレート管理 (admin) -->
+    <a class="app-card" href="../admin/" style="--c1:#8b5cf6;--c2:#3b82f6">
+      <span class="badge">PW</span>
+      <div class="app-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          <line x1="12" y1="11" x2="12" y2="17"/>
+          <line x1="9" y1="14" x2="15" y2="14"/>
+        </svg>
+      </div>
+      <div class="app-name">テンプレート管理</div>
+      <div class="app-desc">SVG・カテゴリ登録</div>
+    </a>
+
+  </div>
+
+</div>
+
+<div class="ft">
+  © 2026 COCORO-KOBO ココロ工房<br>
+  <a href="https://github.com/802eve/cocoro-3d-viewer" target="_blank" rel="noopener">GitHub</a>
+</div>
+
+</div><!-- /main-content -->
+
+<script>
+  // ===== Lv2 認証 (2026-05-25): admin/ と 同じ GAS token を 共有 =====
+  var CLOUD_GAS_URL = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
+  var ADMIN_TOKEN_KEY = 'cocoro_admin_token';
+  function _intGasJsonp(params, cb){
+    var cbName = '_intAuthCb_' + Date.now() + '_' + Math.floor(Math.random()*99999);
+    var timer = null;
+    window[cbName] = function(resp){
+      delete window[cbName];
+      if(timer) clearTimeout(timer);
+      try{ s.remove(); }catch(_){}
+      if(typeof cb === 'function') cb(resp);
+    };
+    var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+    var s = document.createElement('script');
+    s.src = CLOUD_GAS_URL + '?' + qs + '&callback=' + cbName;
+    s.onerror = function(){
+      delete window[cbName];
+      try{ s.remove(); }catch(_){}
+      if(typeof cb === 'function') cb({ ok:false, error:'JSONP load error' });
+    };
+    document.body.appendChild(s);
+    timer = setTimeout(function(){
+      if(window[cbName]){
+        delete window[cbName];
+        try{ s.remove(); }catch(_){}
+        if(typeof cb === 'function') cb({ ok:false, error:'timeout' });
+      }
+    }, 30000);
+  }
+  function _internalUnlock(){
+    var g = document.getElementById('gate');
+    var m = document.getElementById('main-content');
+    if(g) g.style.display = 'none';
+    if(m) m.classList.add('authenticated');
+  }
+  function _internalCheckGate(){
+    var pw = document.getElementById('gate-input').value;
+    var err = document.getElementById('gate-err');
+    var btn = document.getElementById('gate-btn');
+    if(!pw){ err.textContent = 'パスワードを入力してください'; return; }
+    err.textContent = '認証中...';
+    btn.disabled = true;
+    _intGasJsonp({ action:'admin_login', password: pw }, function(resp){
+      btn.disabled = false;
+      if(resp && resp.ok && resp.token){
+        sessionStorage.setItem(ADMIN_TOKEN_KEY, resp.token);
+        err.textContent = '';
+        _internalUnlock();
+      } else {
+        err.textContent = (resp && resp.error) ? ('認証失敗: ' + resp.error) : 'パスワードが違います';
+        document.getElementById('gate-input').value = '';
+      }
+    });
+  }
+  // 既存トークン復元: admin/ で 認証済なら そのまま通過
+  (function(){
+    var tok = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+    if(!tok) return;
+    _intGasJsonp({ action:'admin_verify', token: tok }, function(resp){
+      if(resp && resp.ok){ _internalUnlock(); }
+      else { sessionStorage.removeItem(ADMIN_TOKEN_KEY); }
+    });
+  })();
+
+  // ホーム画面に追加で起動した時のスムーズな見え方
+  if(window.matchMedia('(display-mode: standalone)').matches){
+    document.body.classList.add('standalone');
+  }
+  // ★ N3.16.0 2026-05-10: Service Worker 登録 (オフライン対応 + 高速化)
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js', { scope: '/cocoro-3d-viewer/' })
+        .then((reg) => { console.log('SW registered:', reg.scope); })
+        .catch((err) => { console.warn('SW register failed:', err); });
+    });
+  }
+  // ★ N3.16.0: 「アプリをインストール」 プロンプトを ボタンで出せるように
+  let _installPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _installPrompt = e;
+    // フッターに ボタン追加
+    const ft = document.querySelector('.ft');
+    if(ft && !document.getElementById('_installBtn')){
+      const b = document.createElement('button');
+      b.id = '_installBtn';
+      b.textContent = '📲 アプリをインストール';
+      b.style.cssText = 'display:block;margin:14px auto 0;padding:10px 20px;background:linear-gradient(135deg,var(--ac),var(--rd));color:#1a1a2e;border:none;border-radius:24px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--ff);box-shadow:0 4px 14px rgba(245,158,11,.3);';
+      b.addEventListener('click', async () => {
+        if(!_installPrompt) return;
+        _installPrompt.prompt();
+        const choice = await _installPrompt.userChoice;
+        if(choice && choice.outcome === 'accepted') b.remove();
+        _installPrompt = null;
+      });
+      ft.appendChild(b);
+    }
+  });
+</script>
+
+</body>
+</html>
