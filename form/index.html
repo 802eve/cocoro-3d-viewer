@@ -7664,6 +7664,12 @@ function _buildSubmitItemForLine(l){
         dataAdjustNote: d.dataState === 'adjust' ? (d.dataNote || '') : '',
         dataDesignNote: d.dataState === 'design' ? (d.dataNote || '') : '',
         printNote: d.note || '',
+        // ★ 2026-05-25 H-fix: 3D 位置ドラッグ調整値を送信ペイロードに 含める
+        //   旧: state.lines[].printDesigns[area].offsetX/Y は キャプチャされるが 送信時に 欠落
+        //       → 社内オーダーに 反映されず、 顧客が 3D で 微調整しても 全部 lost
+        //   新: 0 でも 明示送信して 社内 formJson に persist (社内側は p.offsetX/Y を viewer に渡す)
+        offsetX:   (typeof d.offsetX === 'number') ? d.offsetX : 0,
+        offsetY:   (typeof d.offsetY === 'number') ? d.offsetY : 0,
         uploadFiles,
         hasUpload,
         inkColors,
