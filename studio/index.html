@@ -8518,9 +8518,63 @@ function askApplyToForm(url){
   _pendingApplyUrl = url;
   document.getElementById('applyFormModal').classList.add('vis');
 }
-function confirmApplyForm(apply){
+// ★ 2026-05-27 K-fix: localStorage 書き込み前 PNG 圧縮ヘルパー
+//   背景: 4000px+ の高解像度 PNG は ~3MB 超 → localStorage 5MB 制限を 超えて QuotaExceeded
+//   対策: Canvas API で 段階的に 縮小 → 5MB 制限内に収める
+function _compressForLS(dataUrl, maxBytes){
+  return new Promise(function(resolve){
+    try {
+      if(!dataUrl || typeof dataUrl !== 'string' || dataUrl.indexOf('data:image/') !== 0){
+        resolve(dataUrl); return;
+      }
+      // base64 size ≈ char数 × 0.75 (バイト換算近似)、 余裕見て 0.8 倍
+      if(dataUrl.length * 0.8 < maxBytes){ resolve(dataUrl); return; }
+      var img = new Image();
+      img.onload = function(){
+        // 段階圧縮: 1500 → 1200 → 1000 → 800 px max width で 試行、 quality 0.92 → 0.85 → 0.75
+        var attempts = [
+          {maxW: 1500, quality: 0.92},
+          {maxW: 1200, quality: 0.88},
+          {maxW: 1000, quality: 0.82},
+          {maxW: 800,  quality: 0.75},
+        ];
+        var result = dataUrl;
+        for(var i = 0; i < attempts.length; i++){
+          var a = attempts[i];
+          var w = img.naturalWidth || img.width;
+          var h = img.naturalHeight || img.height;
+          if(w > a.maxW){
+            var ratio = a.maxW / w;
+            w = a.maxW;
+            h = Math.round(h * ratio);
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          var out = canvas.toDataURL('image/png', a.quality);
+          if(out.length * 0.8 < maxBytes){ result = out; break; }
+          result = out; // 最後の試行結果を残す
+        }
+        resolve(result);
+      };
+      img.onerror = function(){ resolve(dataUrl); };
+      img.src = dataUrl;
+    } catch(e){ resolve(dataUrl); }
+  });
+}
+
+async function confirmApplyForm(apply){
   document.getElementById('applyFormModal').classList.remove('vis');
   if(apply && _pendingApplyUrl){
+    // ★ 2026-05-27 K-fix: localStorage 制限 (5MB) 内に収めるため 事前圧縮
+    //   2MB を 上限目安に (PNG + 他キーの 余裕枠 込み)
+    try {
+      _pendingApplyUrl = await _compressForLS(_pendingApplyUrl, 2 * 1024 * 1024);
+    } catch(compressErr){
+      console.warn('[K-fix] compress before LS fail (continuing with original):', compressErr);
+    }
     // 2026-04-24: 容量超過エラー対策
     // localStorage は通常5〜10MBで、3200pxのPNG（~1-2MB）+ SVG + 他デザインのthumbで
     //  あっという間に枠を使い切る。以下の順で堅牢化:
