@@ -3389,6 +3389,16 @@ async function _initCustomerReviewMode(){
         //   旧コード: overlay 永遠に表示 → ユーザーが 「読み込み中」 で stuck
         //   新コード: overlay 隠して 明確なメッセージ表示 → 顧客が状況把握可能
         try { _hideLoadingOverlay(); } catch(_){}
+        // ★ 確定/修正/3D ボタンも 削除 (デザインが無いので 押しても意味なし)
+        try {
+          const _btns = document.getElementById('_custReviewBtns');
+          if(_btns) _btns.remove();
+        } catch(_){}
+        // ★ 上部 緑バナー も 「準備中」 用に 文言差替
+        try {
+          const _banner = document.getElementById('_custReviewBanner');
+          if(_banner) _banner.innerHTML = '🛠 デザイン準備中 — もうしばらく お待ちください';
+        } catch(_){}
         const _hasAnyDesign = (prints || []).some(p => p && (p.designUrl || p.designSvgDriveId || p.designJsonDriveId));
         const _printsCount = (prints || []).length;
         const overlay = document.createElement('div');
@@ -3482,6 +3492,28 @@ function _installCustomerReviewBtns(){
 //   現在のキャンバス全体を PNG 化して 3D へ (FORM_CONTEXT は v11.3 で 全項目セット済)
 function _customerOpen3dFromPng(){
   try {
+    // ★ 2026-05-27 J-fix: 1オーダーに複数ボディ色がある場合、 3Dで切替できるよう allColors を準備
+    //   _customerReviewData (GAS getDesignReview の返り値) に colors[] が含まれていれば 注入
+    try {
+      const j = window._customerReviewData;
+      const colors = (j && j.item && Array.isArray(j.item.colors)) ? j.item.colors : [];
+      if(colors.length >= 2){
+        // viewer 側が想定する形式: [{colorName, colorHex/hex}]
+        const allColors = colors
+          .filter(c => c && (c.colorHex || c.hex))
+          .map(c => ({
+            colorName: c.colorName || c.name || '',
+            colorHex:  c.colorHex  || c.hex  || '#ffffff',
+            hex:       c.colorHex  || c.hex  || '#ffffff',
+          }));
+        if(allColors.length >= 2){
+          // _3d_openFromEditor が 生成する cfg に allColors を 注入するための フック
+          window._customerReviewAllColors = allColors;
+        }
+      } else {
+        window._customerReviewAllColors = null;
+      }
+    } catch(prepErr){ console.warn('allColors prep fail:', prepErr); }
     if(typeof _3d_openFromEditor === 'function'){
       _3d_openFromEditor();
     } else {
@@ -12013,6 +12045,13 @@ function _3d_openFromEditor(){
       imageDataUrl: url
     }]
   };
+  // ★ 2026-05-27 J-fix: 顧客確認モードで 全カラー情報があれば viewer に渡す (色切替UI 表示)
+  try {
+    if(Array.isArray(window._customerReviewAllColors) && window._customerReviewAllColors.length >= 2){
+      cfg.allColors = window._customerReviewAllColors;
+      cfg.currentColorIdx = 0;
+    }
+  } catch(_){}
   _3d_launchViewer(cfg);
 }
 
