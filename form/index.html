@@ -4899,6 +4899,11 @@ function buildPrintsForViewer(line){
     } else {
       img = getPrintSampleImg(size, rotated, inkHex);
     }
+    // ★ 2026-05-27 O-fix: viewer の 色切替で 再着色が動くように 元色 + 現色 hex を 添付
+    const _origHexes = (d && d.studioOriginalHexes && d.studioOriginalHexes.length) ? d.studioOriginalHexes.slice() : [];
+    const _targetHexes = (d && d.inkSlots && d.inkSlots.length)
+      ? d.inkSlots.map(id => { const ink = INK_COLORS.find(c => c.id === id); return ink ? ink.hex : ''; }).filter(Boolean)
+      : [];
     return {
       area:    loc.area,
       method:  (d && d.method) || 'シルクスクリーン',
@@ -4906,6 +4911,8 @@ function buildPrintsForViewer(line){
       imageDataUrl: img,
       offsetX: (d && d.offsetX) || 0,
       offsetY: (d && d.offsetY) || 0,
+      originalInkHexes: _origHexes,
+      targetInkHexes: _targetHexes,
     };
   }).filter(Boolean);
 }
@@ -4941,13 +4948,35 @@ function pushConfigToViewer(extras){
         if(ln.printSource === ('reuse:' + parentIdx)){ _related.push(ln); }
       });
       if(_related.length >= 2){
+        // ★ 2026-05-27 O-fix: 色違いラインの inkOverrides → inkOverrideHexes に変換
+        //   viewer の _switchToColor が overrideHexes を使って 再着色 (色切替)
+        // 親ラインの prints (locations) リストを取得 — index で参照するため
+        const _parentLine = state.lines[parentIdx];
+        const _parentPrintNames = (_parentLine && _parentLine.prints) ? _parentLine.prints : [];
         allColors = _related
           .filter(ln => ln.color && ln.color.hex)
-          .map(ln => ({
-            colorName: (ln.color && ln.color.name) || '',
-            colorHex:  (ln.color && ln.color.hex)  || '#ffffff',
-            hex:       (ln.color && ln.color.hex)  || '#ffffff',
-          }));
+          .map(ln => {
+            const _ovrHexes = {};
+            const _ovr = ln.inkOverrides || {};
+            _parentPrintNames.forEach((pname, pi) => {
+              const _loc = PRINT_LOCATIONS.find(p => p.name === pname);
+              if(!_loc) return;
+              const _ov = _ovr[_loc.area];
+              if(_ov && Array.isArray(_ov.inkSlots) && _ov.inkSlots.length){
+                const hexes = _ov.inkSlots.map(id => {
+                  const ink = INK_COLORS.find(c => c.id === id);
+                  return ink ? ink.hex : '';
+                }).filter(Boolean);
+                if(hexes.length) _ovrHexes[pi] = hexes;
+              }
+            });
+            return {
+              colorName: (ln.color && ln.color.name) || '',
+              colorHex:  (ln.color && ln.color.hex)  || '#ffffff',
+              hex:       (ln.color && ln.color.hex)  || '#ffffff',
+              inkOverrideHexes: Object.keys(_ovrHexes).length ? _ovrHexes : null,
+            };
+          });
         if(allColors.length < 2) allColors = null;
       }
     }
