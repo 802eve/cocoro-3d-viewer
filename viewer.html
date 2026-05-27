@@ -2200,8 +2200,17 @@ async function _switchToColor(newIdx){
     for(let i = 0; i < lastCfg.prints.length; i++){
       const p = lastCfg.prints[i];
       let img = await loadImage(p.imageDataUrl || p.image || p.url);
-      // 該当カラー用 override hex が あれば 再着色、 なければ 元色 (p.originalInkHexes) で 表示
-      const targetHexes = (Array.isArray(ovrHexes[i]) && ovrHexes[i].length) ? ovrHexes[i] : (p.originalInkHexes || p.targetInkHexes || []);
+      // ★ 2026-05-27 P-fix: フォールバック順 修正
+      //   旧: `p.originalInkHexes || p.targetInkHexes` だが 配列 [] は truthy のため originalInkHexes が ある限り 常にそれが返り、 親色 (targetInkHexes) に 戻れない バグ
+      //   新: override > 親色 (targetInkHexes) > 元色 (originalInkHexes) の 優先順
+      let targetHexes;
+      if(Array.isArray(ovrHexes[i]) && ovrHexes[i].length){
+        targetHexes = ovrHexes[i];
+      } else if(Array.isArray(p.targetInkHexes) && p.targetInkHexes.length){
+        targetHexes = p.targetInkHexes;
+      } else {
+        targetHexes = p.originalInkHexes || [];
+      }
       if(_shouldRecolor(p.originalInkHexes, targetHexes)){
         console.log('[switch recolor] color', target.name, 'print', i, 'to', targetHexes);
         img = _recolorImageSync(img, p.originalInkHexes, targetHexes);
