@@ -4880,30 +4880,21 @@ function buildPrintsForViewer(line){
       const ink = INK_COLORS.find(c => c.id === d.inkSlots[0]);
       if(ink) inkHex = ink.hex;
     }
-    let img;
-    if(d && d.studioImage){
-      const fromHexes = (d.studioOriginalHexes && d.studioOriginalHexes.length) ? d.studioOriginalHexes : [];
-      const toHexes = (d.inkSlots || []).map(id => {
-        const ink = INK_COLORS.find(c => c.id === id);
-        return ink ? ink.hex : '';
-      }).filter(Boolean);
-      const sameAsOriginal = fromHexes.length > 0 &&
-        fromHexes.length === toHexes.length &&
-        fromHexes.every((f, i) => String(f).toLowerCase() === String(toHexes[i] || '').toLowerCase());
-      if(toHexes.length && !sameAsOriginal && fromHexes.length){
-        const recolored = _recolorImage(d.studioImage, fromHexes, toHexes);
-        img = recolored || d.studioImage;
-      } else {
-        img = d.studioImage;
-      }
-    } else {
-      img = getPrintSampleImg(size, rotated, inkHex);
-    }
-    // ★ 2026-05-27 O-fix: viewer の 色切替で 再着色が動くように 元色 + 現色 hex を 添付
+    // ★ 2026-05-27 P-fix: viewer に 元PNG (再着色前) + 元色 + 現色 hex を 渡す
+    //   理由: viewer 側で 初期表示 (元→親色) と 色切替 (元→override色) の 両方を 一貫処理させる
+    //   旧: ここで 親色に 再着色済 PNG を送る → 色切替時 viewer が 再着色済みPNG を 元色基準で
+    //       recolor しようとして 失敗 → 黒部分も override 色に染まる バグ
     const _origHexes = (d && d.studioOriginalHexes && d.studioOriginalHexes.length) ? d.studioOriginalHexes.slice() : [];
     const _targetHexes = (d && d.inkSlots && d.inkSlots.length)
       ? d.inkSlots.map(id => { const ink = INK_COLORS.find(c => c.id === id); return ink ? ink.hex : ''; }).filter(Boolean)
       : [];
+    let img;
+    if(d && d.studioImage){
+      // 元 studio PNG を そのまま 渡す (viewer 側で recolor)
+      img = d.studioImage;
+    } else {
+      img = getPrintSampleImg(size, rotated, inkHex);
+    }
     return {
       area:    loc.area,
       method:  (d && d.method) || 'シルクスクリーン',
