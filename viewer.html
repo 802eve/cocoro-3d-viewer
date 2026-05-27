@@ -2114,31 +2114,74 @@ function _shouldRecolor(fromHexes, toHexes){
 function _renderColorSwitcher(){
   const colors = window._viewerAllColors || [];
   if(!Array.isArray(colors) || colors.length < 2) return;
+  // ★ 2026-05-27 N-fix: モバイル UX 改善 — 折りたたみ可能 chip 形式
+  //   旧: 画面下中央に 大きい panel 常時表示 → モバイルで Tシャツ画像と重なる
+  //   新: 右下に 小さい円形 chip (現色) → タップで 展開、 タップで 切替+折りたたみ
+  const isMobile = window.matchMedia('(max-width: 768px)').matches || ('ontouchstart' in window);
   let panel = document.getElementById('viewerColorSwitcher');
   if(!panel){
     panel = document.createElement('div');
     panel.id = 'viewerColorSwitcher';
-    panel.style.cssText = 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:rgba(0,0,0,.78);backdrop-filter:blur(8px);border-radius:14px;padding:8px 12px;display:flex;align-items:center;gap:8px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.4);font-family:sans-serif;color:#fff;flex-wrap:wrap;max-width:90vw;';
+    panel.style.cssText = isMobile
+      // モバイル: 右下に コンパクトに、 デフォルト折りたたみ
+      ? 'position:fixed;right:12px;bottom:90px;z-index:9999;font-family:sans-serif;display:flex;flex-direction:column;align-items:flex-end;gap:6px;'
+      // PC: 下中央 (従来通り、 ただし クリック展開式)
+      : 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:9999;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;gap:6px;';
     document.body.appendChild(panel);
   }
   const curIdx = window._viewerCurrentColorIdx || 0;
-  panel.innerHTML = '<span style="font-size:11px;font-weight:700;color:#ddd;margin-right:4px;">👕 ボディ色:</span>' + colors.map(function(c, i){
-    const sel = (i === curIdx);
-    const isLight = function(hex){
-      const h = (hex||'').replace('#','');
-      if(h.length !== 6) return false;
-      const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
-      return (r*0.299 + g*0.587 + b*0.114) > 170;
-    }(c.hex);
-    return '<button type="button" data-cidx="' + i + '" title="' + (c.name||'') + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:4px;background:' + (sel?'rgba(255,255,255,.15)':'transparent') + ';border:' + (sel?'2px solid #fff':'2px solid transparent') + ';border-radius:8px;cursor:pointer;transition:.15s;">'
-      + '<div style="width:30px;height:30px;border-radius:50%;background:' + c.hex + ';border:1px solid ' + (isLight?'#999':'rgba(255,255,255,.3)') + ';"></div>'
-      + '<div style="font-size:9px;color:#eee;white-space:nowrap;max-width:54px;overflow:hidden;text-overflow:ellipsis;">' + (c.name||'') + '</div>'
-      + '</button>';
-  }).join('');
+  const curColor = colors[curIdx] || {};
+  const isLight = function(hex){
+    const h = (hex||'').replace('#','');
+    if(h.length !== 6) return false;
+    const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+    return (r*0.299 + g*0.587 + b*0.114) > 170;
+  };
+  // 展開状態を 保持 (デフォルト: PC=展開、 モバイル=折りたたみ)
+  if(typeof window._viewerColorSwExpanded === 'undefined'){
+    window._viewerColorSwExpanded = !isMobile;
+  }
+  const expanded = !!window._viewerColorSwExpanded;
+  // 展開時の色パネル HTML
+  const swatchesHtml = !expanded ? '' :
+    '<div id="viewerColorPanel" style="background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border-radius:14px;padding:8px 10px;display:flex;align-items:center;gap:6px;color:#fff;flex-wrap:wrap;max-width:88vw;box-shadow:0 6px 20px rgba(0,0,0,.4);">'
+    + '<span style="font-size:10px;font-weight:700;color:#ddd;margin-right:2px;">👕</span>'
+    + colors.map(function(c, i){
+        const sel = (i === curIdx);
+        const sz = isMobile ? 24 : 28;
+        return '<button type="button" data-cidx="' + i + '" title="' + (c.name||'') + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:2px;background:' + (sel?'rgba(255,255,255,.15)':'transparent') + ';border:' + (sel?'2px solid #fff':'2px solid transparent') + ';border-radius:8px;cursor:pointer;transition:.15s;">'
+          + '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + c.hex + ';border:1px solid ' + (isLight(c.hex)?'#999':'rgba(255,255,255,.3)') + ';"></div>'
+          + (isMobile ? '' : '<div style="font-size:9px;color:#eee;white-space:nowrap;max-width:54px;overflow:hidden;text-overflow:ellipsis;">' + (c.name||'') + '</div>')
+          + '</button>';
+      }).join('')
+    + '</div>';
+  // 折りたたみ chip (現在色 + 件数 + ⌃/⌄)
+  const chipSz = isMobile ? 36 : 42;
+  const chipHtml = '<button type="button" id="viewerColorChip" title="ボディ色切替 (' + colors.length + '色)" style="display:flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:999px;color:#fff;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);">'
+    + '<div style="width:' + chipSz + 'px;height:' + chipSz + 'px;border-radius:50%;background:' + (curColor.hex||'#fff') + ';border:1.5px solid ' + (isLight(curColor.hex)?'#888':'rgba(255,255,255,.4)') + ';flex-shrink:0;"></div>'
+    + '<span style="white-space:nowrap;">' + (isMobile ? colors.length + '色' : '色切替 (' + colors.length + ')') + '</span>'
+    + '<span style="font-size:10px;opacity:.7;margin-left:2px;">' + (expanded ? '⌄' : '⌃') + '</span>'
+    + '</button>';
+  // パネル → chip の順 (chip が下)
+  panel.innerHTML = swatchesHtml + chipHtml;
+  // chip クリックで 折りたたみトグル
+  const chipBtn = document.getElementById('viewerColorChip');
+  if(chipBtn){
+    chipBtn.addEventListener('click', function(){
+      window._viewerColorSwExpanded = !window._viewerColorSwExpanded;
+      _renderColorSwitcher();
+    });
+  }
+  // 色 swatch クリック
   panel.querySelectorAll('button[data-cidx]').forEach(function(b){
     b.addEventListener('click', function(){
       const ni = parseInt(b.dataset.cidx, 10);
       _switchToColor(ni);
+      // モバイルは 切替後 自動的に 折りたたむ
+      if(isMobile){
+        window._viewerColorSwExpanded = false;
+        setTimeout(_renderColorSwitcher, 100);
+      }
     });
   });
 }
