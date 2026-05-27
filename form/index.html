@@ -4920,11 +4920,47 @@ function pushConfigToViewer(extras){
     prints = buildPrintsForViewer(line);
   }
   delete extras.printsOverride;
+  // ★ 2026-05-27 L-fix: 色違い兄弟ライン (= 同じ親に reuse) の カラーも 集約して viewer に渡す
+  //   背景: 「同じ柄・複数ボディ色」 オーダーで 確認モーダル 3D で 全色 切替可能にする
+  //   ロジック:
+  //     1. 現ライン が reuse:N なら 親 = N、 そうでなければ 親 = 現ライン
+  //     2. 親 + (printSource === 'reuse:親idx' の 全ライン) の color を 集める
+  let allColors = null;
+  try {
+    const _lineIdx = state.lineIdx;
+    const _curLine = state.lines[_lineIdx];
+    if(_curLine){
+      let parentIdx = _lineIdx;
+      if(_curLine.printSource && _curLine.printSource.indexOf('reuse:') === 0){
+        const pn = parseInt(_curLine.printSource.slice(6), 10);
+        if(!isNaN(pn) && state.lines[pn]) parentIdx = pn;
+      }
+      const _related = [];
+      state.lines.forEach((ln, idx) => {
+        if(idx === parentIdx){ _related.push(ln); return; }
+        if(ln.printSource === ('reuse:' + parentIdx)){ _related.push(ln); }
+      });
+      if(_related.length >= 2){
+        allColors = _related
+          .filter(ln => ln.color && ln.color.hex)
+          .map(ln => ({
+            colorName: (ln.color && ln.color.name) || '',
+            colorHex:  (ln.color && ln.color.hex)  || '#ffffff',
+            hex:       (ln.color && ln.color.hex)  || '#ffffff',
+          }));
+        if(allColors.length < 2) allColors = null;
+      }
+    }
+  } catch(_){ allColors = null; }
   const cfg = Object.assign({
     bodyColor: (line.color && line.color.hex) || '#ffffff',
     prints: prints,
     rotationSpeed: ROTATION_SPEED_DEFAULT,
   }, extras);
+  if(allColors){
+    cfg.allColors = allColors;
+    cfg.currentColorIdx = 0;
+  }
   try{
     ifr.contentWindow.postMessage({ type:'tshirt3d-config', config: cfg }, '*');
   }catch(e){
