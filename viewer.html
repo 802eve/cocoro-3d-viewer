@@ -1810,6 +1810,11 @@ async function applyExternalConfig(cfg) {
     window._viewerCurrentColorIdx = (typeof cfg.currentColorIdx === 'number') ? cfg.currentColorIdx : 0;
     window._viewerLastCfg = cfg;
     _renderColorSwitcher();
+    // ★ 2026-05-27 R-fix: allColors 時は 左下「シャツ色」入力欄 非表示 (chip と機能重複)
+    try {
+      const _sl = document.querySelector('#colorPanel label');
+      if(_sl) _sl.style.display = 'none';
+    } catch(_){}
   }
   if (cfg.bodyColor) {
     state.bodyColor = cfg.bodyColor;
