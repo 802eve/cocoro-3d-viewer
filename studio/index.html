@@ -3297,6 +3297,49 @@ async function _initCustomerReviewMode(){
       targetPrint = prints.find(p => p.designUrl) || prints[0] || null;
     }
     window._customerReviewTargetPrint = targetPrint;
+    // ★ 2026-05-28 W-fix: 複数プリント箇所がある場合、 顧客が 順番に確認できるよう ピッカー UI を追加
+    //   各プリントを サムネ + 場所名で 表示 → クリックで そのプリントを 編集対象に
+    try {
+      if(prints.length >= 2){
+        const _withDesign = prints.filter(p => p && p.designUrl);
+        if(_withDesign.length >= 2){
+          const _renderPrintPicker = function(){
+            let pp = document.getElementById('_custPrintPicker');
+            if(pp) pp.remove();
+            pp = document.createElement('div');
+            pp.id = '_custPrintPicker';
+            pp.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--cocoro-banner-h, 56px) + 78px);z-index:99998;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border-radius:12px;padding:6px;display:flex;gap:6px;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.4);max-width:90vw;flex-wrap:wrap;justify-content:center;';
+            const _curIdx = prints.indexOf(window._customerReviewTargetPrint);
+            pp.innerHTML = '<span style="font-size:10px;color:#ddd;align-self:center;padding:0 4px;font-weight:700;">📍</span>' + _withDesign.map(function(p){
+              const realIdx = prints.indexOf(p);
+              const sel = (realIdx === _curIdx);
+              return '<button type="button" data-pidx="' + realIdx + '" style="display:flex;align-items:center;gap:4px;padding:5px 10px;background:' + (sel ? '#f59e0b' : 'rgba(255,255,255,.1)') + ';color:#fff;border:' + (sel ? '2px solid #fde68a' : '2px solid transparent') + ';border-radius:8px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;white-space:nowrap;">'
+                + (sel ? '✓ ' : '')
+                + (p.location || '?')
+                + '</button>';
+            }).join('');
+            document.body.appendChild(pp);
+            pp.querySelectorAll('button[data-pidx]').forEach(function(b){
+              b.addEventListener('click', function(){
+                const ni = parseInt(b.dataset.pidx, 10);
+                if(isNaN(ni) || !prints[ni]) return;
+                if(prints[ni] === window._customerReviewTargetPrint) return; // 同じ → 何もしない
+                if(_customerReviewState === 'editing'){
+                  if(!confirm('編集中の内容は失われます。 別のプリント箇所に切り替えますか?')) return;
+                }
+                // PLATFORM_CONTEXT.printIdx を 更新 → 再初期化
+                PLATFORM_CONTEXT.printIdx = ni;
+                // ページ再ロード が 一番確実 (状態 リセット 含む)
+                const url = new URL(location.href);
+                url.searchParams.set('printIdx', ni);
+                location.href = url.toString();
+              });
+            });
+          };
+          _renderPrintPicker();
+        }
+      }
+    } catch(pickerErr){ console.warn('print picker fail:', pickerErr); }
     // ★ 2026-05-13 v10: SIZE_DIMS_CM × PPC で 正確なキャンバスサイズ算出 (sizeMap ハードコーディング 廃止)
     const printSize = (targetPrint && targetPrint.size) || '34cm角内';
     let canvSize;
@@ -3492,28 +3535,80 @@ function _installCustomerReviewBtns(){
 //   現在のキャンバス全体を PNG 化して 3D へ (FORM_CONTEXT は v11.3 で 全項目セット済)
 function _customerOpen3dFromPng(){
   try {
-    // ★ 2026-05-27 J-fix: 1オーダーに複数ボディ色がある場合、 3Dで切替できるよう allColors を準備
-    //   _customerReviewData (GAS getDesignReview の返り値) に colors[] が含まれていれば 注入
-    try {
-      const j = window._customerReviewData;
-      const colors = (j && j.item && Array.isArray(j.item.colors)) ? j.item.colors : [];
-      if(colors.length >= 2){
-        // viewer 側が想定する形式: [{colorName, colorHex/hex}]
-        const allColors = colors
-          .filter(c => c && (c.colorHex || c.hex))
-          .map(c => ({
+    // ★ 2026-05-28 V-fix: 顧客確認モードは GAS から 全プリント情報を 取得済 → 全部を 3D に表示
+    //   旧: fabCanvas (現在表示中の 1 プリントのみ) から PNG 抽出 → 背面など 他プリント 消える
+    //   新: _customerReviewData.item.prints[] 全部を cfg に集約 → 全プリント 表示
+    const j = window._customerReviewData;
+    const item = j && j.item;
+    const prints = (item && Array.isArray(item.prints)) ? item.prints : [];
+    if(prints.length){
+      // 全プリント (designUrl あるもののみ) を cfg.prints[] に
+      const cfgPrints = prints
+        .filter(p => p && p.designUrl)
+        .map(p => {
+          // location 名 → area key (前面 / 背中 / 左胸 等)
+          const _areaMap = {
+            '前面（胸中央）':'front_center','背中（中央）':'back_center',
+            '左胸':'left_chest','右胸':'right_chest',
+            '左袖':'left_sleeve','右袖':'right_sleeve',
+            '左袖いっぱい':'left_sleeve_full','右袖いっぱい':'right_sleeve_full',
+            '左袖先':'left_sleeve_cuff','右袖先':'right_sleeve_cuff',
+            '襟下（背中）':'back_upper','前裾':'front_hem','後ろ裾':'back_hem',
+          };
+          const area = _areaMap[p.location] || p.location || 'front_center';
+          return {
+            area: area,
+            method: p.method || 'シルクスクリーン',
+            size: p.size || '34cm角内',
+            imageDataUrl: p.designUrl,
+          };
+        });
+      if(!cfgPrints.length){
+        alert('3Dに表示するデザインが見つかりません');
+        return;
+      }
+      // モデル判定 (category + name から viewer.html の model キー)
+      const _resolveModel = function(){
+        const txt = String((item.category || '') + ' ' + (item.name || '')).toLowerCase();
+        if(/ジップ|zip|フルジップ/i.test(txt) && /パーカー|フード|hood/i.test(txt)) return 'hoodie_zip';
+        if(/パーカー|フード|hood/i.test(txt)) return 'hoodie';
+        if(/スウェット|トレーナー|sweat/i.test(txt)) return 'sweat';
+        if(/ポロ|polo/i.test(txt)) return 'polo';
+        if(/ロング|長袖|long/i.test(txt)) return 'long_sleeve';
+        return 'tshirt';
+      };
+      // ボディ色 (firstColor)
+      const firstColor = item.firstColor || {};
+      const bodyColor = firstColor.colorHex || firstColor.hex || '#ffffff';
+      // 全カラー情報 (色違いがあれば)
+      const colors = Array.isArray(item.colors) ? item.colors : [];
+      const allColors = (colors.length >= 2)
+        ? colors.filter(c => c && (c.colorHex || c.hex)).map(c => ({
             colorName: c.colorName || c.name || '',
             colorHex:  c.colorHex  || c.hex  || '#ffffff',
             hex:       c.colorHex  || c.hex  || '#ffffff',
-          }));
-        if(allColors.length >= 2){
-          // _3d_openFromEditor が 生成する cfg に allColors を 注入するための フック
-          window._customerReviewAllColors = allColors;
-        }
-      } else {
-        window._customerReviewAllColors = null;
+          }))
+        : null;
+      const cfg = {
+        bodyColor: bodyColor,
+        prints: cfgPrints,
+      };
+      if(allColors && allColors.length >= 2){
+        cfg.allColors = allColors;
+        cfg.currentColorIdx = 0;
       }
-    } catch(prepErr){ console.warn('allColors prep fail:', prepErr); }
+      // viewer.html を 新タブで 起動 (既存 _3d_launchViewer 経由)
+      if(typeof _3d_launchViewer === 'function'){
+        // model も 設定する必要あり (_3d_launchViewer 内で _3d_getModelKey() が 呼ばれるため URL に model 入る)
+        // → window._3dForceModel に セットして _3d_getModelKey 側で 拾えるように
+        try { window._3dForceModel = _resolveModel(); } catch(_){}
+        _3d_launchViewer(cfg);
+      } else {
+        alert('3Dビューア機能が見つかりません');
+      }
+      return;
+    }
+    // フォールバック: prints[] 空なら 従来通り fabCanvas 経由 (デザイン無し時)
     if(typeof _3d_openFromEditor === 'function'){
       _3d_openFromEditor();
     } else {
@@ -11982,6 +12077,12 @@ function _3d_isSmallArea(area){
       || area === 'left_sleeve' || area === 'right_sleeve';
 }
 function _3d_getModelKey(){
+  // ★ 2026-05-28 V-fix: 顧客確認モードで item.category から 直接モデルを 指定する場合のフック
+  if(window._3dForceModel){
+    const m = window._3dForceModel;
+    delete window._3dForceModel;  // 1 回使ったら消す (副作用最小化)
+    return m;
+  }
   const cat = (FORM_CONTEXT && FORM_CONTEXT.cat) ? String(FORM_CONTEXT.cat) : '';
   // 2026-04-24: 表記揺れ対応 ― 「ロンT」「ロング」「ロングTシャツ」「長袖」「long」を全部拾う
   if(/ロンT|ロング|長袖|long/i.test(cat)) return 'long_sleeve';
