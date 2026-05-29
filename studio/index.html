@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -8718,7 +8718,9 @@ async function confirmApplyForm(apply){
     } catch(e){}
     // ② 必須キー（これが失敗したら復帰不可）
     let okData = _tryLS('cocoro_design_data', _pendingApplyUrl);
-    _tryLS('cocoro_design_timestamp', Date.now().toString());
+    // ★ 2026-05-29 bug①: ts は localStorage と postMessage で 同一値を使う (顧客フォーム側 二重適用ガード)
+    var _designTs = Date.now();
+    _tryLS('cocoro_design_timestamp', String(_designTs));
     if(FORM_CONTEXT && FORM_CONTEXT.pid) _tryLS('cocoro_design_pid', FORM_CONTEXT.pid);
     if(FORM_CONTEXT && FORM_CONTEXT.method) _tryLS('cocoro_design_method', FORM_CONTEXT.method);
     try { if(_printSizeKey) _tryLS('cocoro_design_size', _printSizeKey); } catch(e){}
@@ -8763,6 +8765,7 @@ async function confirmApplyForm(apply){
       }
     }
     // 使用色統計
+    var _usageJson = '';
     try{
       const used = collectUsedInkColors();
       const stats = {
@@ -8777,12 +8780,34 @@ async function confirmApplyForm(apply){
         originalMethod: FORM_CONTEXT._originalMethod || '',
         originalColorCount: FORM_CONTEXT._originalColorCount || ''
       };
-      _tryLS('cocoro_design_usage', JSON.stringify(stats));
+      _usageJson = JSON.stringify(stats);
+      _tryLS('cocoro_design_usage', _usageJson);
       // 旧キーも別途保存 (現在の method/colorCount を確実に更新)
       _tryLS('cocoro_design_color_count', String(FORM_CONTEXT.colorCount || ''));
     }catch(e){}
-    // ④ 必須 `cocoro_design_data` が入ったかどうかで成否判定
-    if(okData){
+    // ★ 2026-05-29 bug①: PNG 本体も opener へ postMessage 直送 (localStorage 容量不足対策)
+    //   背景: cocoro_design_data (PNG 1-2MB) が localStorage 上限を 超えると okData=false →
+    //         「保存容量が不足しています」 alert で 顧客が お見積りを 中断してしまう。
+    //   対策: SVG (Z-fix) と同様 PNG も postMessage で opener (顧客フォーム) へ直送。
+    //         localStorage が 失敗しても postMessage が 届けば 反映継続 → 容量警告を出さない。
+    var _pngPosted = false;
+    try {
+      if(window.opener && !window.opener.closed){
+        window.opener.postMessage({
+          type: 'cocoro-design-png',
+          pid: (FORM_CONTEXT && FORM_CONTEXT.pid) || '',
+          png: _pendingApplyUrl,
+          size: _printSizeKey || '',
+          rotated: _printSizeRotated ? '1' : '0',
+          usage: _usageJson,
+          ts: _designTs,
+        }, '*');
+        _pngPosted = true;
+        console.log('[confirmApplyForm] PNG postMessage sent: ' + (_pendingApplyUrl ? _pendingApplyUrl.length : 0) + ' chars');
+      }
+    } catch(pmErr){ console.warn('[confirmApplyForm] PNG postMessage fail:', pmErr); }
+    // ④ 必須 `cocoro_design_data` が入ったか、 または postMessage 送信できたかで 成否判定
+    if(okData || _pngPosted){
       // 成功時 — svg が失敗していてもデザイン本体PNGは保存できたので反映継続
       if(_saveErrors.length > 0){
         console.warn('[confirmApplyForm] 一部キー保存失敗（反映は継続）:', _saveErrors);
