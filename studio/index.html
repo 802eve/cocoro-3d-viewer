@@ -8706,33 +8706,34 @@ async function confirmApplyForm(apply){
         if(entry && entry.svg) svgStr = entry.svg;
       }
     } catch(e){}
-    // ★ 2026-05-28 Y-fix: SVG 圧縮 (空白除去 + 改行除去) + 保存失敗時に 明示エラー
-    //   背景: 複数プリント (胸+背中等) で 2回目の studio 保存時 localStorage 残量不足 →
-    //         SVG silently 失敗 → 顧客フォームに SVG が届かず → Drive にも 上がらず →
-    //         顧客確認 修正モードで 「JSON/SVG not available」 fallback → パーツ編集 不可
-    //   対策: SVG を minify してから 保存試行、 失敗したら ユーザーに伝える
+    // ★ 2026-05-28 Z-fix: SVG は localStorage を 経由せず opener へ postMessage 直送
+    //   背景: 複数プリント (胸+背中等) で SVG が localStorage 5MB 上限を 超えて 保存失敗 →
+    //         顧客フォームに SVG が届かず → 顧客確認 修正で パーツ編集 不可
+    //   対策: PNG だけ localStorage に保存し、 SVG は postMessage で opener (顧客フォーム) へ
+    //         直送 → 顧客フォーム側で 受信して state.lines に 反映 (容量制限なし)
     if(svgStr){
       var svgMin = svgStr;
       try {
-        // 改行 + 連続スペースを 単一スペースに、 タグ間スペース除去
         svgMin = svgMin.replace(/[\n\r\t]+/g, ' ').replace(/ {2,}/g, ' ').replace(/>\s+</g, '><').trim();
       } catch(_){}
+      // まず localStorage 試行 (軽い SVG なら 従来通り)
       var _svgOk = _tryLS('cocoro_design_svg', svgMin);
+      // postMessage でも 送信 (opener が listener あれば 受信、 なければ 無害に スキップ)
+      try {
+        if(window.opener && !window.opener.closed){
+          window.opener.postMessage({
+            type: 'cocoro-design-svg',
+            pid: (FORM_CONTEXT && FORM_CONTEXT.pid) || '',
+            svg: svgMin,
+            ts: Date.now(),
+          }, '*');
+          console.log('[confirmApplyForm] SVG postMessage sent: ' + svgMin.length + ' chars');
+        }
+      } catch(pmErr){ console.warn('[confirmApplyForm] SVG postMessage fail:', pmErr); }
       if(!_svgOk){
-        // ★ 重要: SVG が 保存できないと 顧客が 後から 修正できない
-        //   再試行: cocoro_design_data (PNG) を 退避 → SVG 保存試行 → PNG 戻す (が これで PNG 落ちる)
-        //   現実的には: ユーザーに 警告して 「デザインを 簡略化してから 再保存」 を 促す
-        console.warn('[confirmApplyForm] SVG 保存失敗 (Quota?): ' + svgMin.length + ' chars');
-        // 軽量警告 — alert は 流れを止めるので setTimeout 経由
-        setTimeout(function(){
-          alert('⚠ 注意: デザインの ベクター情報 (SVG) が ブラウザ保存容量超過で 一部保存できませんでした。\n\n'
-              + '影響: 後で 修正する時に パーツ別の編集が できず、 全体 移動のみ可能になります。\n\n'
-              + '対策:\n'
-              + '  ・複雑な絵 (細かいパス多数) を シンプル化\n'
-              + '  ・ブラウザ キャッシュをクリア (設定 → 閲覧履歴)\n'
-              + '  ・シークレットウィンドウで 再試行\n\n'
-              + '見積もり自体は 問題なく 進められます。');
-        }, 800);
+        // localStorage は失敗したが postMessage で送ったので 進行 OK
+        // 念のため 控えめ ログ (alert は出さない)
+        console.warn('[confirmApplyForm] SVG localStorage 失敗 (postMessage で 代替送信): ' + svgMin.length + ' chars');
       }
     }
     // 使用色統計
