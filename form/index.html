@@ -4979,7 +4979,17 @@ function pushConfigToViewer(extras){
   }, extras);
   if(allColors){
     cfg.allColors = allColors;
-    cfg.currentColorIdx = 0;
+    // ★ 2026-05-28 AA-fix: chip 選択状態を 現ラインの色に合わせる
+    //   旧: 常に 0 (親) → 子ライン編集中も chip は 親を選択状態 → 表示と不一致
+    //   新: 現ライン (= 編集中のライン) の色を allColors の中から探して idx に
+    let _curColorHex = '';
+    try { _curColorHex = (line.color && line.color.hex) ? String(line.color.hex).toLowerCase() : ''; } catch(_){}
+    let _matchIdx = 0;
+    if(_curColorHex){
+      const _i = allColors.findIndex(c => String(c.colorHex || c.hex || '').toLowerCase() === _curColorHex);
+      if(_i >= 0) _matchIdx = _i;
+    }
+    cfg.currentColorIdx = _matchIdx;
   }
   try{
     ifr.contentWindow.postMessage({ type:'tshirt3d-config', config: cfg }, '*');
