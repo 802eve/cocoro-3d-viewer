@@ -3543,6 +3543,14 @@ function _customerOpen3dFromPng(){
     const item = j && j.item;
     const prints = (item && Array.isArray(item.prints)) ? item.prints : [];
     if(prints.length){
+      // ★ 2026-05-29 CC-fix: ink color name → hex 変換ヘルパー (allColors と prints 両方で使用)
+      const _ink2hex = (names) => {
+        if(!Array.isArray(names)) return [];
+        return names.map(n => {
+          const ink = (typeof INK_COLORS !== 'undefined' && INK_COLORS) ? INK_COLORS.find(c => c.name === n) : null;
+          return ink ? ink.hex : '';
+        }).filter(Boolean);
+      };
       // 全プリント (designUrl あるもののみ) を cfg.prints[] に
       const cfgPrints = prints
         .filter(p => p && p.designUrl)
@@ -3565,6 +3573,9 @@ function _customerOpen3dFromPng(){
             // ★ 2026-05-29 BB-fix: 顧客フォームで 設定したプリント位置を 顧客確認 3D にも 反映
             offsetX: (typeof p.offsetX === 'number') ? p.offsetX : 0,
             offsetY: (typeof p.offsetY === 'number') ? p.offsetY : 0,
+            // ★ 2026-05-29 CC-fix: viewer 色切替で 再着色するため 元色 + 親色 hex を 添付
+            originalInkHexes: (Array.isArray(p.originalInkHexes) && p.originalInkHexes.length) ? p.originalInkHexes.slice() : [],
+            targetInkHexes: (typeof _ink2hex === 'function' && Array.isArray(p.inkColors)) ? _ink2hex(p.inkColors) : [],
           };
         });
       if(!cfgPrints.length){
@@ -3584,14 +3595,26 @@ function _customerOpen3dFromPng(){
       // ボディ色 (firstColor)
       const firstColor = item.firstColor || {};
       const bodyColor = firstColor.colorHex || firstColor.hex || '#ffffff';
-      // 全カラー情報 (色違いがあれば)
+      // 全カラー情報 (色違いがあれば) — ★ 2026-05-29 CC-fix: inkOverrideHexes も注入
       const colors = Array.isArray(item.colors) ? item.colors : [];
       const allColors = (colors.length >= 2)
-        ? colors.filter(c => c && (c.colorHex || c.hex)).map(c => ({
-            colorName: c.colorName || c.name || '',
-            colorHex:  c.colorHex  || c.hex  || '#ffffff',
-            hex:       c.colorHex  || c.hex  || '#ffffff',
-          }))
+        ? colors.filter(c => c && (c.colorHex || c.hex)).map(c => {
+            let ovrHexes = null;
+            if(c.inkOverrides && typeof c.inkOverrides === 'object'){
+              ovrHexes = {};
+              Object.keys(c.inkOverrides).forEach(pi => {
+                const hexes = _ink2hex(c.inkOverrides[pi]);
+                if(hexes.length) ovrHexes[pi] = hexes;
+              });
+              if(!Object.keys(ovrHexes).length) ovrHexes = null;
+            }
+            return {
+              colorName: c.colorName || c.name || '',
+              colorHex:  c.colorHex  || c.hex  || '#ffffff',
+              hex:       c.colorHex  || c.hex  || '#ffffff',
+              inkOverrideHexes: ovrHexes,
+            };
+          })
         : null;
       const cfg = {
         bodyColor: bodyColor,
