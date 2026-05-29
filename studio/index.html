@@ -3308,13 +3308,14 @@ async function _initCustomerReviewMode(){
             if(pp) pp.remove();
             pp = document.createElement('div');
             pp.id = '_custPrintPicker';
-            pp.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--cocoro-banner-h, 56px) + 78px);z-index:99998;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border-radius:12px;padding:6px;display:flex;gap:6px;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.4);max-width:90vw;flex-wrap:wrap;justify-content:center;';
+            // ★ X2-fix: 左上 縦列 に変更 (右側の 確定/修正/3D ボタンと 重ならないように)
+            pp.style.cssText = 'position:fixed;left:14px;top:calc(var(--cocoro-banner-h, 56px) + 8px);z-index:99999;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.4);max-width:42vw;';
             const _curIdx = prints.indexOf(window._customerReviewTargetPrint);
-            pp.innerHTML = '<span style="font-size:10px;color:#ddd;align-self:center;padding:0 4px;font-weight:700;">📍</span>' + _withDesign.map(function(p){
+            pp.innerHTML = '<span style="font-size:10px;color:#ddd;font-weight:700;margin-bottom:2px;">📍 プリント箇所</span>' + _withDesign.map(function(p){
               const realIdx = prints.indexOf(p);
               const sel = (realIdx === _curIdx);
-              return '<button type="button" data-pidx="' + realIdx + '" style="display:flex;align-items:center;gap:4px;padding:5px 10px;background:' + (sel ? '#f59e0b' : 'rgba(255,255,255,.1)') + ';color:#fff;border:' + (sel ? '2px solid #fde68a' : '2px solid transparent') + ';border-radius:8px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;white-space:nowrap;">'
-                + (sel ? '✓ ' : '')
+              return '<button type="button" data-pidx="' + realIdx + '" style="display:flex;align-items:center;gap:4px;padding:7px 10px;background:' + (sel ? '#f59e0b' : 'rgba(255,255,255,.1)') + ';color:#fff;border:' + (sel ? '2px solid #fde68a' : '2px solid rgba(255,255,255,.15)') + ';border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;white-space:nowrap;text-align:left;justify-content:flex-start;width:100%;">'
+                + (sel ? '✓ ' : '○ ')
                 + (p.location || '?')
                 + '</button>';
             }).join('');
