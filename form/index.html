@@ -6554,17 +6554,31 @@ function _compressImageDataUrl(dataUrl, opts){
    ============================================================ */
 function checkDesignToolData(){
   try {
-    const data = localStorage.getItem('cocoro_design_data');
-    const ts   = localStorage.getItem('cocoro_design_timestamp');
+    let data = localStorage.getItem('cocoro_design_data');
+    let ts   = localStorage.getItem('cocoro_design_timestamp');
+    let targetArea = localStorage.getItem('cocoro_design_pid') || '';
+    let designSize = localStorage.getItem('cocoro_design_size') || '';
+    let usageRaw   = localStorage.getItem('cocoro_design_usage') || '';
+    // ★ 2026-05-29 bug①: localStorage に PNG 本体が 入っていない (容量不足で 保存失敗) 場合、
+    //   studio が postMessage 直送した PNG (window._cocoroPendingPng) を フォールバックで 使う
+    //   → 「ブラウザの保存容量が不足しています」 警告で 顧客が お見積りを 諦める のを 防ぐ
+    const _pendPng = window._cocoroPendingPng;
+    if(!data && _pendPng && _pendPng.png){
+      data       = _pendPng.png;
+      ts         = ts || String(_pendPng.ts || Date.now());
+      targetArea = targetArea || _pendPng.pid || '';
+      designSize = designSize || _pendPng.size || '';
+      usageRaw   = usageRaw || _pendPng.usage || '';
+      console.log('[checkDesignToolData] PNG from postMessage cache:', targetArea, (data ? data.length : 0));
+    }
     if(!data || !ts) return;
     // 30分超過は破棄
     if(Date.now() - parseInt(ts, 10) > 30 * 60 * 1000){
       _clearStudioKeys();
       return;
     }
-    const targetArea = localStorage.getItem('cocoro_design_pid') || '';
-    const designSize = localStorage.getItem('cocoro_design_size') || '';
-    const usageRaw   = localStorage.getItem('cocoro_design_usage') || '';
+    // ★ 2026-05-29 bug①: 二重適用ガード (focus と message の 両リスナーが 同一 ts を 重複適用しない)
+    if(window._cocoroLastAppliedTs && String(ts) === String(window._cocoroLastAppliedTs)) return;
     let svgRaw       = localStorage.getItem('cocoro_design_svg') || '';   // ★ 2026-04-28: SVG を取得
     // ★ 2026-05-28 Z-fix: localStorage に SVG が無い場合、 postMessage 受信した SVG を 使う
     if(!svgRaw && targetArea && window._cocoroPendingSvgs && window._cocoroPendingSvgs[targetArea]){
@@ -6704,6 +6718,8 @@ function checkDesignToolData(){
         }
       } catch(e){ console.warn('mode change check failed', e); }
     }
+    // ★ 2026-05-29 bug①: 適用済み ts を 記録 (focus/message 二重適用ガード用)
+    window._cocoroLastAppliedTs = String(ts);
     _clearStudioKeys();
     pushPrintsTo3D();
     renderPrintGrid();
@@ -6736,6 +6752,8 @@ function _clearStudioKeys(){
    'cocoro_design_size','cocoro_design_rotated'].forEach(k => {
     try { localStorage.removeItem(k); } catch(e){}
   });
+  // ★ 2026-05-29 bug①: postMessage 直送 PNG キャッシュも クリア (再適用防止)
+  window._cocoroPendingPng = null;
 }
 
 // プリントフィールド汎用 setter
@@ -9180,6 +9198,27 @@ function init(){
       });
       console.log('[postMessage SVG] received for', pid, ':', svg.length, 'chars');
     } catch(err){ console.warn('postMessage SVG handler fail:', err); }
+  });
+  // ★ 2026-05-29 bug①: studio から postMessage で PNG 本体 を 直送受信 (localStorage 容量不足 回避)
+  //   背景: cocoro_design_data (PNG 1-2MB) が localStorage 上限 を 超えて 保存失敗 →
+  //         「ブラウザの保存容量が不足しています」 警告で 顧客が お見積りを 諦める
+  //   対策: studio が postMessage で PNG 直送 → ここで _cocoroPendingPng に保持 → checkDesignToolData で適用
+  window.addEventListener('message', e => {
+    if(!e.data || e.data.type !== 'cocoro-design-png') return;
+    const { pid, png, size, rotated, usage, ts } = e.data;
+    if(!pid || !png) return;
+    try {
+      window._cocoroPendingPng = {
+        pid: pid,
+        png: png,
+        size: size || '',
+        rotated: rotated || '0',
+        usage: usage || '',
+        ts: ts || Date.now()
+      };
+      console.log('[postMessage PNG] received for', pid, ':', png.length, 'chars');
+      checkDesignToolData();
+    } catch(err){ console.warn('postMessage PNG handler fail:', err); }
   });
 }
 
