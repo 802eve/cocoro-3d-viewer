@@ -8523,6 +8523,17 @@ let _pendingSave = null;
 
 async function edSave(){
   if(!fabCanvas)return;
+  // ★ 2026-05-29 bug③: 社内プラットフォーム起動時 (fromPlatform=1) は
+  //   見積フォーム用の保存 (confirmApplyForm → 'cocoro-design-png') ではなく、
+  //   プラットフォーム専用の保存フロー (_platformSaveAndReturn → 'cocoroDesignSaved') を実行する。
+  //   platform_ui.html の message リスナーは 'cocoroDesignSaved' のみ受信するため、
+  //   confirmApplyForm が送る 'cocoro-design-png' は platform 側で無視され、
+  //   新規オーダー登録画面 (direct-order モーダル) にデザインが反映されない。
+  //   ⚠ PLATFORM_CONTEXT は top-level const のため window.PLATFORM_CONTEXT は undefined → bareword 参照必須。
+  if(typeof PLATFORM_CONTEXT !== 'undefined' && PLATFORM_CONTEXT.active && !PLATFORM_CONTEXT.customerReview
+     && typeof _platformSaveAndReturn === 'function'){
+    return _platformSaveAndReturn();
+  }
   fabCanvas.discardActiveObject().renderAll();
   // 2026-04-24: プレビュー3D でフォント文字化けが起きる問題対応
   //   キャンバス上のカスタムフォントが CSS @font-face でまだロード中だと
