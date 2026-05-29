@@ -8706,7 +8706,35 @@ async function confirmApplyForm(apply){
         if(entry && entry.svg) svgStr = entry.svg;
       }
     } catch(e){}
-    if(svgStr) _tryLS('cocoro_design_svg', svgStr);
+    // ★ 2026-05-28 Y-fix: SVG 圧縮 (空白除去 + 改行除去) + 保存失敗時に 明示エラー
+    //   背景: 複数プリント (胸+背中等) で 2回目の studio 保存時 localStorage 残量不足 →
+    //         SVG silently 失敗 → 顧客フォームに SVG が届かず → Drive にも 上がらず →
+    //         顧客確認 修正モードで 「JSON/SVG not available」 fallback → パーツ編集 不可
+    //   対策: SVG を minify してから 保存試行、 失敗したら ユーザーに伝える
+    if(svgStr){
+      var svgMin = svgStr;
+      try {
+        // 改行 + 連続スペースを 単一スペースに、 タグ間スペース除去
+        svgMin = svgMin.replace(/[\n\r\t]+/g, ' ').replace(/ {2,}/g, ' ').replace(/>\s+</g, '><').trim();
+      } catch(_){}
+      var _svgOk = _tryLS('cocoro_design_svg', svgMin);
+      if(!_svgOk){
+        // ★ 重要: SVG が 保存できないと 顧客が 後から 修正できない
+        //   再試行: cocoro_design_data (PNG) を 退避 → SVG 保存試行 → PNG 戻す (が これで PNG 落ちる)
+        //   現実的には: ユーザーに 警告して 「デザインを 簡略化してから 再保存」 を 促す
+        console.warn('[confirmApplyForm] SVG 保存失敗 (Quota?): ' + svgMin.length + ' chars');
+        // 軽量警告 — alert は 流れを止めるので setTimeout 経由
+        setTimeout(function(){
+          alert('⚠ 注意: デザインの ベクター情報 (SVG) が ブラウザ保存容量超過で 一部保存できませんでした。\n\n'
+              + '影響: 後で 修正する時に パーツ別の編集が できず、 全体 移動のみ可能になります。\n\n'
+              + '対策:\n'
+              + '  ・複雑な絵 (細かいパス多数) を シンプル化\n'
+              + '  ・ブラウザ キャッシュをクリア (設定 → 閲覧履歴)\n'
+              + '  ・シークレットウィンドウで 再試行\n\n'
+              + '見積もり自体は 問題なく 進められます。');
+        }, 800);
+      }
+    }
     // 使用色統計
     try{
       const used = collectUsedInkColors();
