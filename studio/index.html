@@ -3562,6 +3562,9 @@ function _customerOpen3dFromPng(){
             method: p.method || 'シルクスクリーン',
             size: p.size || '34cm角内',
             imageDataUrl: p.designUrl,
+            // ★ 2026-05-29 BB-fix: 顧客フォームで 設定したプリント位置を 顧客確認 3D にも 反映
+            offsetX: (typeof p.offsetX === 'number') ? p.offsetX : 0,
+            offsetY: (typeof p.offsetY === 'number') ? p.offsetY : 0,
           };
         });
       if(!cfgPrints.length){
