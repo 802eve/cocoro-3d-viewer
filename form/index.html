@@ -6555,7 +6555,12 @@ function checkDesignToolData(){
     const targetArea = localStorage.getItem('cocoro_design_pid') || '';
     const designSize = localStorage.getItem('cocoro_design_size') || '';
     const usageRaw   = localStorage.getItem('cocoro_design_usage') || '';
-    const svgRaw     = localStorage.getItem('cocoro_design_svg') || '';   // ★ 2026-04-28: SVG を取得
+    let svgRaw       = localStorage.getItem('cocoro_design_svg') || '';   // ★ 2026-04-28: SVG を取得
+    // ★ 2026-05-28 Z-fix: localStorage に SVG が無い場合、 postMessage 受信した SVG を 使う
+    if(!svgRaw && targetArea && window._cocoroPendingSvgs && window._cocoroPendingSvgs[targetArea]){
+      svgRaw = window._cocoroPendingSvgs[targetArea];
+      console.log('[checkDesignToolData] SVG from postMessage cache:', targetArea, svgRaw.length);
+    }
     if(!targetArea){ _clearStudioKeys(); return; }
     // ★ 2026-05-23 v2: 圧縮は state 更新 *後* に fire-and-forget で 実行
     //   理由: await を state 更新前に入れると validation が 古い state で 走って NEXT STEP 無効化される
@@ -9144,6 +9149,27 @@ function init(){
     d.offsetX = offsetX;
     d.offsetY = offsetY;
     setTimeout(() => renderPrintGrid(), 0);
+  });
+  // ★ 2026-05-28 Z-fix: studio から postMessage で SVG 受信 (localStorage バイパス用)
+  //   背景: 複雑デザイン の SVG が localStorage 5MB 上限 を 超えて 保存失敗 → 顧客が後で 修正できない
+  //   対策: studio が postMessage で 直送 → ここで受信 → state.lines の studioSvg に直接保存
+  window._cocoroPendingSvgs = window._cocoroPendingSvgs || {};
+  window.addEventListener('message', e => {
+    if(!e.data || e.data.type !== 'cocoro-design-svg') return;
+    const { pid, svg } = e.data;
+    if(!pid || !svg) return;
+    // pid = area key (例: 'left_chest')
+    // 該当 area を持つ全ラインの studioSvg に 反映
+    try {
+      window._cocoroPendingSvgs[pid] = svg;
+      // state.lines の 該当 area に 即時反映
+      (state.lines || []).forEach(ln => {
+        if(ln && ln.printDesigns && ln.printDesigns[pid]){
+          ln.printDesigns[pid].studioSvg = svg;
+        }
+      });
+      console.log('[postMessage SVG] received for', pid, ':', svg.length, 'chars');
+    } catch(err){ console.warn('postMessage SVG handler fail:', err); }
   });
 }
 
