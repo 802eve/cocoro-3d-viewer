@@ -7565,10 +7565,20 @@ function renderReview(){
     priceRows.push([lbl, `¥${est.shippingFee.toLocaleString()}`]);
   }
   if(est.fulfillmentMethod === 'pickup') priceRows.push(['受取方法', '直接受取（送料無料）']);
-  priceRows.push(['小計', `¥${est.subtotal.toLocaleString()}`]);
-  if(est.dlMul !== 1)      priceRows.push(['納期調整', `× ${est.dlMul}`]);
-  priceRows.push(['調整後', `¥${est.adjusted.toLocaleString()}`]);
-  priceRows.push(['消費税(10%)', `¥${(est.taxIncluded - est.adjusted).toLocaleString()}`]);
+  // ★ 2026-05-31: 納期割増/割引を金額(¥)で明記。納期調整がある時だけ「調整前小計」を出す
+  const _dlBaseF = est.subtotal - est.bodyDiscAmount;
+  if(est.dlMul !== 1){
+    priceRows.push(['小計（税抜・納期調整前）', `¥${_dlBaseF.toLocaleString()}`]);
+    const _dlAmtF = est.beforeTax - _dlBaseF;
+    const _dlPctF = Math.round((est.dlMul - 1) * 100);
+    if(est.dlMul > 1){
+      priceRows.push([`⚡ お急ぎ便（+${_dlPctF}%）`, `+¥${_dlAmtF.toLocaleString()}`]);
+    } else {
+      priceRows.push([`🌿 ゆったり割引（${_dlPctF}%）`, `−¥${Math.abs(_dlAmtF).toLocaleString()}`]);
+    }
+  }
+  priceRows.push(['税抜合計', `¥${est.beforeTax.toLocaleString()}`]);
+  priceRows.push(['消費税(10%)', `¥${(est.taxIncluded - est.beforeTax).toLocaleString()}`]);
   if(est.hasConsult) priceRows.push(['※要相談プリント', '別途お見積り']);
   priceRows.push(['税込合計', `¥${est.taxIncluded.toLocaleString()}`]);
   sections.push({ title:'価格内訳', step:null, rows: priceRows });
@@ -7802,7 +7812,8 @@ function buildSubmitPayload(est){
     memo:        memoParts.join('\n'),
     shipZip, shipAddr, shipName, shipWish,
     requestedDelivery: state.deadline ? (state.deadline + '営業日') : '',
-    deliveryPlan: '',
+    // ★ 2026-05-31: 納期プラン名を保存(書類の納期調整ラベル用)。例「5営業日（特急）」
+    deliveryPlan: (() => { const _o = DEADLINE_OPTIONS.find(d => d.days === state.deadline); return _o ? (_o.label + '（' + _o.sub + '）') : ''; })(),
     estimatedShipDate: '',
     estimatedTotal: est.taxIncluded || 0,
     totalQty: est.qty || 0,
@@ -8342,6 +8353,21 @@ function buildDocumentHtml(type){
         rows += `<tr><td class="ind2" style="color:#155724;">${lbl}</td><td></td><td style="text-align:right;color:#155724;">+¥${shippingFee.toLocaleString()}</td></tr>`;
       }
       rows += `<tr class="sub-cat"><td class="ind1">オプション・配送小計</td><td></td><td style="text-align:right;">+¥${(foldingFee + shippingFee).toLocaleString()}</td></tr>`;
+    }
+    // 【納期調整】★ 2026-05-31: 特急/ゆったりを金額(¥)で明記。grand(=dlMul適用後)÷dlMulで調整前を逆算
+    const dlMulD = Number(cb.dlMul || 1.0);
+    if(dlMulD !== 1.0 && grand > 0){
+      const baseBeforeDl = Math.round(grand / dlMulD);
+      const dlAdjustD = grand - baseBeforeDl;
+      const dlPctD = Math.round((dlMulD - 1) * 100);
+      const dlPlanD = data.deliveryPlan ? ('　' + escapeHtmlSimple(data.deliveryPlan)) : '';
+      rows += `<tr class="cat-hd"><td colspan="3">【納期調整】</td></tr>`;
+      rows += `<tr class="sub-cat"><td class="ind1">小計（税抜・納期調整前）</td><td></td><td style="text-align:right;">¥${baseBeforeDl.toLocaleString()}</td></tr>`;
+      if(dlMulD > 1){
+        rows += `<tr><td class="ind2" style="color:#dc2626;">⚡ お急ぎ便（+${dlPctD}%）${dlPlanD}</td><td></td><td style="text-align:right;color:#dc2626;">+¥${dlAdjustD.toLocaleString()}</td></tr>`;
+      } else {
+        rows += `<tr><td class="ind2" style="color:#16a34a;">🌿 ゆったり割引（${dlPctD}%）${dlPlanD}</td><td></td><td style="text-align:right;color:#16a34a;">−¥${Math.abs(dlAdjustD).toLocaleString()}</td></tr>`;
+      }
     }
     // 合計
     rows += `<tr class="total"><td>小計（税抜）</td><td></td><td style="text-align:right;">¥${grand.toLocaleString()}</td></tr>`;
