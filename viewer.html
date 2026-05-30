@@ -2110,6 +2110,12 @@ function _recolorImageSync(img, fromHexes, toHexes){
   } catch(e){ console.warn('[recolor] failed', e); return img; }
 }
 function _shouldRecolor(fromHexes, toHexes){
+  // ★ 2026-05-29: 元色 (fromHexes) が空＝デザインの元色が不明な時は再着色しない。
+  //   背景: アップロードした多色ロゴ等で originalInkHexes が空のまま targetInkHexes だけ届くと、
+  //   _recolorImageSync が source-in (!fromRGB.length 分岐) でデザイン全体を1色(黒)に塗り潰す
+  //   ＝「3Dでインク色が黒くなる」バグの真因。元色が分かっている「色違いライン」の
+  //   正規の色替え (originalInkHexes 非空) のときだけ再着色する。
+  if(!fromHexes || !fromHexes.length) return false;
   const a = (fromHexes || []).map(h => (h||'').toLowerCase()).join(',');
   const b = (toHexes || []).map(h => (h||'').toLowerCase()).join(',');
   return a !== b && (toHexes && toHexes.length);
