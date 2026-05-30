@@ -187,23 +187,36 @@
 function _3d_goBack(){
   // 2026-04-25: ブラウザが window.close() をブロックするケース（クロスオリジン/直接URL等）
   //             にも確実に元ページへ戻るため、段階的フォールバックを実装。
+  // ★ 2026-05-29: opener が ?back=<元ページURL> を渡してくるので、close() が
+  //   ブロックされても その URL へ現タブを置換して「元いたページ」に確実に戻す。
+  //   (no-referrer meta のため document.referrer は空 → back param が主たる戻り先)
+  var _backUrl = '';
+  try {
+    var _b = new URLSearchParams(location.search).get('back');
+    if(_b) _backUrl = decodeURIComponent(_b);
+  } catch(e){}
   // 1) opener タブが生きているなら、opener にフォーカスしてから自タブを閉じる
   //    (→ 新タブで開いた普通のケース。ユーザー視点では opener タブに戻る)
   if(window.opener && !window.opener.closed){
     try { window.opener.focus(); } catch(e){}
     try { window.close(); } catch(e){}
-    // close がブロックされたときのフォールバック（150ms後にまだここにいたら実行）
-    setTimeout(()=> _3d_goBackFallback(), 150);
+    // close がブロックされたときのフォールバック（200ms後にまだここにいたら back URL へ）
+    setTimeout(function(){ _3d_goBackFallback(_backUrl); }, 200);
     return;
   }
-  // 2) opener なし → ブラウザ履歴を1段戻す
+  // 2) opener なし → back URL があれば最優先で遷移（元ページへ確実に戻る）
+  if(_backUrl){ try { location.href = _backUrl; return; } catch(e){} }
+  // 3) ブラウザ履歴を1段戻す
   if(history.length > 1){
     try { history.back(); return; } catch(e){}
   }
-  // 3) 最終: referrer に遷移 or ウィンドウを閉じる
-  _3d_goBackFallback();
+  // 4) 最終: referrer に遷移 or ウィンドウを閉じる
+  _3d_goBackFallback(_backUrl);
 }
-function _3d_goBackFallback(){
+function _3d_goBackFallback(backUrl){
+  try {
+    if(backUrl){ location.href = backUrl; return; }            // ★ back URL を最優先
+  } catch(e){}
   try {
     if(document.referrer){
       // 元ページの URL に直接戻る（現タブを置換）
