@@ -7850,6 +7850,7 @@ function buildSubmitPayload(est){
       hasConsult:      est.hasConsult,
       fulfillmentMethod: est.fulfillmentMethod,
       // ★ v12 互換エイリアス（platform_ui.html の既存表示と整合）
+      bodyRaw:         est.bodyCost || 0,  // ★ 2026-05-31: 定価を明示保存(書類の割引明記で使用)
       bodyDisc:        Math.max(0, (est.bodyCost || 0) - (est.bodyDiscAmount || 0)),
       bodyDiscAmt:     est.bodyDiscAmount || 0,
       smallFee:        est.smallOrderFee || 0,
@@ -8293,7 +8294,8 @@ function buildDocumentHtml(type){
   const breakdownRows = (() => {
     const bodyDisc = cb.bodyDisc || cb.bodyCost || 0;
     const bodyDiscAmt = cb.bodyDiscAmt || cb.bodyDiscAmount || 0;
-    const bodyDiscRate = cb.bodyDiscRate || 0;
+    let bodyDiscRate = cb.bodyDiscRate || 0;
+    if(bodyDiscRate > 0 && bodyDiscRate < 1) bodyDiscRate = Math.round(bodyDiscRate * 100);  // 小数(0.40)→百分率(40) 統一
     const upchargeCost = cb.upchargeCost || 0;
     const smallFee = cb.smallFee || cb.smallOrderFee || 0;
     const printTotal = cb.printTotal || ((cb.inkCost||0)+(cb.transferCost||0));
