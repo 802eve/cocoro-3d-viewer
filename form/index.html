@@ -7448,7 +7448,8 @@ function calcEstimate(){
   // 納期倍率 (Express/Eco 共通: 全体に適用)
   const dlMul = deadlineMul();
   const beforeTax  = Math.round((subtotal - bodyDiscAmount) * dlMul);
-  const taxIncluded = Math.round(beforeTax * 1.10);
+  // ★ 2026-05-30: 税込は「税抜 + floor(税抜×0.1)」に統一 (見積書/請求書6196-6199・社内と完全一致。round だと1円ズレる)
+  const taxIncluded = beforeTax + Math.floor(beforeTax * 0.10);
   const unitPrice = qty > 0 ? Math.round(taxIncluded / qty) : 0;
 
   // 旧 v13 の qtyDiscountMul はボディ割引と二重なので 1.0 固定にして互換維持
