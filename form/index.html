@@ -7445,9 +7445,11 @@ function calcEstimate(){
   for(const t of PRICING.bodyDiscount){ if(qty >= t.minQty){ bodyDiscRate = t.rate; break; } }
   const bodyDiscAmount = Math.round(bodyCost * bodyDiscRate);
 
-  // 納期倍率 (Express/Eco 共通: 全体に適用)
+  // 納期倍率 — ★ 2026-06-02: プリント代(版代+インク代+転写代)のみに適用 (ボディ/色替え/特殊色/アップチャージ/データ/手数料/送料は対象外)
   const dlMul = deadlineMul();
-  const beforeTax  = Math.round((subtotal - bodyDiscAmount) * dlMul);
+  const dlBase = (plateCost||0) + (inkCost||0) + (transferCost||0);
+  const dlAdjAmt = Math.round(dlBase * dlMul) - dlBase;   // 割増(+) / 割引(-) 額
+  const beforeTax  = (subtotal - bodyDiscAmount) + dlAdjAmt;
   // ★ 2026-05-30: 税込は「税抜 + floor(税抜×0.1)」に統一 (見積書/請求書6196-6199・社内と完全一致。round だと1円ズレる)
   const taxIncluded = beforeTax + Math.floor(beforeTax * 0.10);
   const unitPrice = qty > 0 ? Math.round(taxIncluded / qty) : 0;
@@ -7462,7 +7464,7 @@ function calcEstimate(){
     bodyCost, plateCost, inkCost, transferCost, colorChangeCost, upchargeCost, specialInkCost, printCost,
     dataFee, smallOrderFee, foldingFee, shippingFee,
     bodyDiscRate, bodyDiscAmount,
-    subtotal, qtyMul, dlMul,
+    subtotal, qtyMul, dlMul, dlBase, dlAdjAmt,
     beforeTax, adjusted: beforeTax, taxIncluded, unitPrice,
     hasConsult,
     fulfillmentMethod: state.delivery.method,
@@ -7855,6 +7857,8 @@ function buildSubmitPayload(est){
       shippingBoxes:   (typeof calcShippingBoxes === 'function') ? calcShippingBoxes() : 0,
       subtotal:        est.subtotal,
       dlMul:           est.dlMul,
+      dlBase:          est.dlBase,
+      dlAdjAmt:        est.dlAdjAmt,
       beforeTax:       est.beforeTax,
       taxIncluded:     est.taxIncluded,
       unitPrice:       est.unitPrice,
@@ -8357,8 +8361,9 @@ function buildDocumentHtml(type){
     // 【納期調整】★ 2026-05-31: 特急/ゆったりを金額(¥)で明記。grand(=dlMul適用後)÷dlMulで調整前を逆算
     const dlMulD = Number(cb.dlMul || 1.0);
     if(dlMulD !== 1.0 && grand > 0){
-      const baseBeforeDl = Math.round(grand / dlMulD);
-      const dlAdjustD = grand - baseBeforeDl;
+      // ★ 2026-06-02: 納期調整はプリント代(版代+インク+転写)のみ対象。保存値 dlAdjAmt 優先、無ければ旧式(全体×倍率)逆算でフォールバック
+      const dlAdjustD = (typeof cb.dlAdjAmt === 'number') ? cb.dlAdjAmt : (grand - Math.round(grand / dlMulD));
+      const baseBeforeDl = grand - dlAdjustD;
       const dlPctD = Math.round((dlMulD - 1) * 100);
       const dlPlanD = data.deliveryPlan ? ('　' + escapeHtmlSimple(data.deliveryPlan)) : '';
       rows += `<tr class="cat-hd"><td colspan="3">【納期調整】</td></tr>`;
