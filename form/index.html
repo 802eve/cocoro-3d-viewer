@@ -9160,8 +9160,47 @@ function _setupCopyProtection(){
   });
 }
 
+// ★ 2026-06-02 B1: 料金設定 (納期倍率 + 枚数割引) を 社内platform GAS から JSONP取得して上書き
+//   取得失敗時は このファイルの DEADLINE_OPTIONS / PRICING.bodyDiscount の既定値をそのまま使う (フォームは止まらない)
+function _applyPricingConfig(cfg){
+  try {
+    if(!cfg) return;
+    if(Array.isArray(cfg.deadlineOptions)){
+      cfg.deadlineOptions.forEach(function(c){
+        const opt = DEADLINE_OPTIONS.find(function(d){ return String(d.days) === String(c.days); });
+        const mul = Number(c && c.mul);
+        if(opt && isFinite(mul) && mul > 0) opt.mul = mul;
+      });
+    }
+    if(Array.isArray(cfg.bodyDiscount) && cfg.bodyDiscount.length){
+      const tiers = cfg.bodyDiscount
+        .filter(function(t){ return isFinite(Number(t.minQty)) && isFinite(Number(t.rate)); })
+        .map(function(t){ return { minQty: parseInt(t.minQty,10), rate: Number(t.rate) }; })
+        .sort(function(a,b){ return b.minQty - a.minQty; });
+      if(tiers.length) PRICING.bodyDiscount = tiers;
+    }
+    window._pricingConfigApplied = true;
+    try { if(typeof renderDeadline === 'function') renderDeadline(); } catch(_){}
+    try { if(typeof refreshChrome === 'function') refreshChrome(); } catch(_){}
+  } catch(e){ console.warn('[pricingConfig] apply failed', e); }
+}
+function _fetchPricingConfig(){
+  try {
+    const cbName = '_pricingCfgCb_' + Math.floor(Math.random()*1e9);
+    const s = document.createElement('script');
+    window[cbName] = function(resp){
+      try { if(resp && resp.ok && resp.config) _applyPricingConfig(resp.config); }
+      catch(e){ console.warn('[pricingConfig] cb err', e); }
+      finally { try { delete window[cbName]; } catch(_){} if(s && s.parentNode) s.parentNode.removeChild(s); }
+    };
+    s.src = PLATFORM_GAS_ENDPOINT + '?action=getPricingConfig&callback=' + cbName + '&_=' + Date.now();
+    s.onerror = function(){ console.warn('[pricingConfig] fetch failed — 既定値を使用'); try { delete window[cbName]; } catch(_){} if(s.parentNode) s.parentNode.removeChild(s); };
+    document.head.appendChild(s);
+  } catch(e){ console.warn('[pricingConfig] fetch setup failed', e); }
+}
 function init(){
   _setupCopyProtection();   // ★ コピー防止 (本番のみ)
+  _fetchPricingConfig();    // ★ 2026-06-02 B1: 料金設定を非同期取得 (返ってきたら mul/割引を上書き+再描画)
   state.catIndex = 0;
   loadViewerInitial(CATEGORIES[0].model3d);
   renderHero();
