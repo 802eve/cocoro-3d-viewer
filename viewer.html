@@ -640,6 +640,8 @@ const _isEmbedMode = new URLSearchParams(location.search).get('embed') === '1';
 const _ua = navigator.userAgent || '';
 const _isIOS = /iP(ad|hone|od)/.test(_ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const _isMobile = _isIOS || /Android|Mobile/.test(_ua);
+// ★ 2026-06-04: 低メモリ端末の推定(切替時のGPUメモリ枯渇=クラッシュ対策)。deviceMemory(GB・Android)/CPUコア数で判定
+const _lowMem = (navigator.deviceMemory && navigator.deviceMemory <= 4) || ((navigator.hardwareConcurrency || 8) <= 4);
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({
@@ -695,6 +697,11 @@ _glCanvas.addEventListener('webglcontextrestored', () => {
       setTimeout(() => { try{ location.reload(); }catch(e){} }, 200);
     }
   } catch(e){}
+}, false);
+// ★ 2026-06-04: iframe破棄/再読込/離脱時にGPUコンテキストを即解放。
+//   モバイルブラウザはWebGLコンテキストを溜め込みがちで、カテゴリ切替(iframe再読込)のたびに積み重なり→メモリ枯渇→クラッシュ→reloadループの主因。明示解放で断つ。
+window.addEventListener('pagehide', () => {
+  try { if (typeof renderer !== 'undefined' && renderer) { renderer.forceContextLoss(); renderer.dispose(); } } catch(e){}
 }, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 // ACESFilmicは映画的に色を圧縮するため、シャツの色再現には NoToneMapping が忠実
@@ -1065,7 +1072,9 @@ function initTextureCompose() {
   const ar = origW / origH;
   // ★ L1 2026-05-02: iOS は canvas 1024 まで下げる (ポロ以降のメモリ枯渇対策)
   //   2048²×4byte = 16MB → 1024²×4byte = 4MB に削減 (画質は妥協・安定優先)
-  const TARGET_CANVAS_MIN = _isIOS ? 1024 : 4096;
+  // ★ 2026-06-04: モバイルは合成キャンバスを縮小してGPUメモリ枯渇(切替時クラッシュ)を防ぐ。
+  //   4096²×4byte=67MB×2枚=134MB → Android低メモリ1536(=約19MB)/通常2048(=約33MB)、iOS1024、PCのみ4096維持(高精細)
+  const TARGET_CANVAS_MIN = _isIOS ? 1024 : (_isMobile ? (_lowMem ? 1536 : 2048) : 4096);
   const w = Math.max(origW, TARGET_CANVAS_MIN);
   const h = Math.max(origH, Math.round(w / ar));
 
