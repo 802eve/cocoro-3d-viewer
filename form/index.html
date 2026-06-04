@@ -4703,7 +4703,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '85';   // ★ 2026-06-04: 3Dメモリ対策v2(切替時にforceContextLossで明示破棄)を読ませるため更新
+const VIEWER_VERSION = '86';   // ★ 2026-06-04: 3D根本対策(iframe再読込せずsetModelでモデルだけ差替=WebGL1個維持)を読ませるため更新
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -4759,28 +4759,35 @@ function loadViewer(modelKey, slideDir){
   }
   stage.classList.remove('is-unsupported');
 
-  const active  = getActiveFrame();
-  const standby = getStandbyFrame();
+  const active = getActiveFrame();
 
-  // 同じモデルが現在 active なら、リロードせず spinOnce だけ送る
+  // 同じモデルが現在 active なら、回すだけ
   if(active.dataset.model === modelKey){
     pushConfigToViewer({ spinOnce: true });
     return;
   }
 
+  // ★ 2026-06-04: iframeを再読込しない＝WebGLコンテキストを増やさない（iOSの同時数上限でのクラッシュを根治）。
+  //   未ロード(初回/about:blank)なら通常ロード、ロード済みなら現iframe内で「モデルだけ差し替え」(setModel)。
+  if(!active.dataset.model || !active.src || /about:blank/.test(active.src || '')){
+    loadViewerInitial(modelKey);
+    return;
+  }
+
+  active.dataset.model = modelKey;
+  active.dataset.pendingSpin = '1';
+  active.dataset.pendingSlide = '0';
   stage.classList.add('is-loading');
-  standby.dataset.pendingSpin  = '1';
-  standby.dataset.pendingSlide = '1';
-  standby.dataset.slideDir     = slideDir || 'left';   // デフォルト: 標準カルーセル
-  standby.dataset.model        = modelKey;
-
-  // スタンバイを「待機側 (= slideDir と逆側)」にセットしてから src 読込開始
-  //  - slideDir='left' (現が左へ) → 新は右から → standby は右待機
-  //  - slideDir='right' (現が右へ) → 新は左から → standby は左待機
-  standby.classList.remove('is-active','is-leaving-left','is-leaving-right','is-waiting-left','is-waiting-right');
-  standby.classList.add(slideDir === 'right' ? 'is-waiting-left' : 'is-waiting-right');
-
-  standby.src = VIEWER_URL + '?embed=1&v=' + VIEWER_VERSION + '&model=' + encodeURIComponent(modelKey);
+  try {
+    if(active.contentWindow){
+      active.contentWindow.postMessage({ type: 'tshirt3d-setmodel', model: modelKey }, '*');
+    } else {
+      loadViewerInitial(modelKey);   // contentWindow未準備ならフォールバック
+    }
+  } catch(e){
+    console.warn('[loadViewer] setModel送信失敗→初回ロードにフォールバック', e);
+    loadViewerInitial(modelKey);
+  }
 }
 
 // 初回ロード（intro モード起動時）— スライド遷移なしで即表示
