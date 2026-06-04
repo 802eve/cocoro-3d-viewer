@@ -643,6 +643,7 @@ const _isMobile = _isIOS || /Android|Mobile/.test(_ua);
 // ★ 2026-06-04: 低メモリ端末の推定(切替時のGPUメモリ枯渇=クラッシュ対策)。deviceMemory(GB・Android)/CPUコア数で判定
 const _lowMem = (navigator.deviceMemory && navigator.deviceMemory <= 4) || ((navigator.hardwareConcurrency || 8) <= 4);
 let renderer;
+let _disposed = false;   // ★ 2026-06-04: 親から dispose 命令を受けたら true → 描画停止＋コンテキスト明示解放
 try {
   renderer = new THREE.WebGLRenderer({
     antialias: !_isIOS,                     // iOS では antialias OFF (安定化)
@@ -671,6 +672,7 @@ renderer.setSize(innerWidth, innerHeight);
 const _glCanvas = renderer.domElement;
 _glCanvas.addEventListener('webglcontextlost', (ev) => {
   ev.preventDefault();
+  if (_disposed) return;   // ★ 2026-06-04: 親からの dispose による意図的ロストはエラーUI/復帰不要
   console.warn('WebGL context lost — attempting recovery in 1s');
   try {
     const errEl = document.getElementById('error');
@@ -1046,8 +1048,20 @@ window.addEventListener('message', (e) => {
       // GLB未ロード → バッファ
       _pendingConfig = e.data.config;
     }
+  } else if (e.data?.type === 'tshirt3d-dispose') {
+    // ★ 2026-06-04: 親(フォーム)が iframe を空にする“前”に、生きているうちに明示破棄。
+    //   iOSは about:blank では WebGL を解放しない(A16実機で実証)→ forceContextLoss(WebGL破棄API)を確実に呼ぶ。
+    _disposeViewer();
   }
 });
+// ★ 2026-06-04: WebGLコンテキスト/テクスチャを明示解放(切替で積み重なるのを断つ最重要処理)
+function _disposeViewer(){
+  if (_disposed) return;
+  _disposed = true;
+  try { if (typeof currentTexture !== 'undefined' && currentTexture) currentTexture.dispose(); } catch(e){}
+  try { if (typeof origTexImage !== 'undefined') origTexImage = null; } catch(e){}
+  try { if (renderer) { renderer.forceContextLoss(); renderer.dispose(); } } catch(e){}
+}
 
 function initTextureCompose() {
   const targetMesh = shirtMeshes.find(m => m.material?.map);
@@ -2423,6 +2437,7 @@ function tick() {
       updateRotateBtn();
     }
   }
+  if (_disposed) return;   // ★ dispose後はループ停止(コンテキスト喪失後のrender例外を防ぐ)
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
