@@ -4703,7 +4703,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '84';   // ★ 2026-06-04: 3Dメモリ対策版viewer(モバイルのキャンバス縮小+iframe破棄時GPU解放)を読ませるため更新
+const VIEWER_VERSION = '85';   // ★ 2026-06-04: 3Dメモリ対策v2(切替時にforceContextLossで明示破棄)を読ませるため更新
 const ROTATION_SPEED_DEFAULT = 1.25;
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
@@ -4845,12 +4845,16 @@ window.addEventListener('message', (e) => {
       void oldActive.offsetWidth;
       oldActive.style.transition = '';
 
-      // ★ G2 2026-04-30: iOS メモリ対策 — 旧iframe の WebGL コンテキストを解放
-      //   src を空にすることで GLB / texture / WebGL リソースをすべて解放
+      // ★ 2026-06-04: iOS実機(A16)では about:blank だけでは WebGLコンテキストが解放されず、
+      //   切替を繰り返すと積み重なって 縞→黒→クラッシュ。対策として「空にする前」に viewer へ
+      //   dispose 命令を送り、生きているうちに forceContextLoss(WebGL破棄API)で明示解放させる。
       try {
-        oldActive.src = 'about:blank';
-        oldActive.dataset.model = '';
+        if(oldActive.contentWindow) oldActive.contentWindow.postMessage({ type: 'tshirt3d-dispose' }, '*');
       } catch(e){ /* ignore */ }
+      // 明示破棄が走る時間を与えてから空に（120ms）
+      setTimeout(() => {
+        try { oldActive.src = 'about:blank'; oldActive.dataset.model = ''; } catch(e){ /* ignore */ }
+      }, 120);
 
       // 新iframe に spin 発動（モデルが画面に出てから = スライド完了後 = ベスト）
       if(newActive.dataset.pendingSpin === '1'){
