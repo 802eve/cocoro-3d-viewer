@@ -12252,11 +12252,29 @@ function _3d_launchViewer(cfg){
   const modelKey = _3d_getModelKey();
   // ★ 2026-05-08: viewer.html バージョン (unlit overlay) — キャッシュバスティング
   let url = _3D_VIEWER_PATH + '?model=' + modelKey + '&cfgKey=' + encodeURIComponent(cfgKey) + '&v=83';
+  // ★ 2026-05-29: 戻り先 URL を渡す (viewer の「戻る」で確実に元ページへ戻すため。
+  //   window.close() がブロックされるモバイル等でも back URL で現タブを置換して戻れる)
+  try { url += '&back=' + encodeURIComponent(location.href); } catch(e){}
   try {
     const b64 = btoa(unescape(encodeURIComponent(json)));
     if(b64.length < 6000) url += '&config=' + b64;
   } catch(e){}
-  window.open(url, '_blank');
+  const _w = window.open(url, '_blank');
+  // ★ 2026-06-05 バグ修正: 別タブを開くと当タブはバックグラウンド化し setTimeout がスロットリングされ
+  //   「🎽 3Dビューアを起動中」オーバーレイが消えない → 戻ると固まる。
+  //   → タブに戻った瞬間(focus / visibilitychange / pageshow)に確実に消す。
+  let _clr, _onVis;
+  _clr = () => {
+    try { _hideLoadingOverlay(); } catch(_){}
+    window.removeEventListener('focus', _clr);
+    window.removeEventListener('pageshow', _clr);
+    document.removeEventListener('visibilitychange', _onVis);
+  };
+  _onVis = () => { if(!document.hidden) _clr(); };
+  window.addEventListener('focus', _clr);
+  window.addEventListener('pageshow', _clr);
+  document.addEventListener('visibilitychange', _onVis);
+  if(!_w){ try { _hideLoadingOverlay(); } catch(_){}; alert('3Dビューアを開けませんでした。ブラウザのポップアップ許可をご確認ください。'); }
 }
 
 // 1) エディタ: 現状のキャンバスをPNG化して3Dへ
