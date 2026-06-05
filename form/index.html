@@ -2955,7 +2955,8 @@ img{ display:block; max-width:100%; }
 }
 .lite-3d .stage-tip{ display:none; }                                   /* DRAG/ROTATE/ZOOM は3D専用 */
 .lite-3d #viewer3d-a, .lite-3d #viewer3d-b{ display:none !important; } /* 3D iframe を非表示 */
-@media (max-width:900px){ .lite-3d .lite-hero-visual{ font-size:96px; } }
+.lite-3d .lite-hero-visual svg{ width:auto; height:60%; max-width:78%; display:block; filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)); }
+@media (max-width:900px){ .lite-3d .lite-hero-visual{ font-size:96px; } .lite-3d .lite-hero-visual svg{ height:54%; max-width:86%; } }
 </style>
 </head>
 <body>
@@ -4739,6 +4740,62 @@ const _LITE_3D = (function(){
   return false;
 })();
 try { document.documentElement.classList.toggle('lite-3d', _LITE_3D); } catch(_){}
+
+/* ★ 2026-06-05: ライトモードの2Dガーメント表示 — 指示書と同じ絵型SVGを使い、ボディ色を適用(WebGL不使用＝iOSで落ちない) */
+const _EZ_KEY = { tshirt:'tshirt', long_sleeve:'longtee', longtee:'longtee', polo:'polo', hoodie:'hoodie', hoodie_zip:'hoodie', sweat:'sweat' };
+function _liteEzKey(m){ return _EZ_KEY[m] || 'tshirt'; }
+const _ezSvgCache = {};   // "key_side" → raw SVG文字列(取得失敗はnull)
+function _fetchEzSvg(ezKey, side){
+  const k = ezKey + '_' + side;
+  if(_ezSvgCache[k] !== undefined) return Promise.resolve(_ezSvgCache[k]);
+  return fetch('../ezugata/ezugata/' + k + '.svg')
+    .then(r => r.ok ? r.text() : null)
+    .then(t => { _ezSvgCache[k] = t || null; return _ezSvgCache[k]; })
+    .catch(() => { _ezSvgCache[k] = null; return null; });
+}
+// 絵型のボディ(.cls-1=元#fff)を選択色に。白/未選択は薄グレー(背景と同化防止)
+function _liteColorGarment(raw, bodyColor){
+  if(!raw) return '';
+  let c = '#ececed';
+  if(bodyColor && /^#?[0-9a-fA-F]{3,6}$/.test(String(bodyColor))){
+    const lc = String(bodyColor).toLowerCase();
+    if(lc !== '#fff' && lc !== '#ffffff') c = bodyColor;
+  }
+  return raw.replace(/\.cls-1\s*\{[^}]*\}/i, '.cls-1{fill:' + c + ';}');
+}
+// フォームのプリント箇所(area) → 絵型の座標キー(フロント面のみ。背面プリントはフロント絵型には出さない)
+const _LITE_AREA_KEY = { front_center:'front_center', left_chest:'chest_left', right_chest:'chest_right', left_sleeve:'left_sleeve', right_sleeve:'right_sleeve', front_hem:'front_hem' };
+// 指示書と同じ実機調整済み座標(フロント面・viewBox単位)
+const _LITE_COORDS = {
+  tshirt:  { uPerCm:2.7, locs:{ front_center:{cx:109,cy:78.3,cm:20}, chest_right:{cx:80,cy:62,cm:9}, chest_left:{cx:138,cy:62,cm:9}, front_hem:{cx:109,cy:150,cm:18}, right_sleeve:{cx:26.4,cy:38.4,cm:10}, left_sleeve:{cx:192.1,cy:37,cm:10} } },
+  longtee: { uPerCm:2.7, locs:{ front_center:{cx:109.6,cy:74.8,cm:20}, chest_right:{cx:81,cy:62,cm:9}, chest_left:{cx:139,cy:62,cm:9}, front_hem:{cx:110,cy:150,cm:18}, right_sleeve:{cx:34.4,cy:55.2,cm:10}, left_sleeve:{cx:186.4,cy:55.2,cm:10} } },
+  hoodie:  { uPerCm:2.5, locs:{ front_center:{cx:101.4,cy:113.8,cm:20}, chest_right:{cx:72.4,cy:103.4,cm:9}, chest_left:{cx:132.4,cy:103.2,cm:9}, right_sleeve:{cx:31.4,cy:95.4,cm:10}, left_sleeve:{cx:174.8,cy:97.7,cm:10} } },
+  sweat:   { uPerCm:2.7, locs:{ front_center:{cx:107.8,cy:78,cm:20}, chest_right:{cx:75.6,cy:62,cm:9}, chest_left:{cx:139.9,cy:62,cm:9}, front_hem:{cx:107,cy:139,cm:18}, right_sleeve:{cx:22,cy:56,cm:10}, left_sleeve:{cx:192,cy:58.8,cm:10} } },
+  polo:    { uPerCm:2.7, locs:{ chest_right:{cx:79.4,cy:58,cm:9}, chest_left:{cx:140.6,cy:57.6,cm:9}, front_hem:{cx:108,cy:143.6,cm:18}, right_sleeve:{cx:25,cy:40.8,cm:10}, left_sleeve:{cx:192.6,cy:39.6,cm:10} } },
+};
+// 指定要素に 絵型(front) を「ボディ色＋プリント箇所＋デザイン」付きで描画(取得失敗時は絵文字フォールバック)
+function _liteRenderGarment(el, model3d, bodyColor, fallbackIcon, prints){
+  if(!el) return;
+  const ezKey = _liteEzKey(model3d);
+  _fetchEzSvg(ezKey, 'front').then(raw => {
+    if(!raw){ el.classList.remove('has-svg'); el.textContent = fallbackIcon || '👕'; return; }
+    let svg = _liteColorGarment(raw, bodyColor);
+    const cfg = _LITE_COORDS[ezKey];
+    if(cfg && Array.isArray(prints) && prints.length){
+      let ov = '';
+      prints.forEach(p => {
+        const a = p && cfg.locs[_LITE_AREA_KEY[p.area]];
+        if(!a) return;   // 背面/その他 はフロント絵型に出さない
+        const sz = (a.cm || 14) * cfg.uPerCm;
+        const x = (a.cx - sz/2).toFixed(1), y = (a.cy - sz/2).toFixed(1), s = sz.toFixed(1);
+        ov += '<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="none" stroke="#1d3a8a" stroke-width="1" stroke-dasharray="3 2" rx="1.5"/>';
+        if(p.imageDataUrl){ ov += '<image x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" href="'+p.imageDataUrl+'" preserveAspectRatio="xMidYMid meet"/>'; }
+      });
+      if(ov) svg = svg.replace(/<\/svg>\s*$/i, ov + '</svg>');
+    }
+    el.classList.add('has-svg'); el.innerHTML = svg;
+  });
+}
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
 /* ========================================================================
@@ -4954,6 +5011,17 @@ function buildPrintsForViewer(line){
 
 function pushConfigToViewer(extras){
   extras = extras || {};
+  // ★ 2026-06-05 ライトモード: 3Dへは送らず、絵型(2D)を「ボディ色＋デザイン」付きで再描画
+  if(_LITE_3D){
+    try {
+      const _ln = cur();
+      const _m3 = (typeof _currentModel3d === 'function') ? _currentModel3d(_ln) : (_ln && _ln.category && _ln.category.model3d);
+      const _bc = (_ln && _ln.color && _ln.color.hex) ? _ln.color.hex : null;
+      const _pr = (typeof buildPrintsForViewer === 'function') ? buildPrintsForViewer(_ln) : [];
+      _liteRenderGarment(document.getElementById('liteHeroVisual'), _m3, _bc, (_ln && _ln.category && _ln.category.icon), _pr);
+    } catch(e){}
+    return;
+  }
   const ifr = getActiveFrame();
   const line = cur();
   // printsOverride が指定されたらそれを使う、なければ buildPrintsForViewer で生成
@@ -5249,8 +5317,15 @@ function switchLine(i){
    ======================================================================== */
 function renderHero(){
   const cat = CATEGORIES[state.catIndex];
-  // ★ 2026-06-05 ライトモード: 3Dの代わりにカテゴリのアイコンを大きく表示
-  if(_LITE_3D){ const _lv = document.getElementById('liteHeroVisual'); if(_lv) _lv.textContent = cat.icon || '👕'; }
+  // ★ 2026-06-05 ライトモード: 3Dの代わりに「絵型(2D)＋ボディ色」を表示(取得前は絵文字)
+  if(_LITE_3D){
+    const _lv = document.getElementById('liteHeroVisual');
+    if(_lv){
+      if(!_lv.classList.contains('has-svg')) _lv.textContent = cat.icon || '👕';
+      const _bc = (typeof cur === 'function' && cur() && cur().color && cur().color.hex) ? cur().color.hex : null;
+      _liteRenderGarment(_lv, cat.model3d, _bc, cat.icon);
+    }
+  }
   document.getElementById('heroName').textContent = cat.label;
   document.getElementById('heroSub').textContent =
     (state.catIndex+1) + ' / ' + CATEGORIES.length + '   ·   FROM ¥' + cat.priceFrom.toLocaleString();
