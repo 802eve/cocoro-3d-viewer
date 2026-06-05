@@ -4787,6 +4787,8 @@ function _liteColorGarment(raw, bodyColor){
 }
 // フォームのプリント箇所(area) → 絵型の座標キー(同名はそのまま。左右胸はwearer基準でcx入替)
 const _LITE_AREA_KEY = { front_center:'front_center', left_chest:'chest_left', right_chest:'chest_right', left_sleeve:'left_sleeve', right_sleeve:'right_sleeve', front_hem:'front_hem', back_center:'back_center', back_upper:'back_upper', back_hem:'back_hem' };
+// 縦アンカー: 前/背中央=上端固定(大柄でも首にかからず下へ伸びる) / 裾=下端固定(上へ伸びる) / 他=中央
+const _LITE_ANCHOR = { front_center:'top', back_center:'top', front_hem:'bottom', back_hem:'bottom' };
 // 指示書と同じ実機調整済み座標(front/back・各SVGのviewBox単位)
 const _LITE_COORDS = {
   tshirt:  { uPerCm:2.7,
@@ -4839,7 +4841,13 @@ function _liteBuildSide(raw, bodyColor, locs, uPerCm, prints){
       if(res.wh && a.w && a.h){ wCm = a.w; hCm = a.h; }                              // 袖いっぱい(縦長)
       else { const d = _liteSizeCm(p.size) || { w:a.cm||14, h:a.cm||14 }; wCm = d.w; hCm = d.h; }  // 実サイズ優先
       const w = wCm*u, h = hCm*u;
-      const x = (a.cx - w/2).toFixed(1), y = (a.cy - h/2).toFixed(1), ws = w.toFixed(1), hs = h.toFixed(1);
+      // 縦アンカー: 上端固定(前/背中央=首にかからず下へ) / 下端固定(裾) / 中央(胸・袖・襟下)
+      const anchor = _LITE_ANCHOR[_LITE_AREA_KEY[p.area]] || 'center';
+      const stdH = (a.cm || 14) * u;   // 標準表示サイズの高さ → アンカー基準線の算出用
+      const yNum = (anchor === 'top') ? (a.cy - stdH/2)
+                 : (anchor === 'bottom') ? (a.cy + stdH/2 - h)
+                 : (a.cy - h/2);
+      const x = (a.cx - w/2).toFixed(1), y = yNum.toFixed(1), ws = w.toFixed(1), hs = h.toFixed(1);
       const tf = a.rot ? (' transform="rotate('+a.rot+' '+a.cx+' '+a.cy+')"') : '';   // 袖は角度に合わせて回転
       ov += '<g'+tf+'>';
       ov += '<rect x="'+x+'" y="'+y+'" width="'+ws+'" height="'+hs+'" fill="none" stroke="#1d3a8a" stroke-width="1" stroke-dasharray="3 2" rx="1.5"/>';
