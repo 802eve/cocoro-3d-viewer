@@ -2947,6 +2947,12 @@ img{ display:block; max-width:100%; }
 }
 
 /* ★ 2026-06-05: 3D OFFモード(ライト) — 低スペック端末は3Dを出さず軽量表示。html.lite-3d で全体切替 */
+/* ★ 2026-06-05 手動トグル(3D版 ⇄ 軽い版) — ラベルはCSSで出し分け */
+.lite-toggle{ appearance:none; -webkit-appearance:none; border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.06); color:#fff; font-size:10.5px; font-weight:600; letter-spacing:.03em; padding:5px 11px; border-radius:999px; cursor:pointer; white-space:nowrap; align-self:center; transition:background .15s,border-color .15s; }
+.lite-toggle:hover{ background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.55); }
+.lite-toggle::after{ content:'🪶 軽い版で見る'; }
+.lite-3d .lite-toggle::after{ content:'✨ 3D版で見る'; }
+@media (max-width:900px){ .lite-toggle{ font-size:9.5px; padding:4px 8px; letter-spacing:0; } }
 .lite-hero-visual{ display:none; }
 .lite-3d .lite-hero-visual{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -3220,6 +3226,7 @@ img{ display:block; max-width:100%; }
     <nav class="steps" id="stepNav" aria-label="進行ステップ">
       <!-- populated by JS -->
     </nav>
+    <button class="lite-toggle" id="liteToggle" type="button" onclick="_toggleLiteMode()" aria-label="表示モードを切り替え" title="3Dが重い時は軽い版へ / 戻すこともできます"></button>
     <div class="header-right">
       <div class="top-row">
         <span class="lbl">概算</span>
@@ -4744,6 +4751,17 @@ const _LITE_3D = (function(){
   return false;
 })();
 try { document.documentElement.classList.toggle('lite-3d', _LITE_3D); } catch(_){}
+
+// ★ 2026-06-05 手動トグル: 3D版 ⇄ 軽い版(絵型2D)。?lite=1/0 + localStorage を切替えてリロード
+function _toggleLiteMode(){
+  try {
+    const goLite = !_LITE_3D;
+    try { if(goLite) localStorage.setItem('cocoro_force_lite','1'); else localStorage.removeItem('cocoro_force_lite'); } catch(_){}
+    const u = new URL(location.href);
+    u.searchParams.set('lite', goLite ? '1' : '0');
+    location.href = u.toString();
+  } catch(e){ try { location.reload(); } catch(_){} }
+}
 
 /* ★ 2026-06-05: ライトモードの2Dガーメント表示 — 指示書と同じ絵型SVGを使い、ボディ色を適用(WebGL不使用＝iOSで落ちない) */
 const _EZ_KEY = { tshirt:'tshirt', long_sleeve:'longtee', longtee:'longtee', polo:'polo', hoodie:'hoodie', hoodie_zip:'hoodie', sweat:'sweat' };
