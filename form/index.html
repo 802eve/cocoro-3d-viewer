@@ -4771,24 +4771,62 @@ function _liteColorGarment(raw, bodyColor){
 const _LITE_AREA_KEY = { front_center:'front_center', left_chest:'chest_left', right_chest:'chest_right', left_sleeve:'left_sleeve', right_sleeve:'right_sleeve', front_hem:'front_hem', back_center:'back_center', back_upper:'back_upper', back_hem:'back_hem' };
 // 指示書と同じ実機調整済み座標(front/back・各SVGのviewBox単位)
 const _LITE_COORDS = {
-  tshirt:  { uPerCm:2.7, front:{ front_center:{cx:109,cy:78.3,cm:20}, chest_right:{cx:80,cy:62,cm:9}, chest_left:{cx:138,cy:62,cm:9}, front_hem:{cx:109,cy:150,cm:18}, right_sleeve:{cx:26.4,cy:38.4,cm:10}, left_sleeve:{cx:192.1,cy:37,cm:10} }, back:{ back_center:{cx:109,cy:69.8,cm:20}, back_upper:{cx:109,cy:37.5,cm:14}, back_hem:{cx:109,cy:150,cm:18} } },
-  longtee: { uPerCm:2.7, front:{ front_center:{cx:109.6,cy:74.8,cm:20}, chest_right:{cx:81,cy:62,cm:9}, chest_left:{cx:139,cy:62,cm:9}, front_hem:{cx:110,cy:150,cm:18}, right_sleeve:{cx:34.4,cy:55.2,cm:10}, left_sleeve:{cx:186.4,cy:55.2,cm:10} }, back:{ back_center:{cx:110.8,cy:65.6,cm:20}, back_upper:{cx:110,cy:34.4,cm:14}, back_hem:{cx:110,cy:150,cm:18} } },
-  hoodie:  { uPerCm:2.5, front:{ front_center:{cx:101.4,cy:113.8,cm:20}, chest_right:{cx:72.4,cy:103.4,cm:9}, chest_left:{cx:132.4,cy:103.2,cm:9}, right_sleeve:{cx:31.4,cy:95.4,cm:10}, left_sleeve:{cx:174.8,cy:97.7,cm:10} }, back:{ back_center:{cx:104,cy:111.8,cm:20}, back_upper:{cx:103.3,cy:90.2,cm:14}, back_hem:{cx:104.2,cy:173,cm:18} } },
-  sweat:   { uPerCm:2.7, front:{ front_center:{cx:107.8,cy:78,cm:20}, chest_right:{cx:75.6,cy:62,cm:9}, chest_left:{cx:139.9,cy:62,cm:9}, front_hem:{cx:107,cy:139,cm:18}, right_sleeve:{cx:22,cy:56,cm:10}, left_sleeve:{cx:192,cy:58.8,cm:10} }, back:{ back_center:{cx:108.2,cy:58.5,cm:20}, back_upper:{cx:108.2,cy:32.5,cm:14}, back_hem:{cx:109,cy:139,cm:18} } },
-  polo:    { uPerCm:2.7, front:{ chest_right:{cx:79.4,cy:58,cm:9}, chest_left:{cx:140.6,cy:57.6,cm:9}, front_hem:{cx:108,cy:143.6,cm:18}, right_sleeve:{cx:25,cy:40.8,cm:10}, left_sleeve:{cx:192.6,cy:39.6,cm:10} }, back:{ back_center:{cx:108.8,cy:66.8,cm:20}, back_upper:{cx:108.8,cy:36,cm:14}, back_hem:{cx:109.2,cy:144,cm:18} } },
+  tshirt:  { uPerCm:2.7,
+    front:{ front_center:{cx:109,cy:78.3,cm:20}, chest_right:{cx:80,cy:62,cm:9}, chest_left:{cx:138,cy:62,cm:9}, front_hem:{cx:109,cy:150,cm:18}, right_sleeve:{cx:26.4,cy:38.4,cm:10,rot:60}, left_sleeve:{cx:192.1,cy:37,cm:10,rot:-60} },
+    back:{ back_center:{cx:109,cy:69.8,cm:20}, back_upper:{cx:109,cy:37.5,cm:14}, back_hem:{cx:109,cy:150,cm:18} } },
+  longtee: { uPerCm:2.7,
+    front:{ front_center:{cx:109.6,cy:74.8,cm:20}, chest_right:{cx:81,cy:62,cm:9}, chest_left:{cx:139,cy:62,cm:9}, front_hem:{cx:110,cy:150,cm:18}, right_sleeve:{cx:34.4,cy:55.2,cm:10,rot:21}, left_sleeve:{cx:186.4,cy:55.2,cm:10,rot:-18}, right_sleeve_cuff:{cx:12.6,cy:141.6,cm:11,rot:21}, left_sleeve_cuff:{cx:208.6,cy:141.6,cm:11,rot:-20}, right_sleeve_full:{cx:22,cy:90.3,w:12,h:34,rot:17}, left_sleeve_full:{cx:198.8,cy:90.8,w:12,h:34,rot:-18} },
+    back:{ back_center:{cx:110.8,cy:65.6,cm:20}, back_upper:{cx:110,cy:34.4,cm:14}, back_hem:{cx:110,cy:150,cm:18} } },
+  hoodie:  { uPerCm:2.5,
+    front:{ front_center:{cx:101.4,cy:113.8,cm:20}, chest_right:{cx:72.4,cy:103.4,cm:9}, chest_left:{cx:132.4,cy:103.2,cm:9}, right_sleeve:{cx:31.4,cy:95.4,cm:10,rot:26}, left_sleeve:{cx:174.8,cy:97.7,cm:10,rot:-25}, right_sleeve_cuff:{cx:12.7,cy:171.1,cm:11,rot:26}, left_sleeve_cuff:{cx:192.5,cy:170.2,cm:11,rot:-23}, right_sleeve_full:{cx:18.8,cy:131.6,w:12,h:34,rot:19}, left_sleeve_full:{cx:185.6,cy:131.2,w:12,h:34,rot:-20} },
+    back:{ back_center:{cx:104,cy:111.8,cm:20}, back_upper:{cx:103.3,cy:90.2,cm:14}, back_hem:{cx:104.2,cy:173,cm:18} } },
+  sweat:   { uPerCm:2.7,
+    front:{ front_center:{cx:107.8,cy:78,cm:20}, chest_right:{cx:75.6,cy:62,cm:9}, chest_left:{cx:139.9,cy:62,cm:9}, front_hem:{cx:107,cy:139,cm:18}, right_sleeve:{cx:22,cy:56,cm:10,rot:20}, left_sleeve:{cx:192,cy:58.8,cm:10,rot:-20}, right_sleeve_cuff:{cx:11.4,cy:136.8,cm:11,rot:17}, left_sleeve_cuff:{cx:203.4,cy:137.6,cm:11,rot:-17}, right_sleeve_full:{cx:14.4,cy:90.4,w:12,h:34,rot:15}, left_sleeve_full:{cx:201.9,cy:91.3,w:12,h:34,rot:-14} },
+    back:{ back_center:{cx:108.2,cy:58.5,cm:20}, back_upper:{cx:108.2,cy:32.5,cm:14}, back_hem:{cx:109,cy:139,cm:18} } },
+  polo:    { uPerCm:2.7,
+    front:{ chest_right:{cx:79.4,cy:58,cm:9}, chest_left:{cx:140.6,cy:57.6,cm:9}, front_hem:{cx:108,cy:143.6,cm:18}, right_sleeve:{cx:25,cy:40.8,cm:10,rot:74}, left_sleeve:{cx:192.6,cy:39.6,cm:10,rot:-73} },
+    back:{ back_center:{cx:108.8,cy:66.8,cm:20}, back_upper:{cx:108.8,cy:36,cm:14}, back_hem:{cx:109.2,cy:144,cm:18} } },
 };
-// 1面分の絵型SVGを「ボディ色＋プリント枠＋デザイン」付きで生成
+// プリントサイズ文字列 → cm (Ncm角内=正方形 / 34x12cm=縦34×幅12)
+function _liteSizeCm(sizeStr){
+  if(!sizeStr) return null;
+  let m = String(sizeStr).match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*cm/i);
+  if(m) return { w: parseFloat(m[2]), h: parseFloat(m[1]) };   // 34x12cm = 縦34×幅12 → w=12,h=34
+  m = String(sizeStr).match(/(\d+(?:\.\d+)?)\s*cm/);
+  if(m){ const n = parseFloat(m[1]); return { w:n, h:n }; }    // Ncm角内 = 正方形
+  return null;
+}
+// 箇所キー＋サイズから 実際の座標を解決 (袖は 袖いっぱい=_full / 袖先=_cuff へ自動切替)
+function _liteResolveLoc(locs, area, sizeStr){
+  const key = _LITE_AREA_KEY[area];
+  if(!key || !locs) return null;
+  if(/sleeve/.test(key)){
+    if(/34\s*[x×]\s*12|袖いっぱい/.test(sizeStr||'') && locs[key+'_full']) return { loc: locs[key+'_full'], wh:true };
+    if(/(^|[^0-9])12\s*cm|袖先/.test(sizeStr||'') && locs[key+'_cuff']) return { loc: locs[key+'_cuff'] };
+  }
+  return locs[key] ? { loc: locs[key] } : null;
+}
+// 1面分の絵型SVGを「ボディ色＋プリント枠(実サイズ)＋デザイン」付きで生成
 function _liteBuildSide(raw, bodyColor, locs, uPerCm, prints){
   let svg = _liteColorGarment(raw, bodyColor);
+  const u = uPerCm || 2.7;
   if(locs && Array.isArray(prints) && prints.length){
     let ov = '';
     prints.forEach(p => {
-      const a = p && locs[_LITE_AREA_KEY[p.area]];
-      if(!a) return;   // この面に無い箇所はスキップ(前面に背面プリントは出さない等)
-      const sz = (a.cm || 14) * (uPerCm || 2.7);
-      const x = (a.cx - sz/2).toFixed(1), y = (a.cy - sz/2).toFixed(1), s = sz.toFixed(1);
-      ov += '<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="none" stroke="#1d3a8a" stroke-width="1" stroke-dasharray="3 2" rx="1.5"/>';
-      if(p.imageDataUrl){ ov += '<image x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" href="'+p.imageDataUrl+'" preserveAspectRatio="xMidYMid meet"/>'; }
+      if(!p) return;
+      const res = _liteResolveLoc(locs, p.area, p.size);
+      if(!res) return;   // この面に無い箇所はスキップ(前面に背面プリントは出さない等)
+      const a = res.loc;
+      let wCm, hCm;
+      if(res.wh && a.w && a.h){ wCm = a.w; hCm = a.h; }                              // 袖いっぱい(縦長)
+      else { const d = _liteSizeCm(p.size) || { w:a.cm||14, h:a.cm||14 }; wCm = d.w; hCm = d.h; }  // 実サイズ優先
+      const w = wCm*u, h = hCm*u;
+      const x = (a.cx - w/2).toFixed(1), y = (a.cy - h/2).toFixed(1), ws = w.toFixed(1), hs = h.toFixed(1);
+      const tf = a.rot ? (' transform="rotate('+a.rot+' '+a.cx+' '+a.cy+')"') : '';   // 袖は角度に合わせて回転
+      ov += '<g'+tf+'>';
+      ov += '<rect x="'+x+'" y="'+y+'" width="'+ws+'" height="'+hs+'" fill="none" stroke="#1d3a8a" stroke-width="1" stroke-dasharray="3 2" rx="1.5"/>';
+      if(p.imageDataUrl){ ov += '<image x="'+x+'" y="'+y+'" width="'+ws+'" height="'+hs+'" href="'+p.imageDataUrl+'" preserveAspectRatio="xMidYMid meet"/>'; }
+      ov += '</g>';
     });
     if(ov) svg = svg.replace(/<\/svg>\s*$/i, ov + '</svg>');
   }
