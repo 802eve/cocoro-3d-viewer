@@ -2945,6 +2945,17 @@ img{ display:block; max-width:100%; }
   transform: translateY(-1px);
   box-shadow:0 2px 8px rgba(213,0,28,.4);
 }
+
+/* ★ 2026-06-05: 3D OFFモード(ライト) — 低スペック端末は3Dを出さず軽量表示。html.lite-3d で全体切替 */
+.lite-hero-visual{ display:none; }
+.lite-3d .lite-hero-visual{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:130px; line-height:1; pointer-events:none; user-select:none; z-index:1;
+  filter:drop-shadow(0 10px 26px rgba(0,0,0,.28));
+}
+.lite-3d .stage-tip{ display:none; }                                   /* DRAG/ROTATE/ZOOM は3D専用 */
+.lite-3d #viewer3d-a, .lite-3d #viewer3d-b{ display:none !important; } /* 3D iframe を非表示 */
+@media (max-width:900px){ .lite-3d .lite-hero-visual{ font-size:96px; } }
 </style>
 </head>
 <body>
@@ -3245,6 +3256,9 @@ img{ display:block; max-width:100%; }
       <button class="stage-arrow right" id="stageArrowR" aria-label="次のカテゴリ" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 4 17 12 9 20" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
+
+      <!-- ===== ライトモード(3D OFF)時の中央ビジュアル ===== -->
+      <div class="lite-hero-visual" id="liteHeroVisual" aria-hidden="true"></div>
 
       <!-- ===== INTRO MODE: 中央ヒーロー ===== -->
       <div class="stage-hero" id="stageHero" role="region" aria-label="カテゴリ選択">
@@ -4703,8 +4717,28 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '86';   // ★ 2026-06-04: 3D根本対策(iframe再読込せずsetModelでモデルだけ差替=WebGL1個維持)を読ませるため更新
+const VIEWER_VERSION = '83';
 const ROTATION_SPEED_DEFAULT = 1.25;
+
+/* ★ 2026-06-05: 3D OFFモード判定 ──────────────────────────────────────
+   iOSは「同時に持てるWebGLの数」に厳しく、カテゴリ選択で次々3Dを読むと数回で落ちる（A16実機でも）。
+   そこで 低スペック/非対応端末/過去に落ちた端末 は 3Dを一切読まない「ライトモード」に自動切替。
+   高スペックは従来どおりフル3D（品質はそのまま）。?lite=1 で手動ライト / ?lite=0 で手動フル。 */
+const _LITE_3D = (function(){
+  try {
+    const p = new URLSearchParams(location.search);
+    if(p.get('lite') === '1'){ try{ localStorage.setItem('cocoro_force_lite','1'); }catch(_){}; return true; }
+    if(p.get('lite') === '0'){ try{ localStorage.removeItem('cocoro_force_lite'); }catch(_){}; return false; }
+    try { if(localStorage.getItem('cocoro_force_lite') === '1') return true; } catch(_){}  // 過去に3Dで落ちた端末は自動ライト
+    const cv = document.createElement('canvas');
+    const gl = cv.getContext('webgl2') || cv.getContext('webgl') || cv.getContext('experimental-webgl');
+    if(!gl) return true;                                                  // WebGL不可 → ライト
+    if(navigator.deviceMemory && navigator.deviceMemory <= 3) return true;// 3GB以下(Android) → ライト
+    if((navigator.hardwareConcurrency || 8) <= 4) return true;           // 4コア以下 → ライト
+  } catch(e){ return true; }                                             // 判定中の例外も安全側=ライト
+  return false;
+})();
+try { document.documentElement.classList.toggle('lite-3d', _LITE_3D); } catch(_){}
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
 
 /* ========================================================================
@@ -4752,6 +4786,7 @@ function _currentModel3d(line){
 // slideDir: 'left' → 現iframeが左へ退場 / 新iframeが右から登場 (標準カルーセル)
 //           'right' → 現iframeが右へ退場 / 新iframeが左から登場
 function loadViewer(modelKey, slideDir){
+  if(_LITE_3D){ return; }   // ★ 2026-06-05 ライトモード: 3Dを一切読まない(低スペック端末のクラッシュ防止)
   const stage = document.getElementById('stage');
   if(!modelKey){
     stage.classList.add('is-unsupported');
@@ -4759,39 +4794,33 @@ function loadViewer(modelKey, slideDir){
   }
   stage.classList.remove('is-unsupported');
 
-  const active = getActiveFrame();
+  const active  = getActiveFrame();
+  const standby = getStandbyFrame();
 
-  // 同じモデルが現在 active なら、回すだけ
+  // 同じモデルが現在 active なら、リロードせず spinOnce だけ送る
   if(active.dataset.model === modelKey){
     pushConfigToViewer({ spinOnce: true });
     return;
   }
 
-  // ★ 2026-06-04: iframeを再読込しない＝WebGLコンテキストを増やさない（iOSの同時数上限でのクラッシュを根治）。
-  //   未ロード(初回/about:blank)なら通常ロード、ロード済みなら現iframe内で「モデルだけ差し替え」(setModel)。
-  if(!active.dataset.model || !active.src || /about:blank/.test(active.src || '')){
-    loadViewerInitial(modelKey);
-    return;
-  }
-
-  active.dataset.model = modelKey;
-  active.dataset.pendingSpin = '1';
-  active.dataset.pendingSlide = '0';
   stage.classList.add('is-loading');
-  try {
-    if(active.contentWindow){
-      active.contentWindow.postMessage({ type: 'tshirt3d-setmodel', model: modelKey }, '*');
-    } else {
-      loadViewerInitial(modelKey);   // contentWindow未準備ならフォールバック
-    }
-  } catch(e){
-    console.warn('[loadViewer] setModel送信失敗→初回ロードにフォールバック', e);
-    loadViewerInitial(modelKey);
-  }
+  standby.dataset.pendingSpin  = '1';
+  standby.dataset.pendingSlide = '1';
+  standby.dataset.slideDir     = slideDir || 'left';   // デフォルト: 標準カルーセル
+  standby.dataset.model        = modelKey;
+
+  // スタンバイを「待機側 (= slideDir と逆側)」にセットしてから src 読込開始
+  //  - slideDir='left' (現が左へ) → 新は右から → standby は右待機
+  //  - slideDir='right' (現が右へ) → 新は左から → standby は左待機
+  standby.classList.remove('is-active','is-leaving-left','is-leaving-right','is-waiting-left','is-waiting-right');
+  standby.classList.add(slideDir === 'right' ? 'is-waiting-left' : 'is-waiting-right');
+
+  standby.src = VIEWER_URL + '?embed=1&v=' + VIEWER_VERSION + '&model=' + encodeURIComponent(modelKey);
 }
 
 // 初回ロード（intro モード起動時）— スライド遷移なしで即表示
 function loadViewerInitial(modelKey){
+  if(_LITE_3D){ return; }   // ★ 2026-06-05 ライトモード: 3Dを読まない
   const stage = document.getElementById('stage');
   const active = getActiveFrame();
   stage.classList.remove('is-unsupported');
@@ -4802,6 +4831,14 @@ function loadViewerInitial(modelKey){
   active.src = VIEWER_URL + '?embed=1&v=' + VIEWER_VERSION + '&model=' + encodeURIComponent(modelKey);
 }
 
+// ★ 2026-06-05: 3Dがコンテキスト喪失(=この端末では3Dが重すぎて落ちた)→ 次回から自動でライトモードに切替えて再読込。
+//   高性能でも落ちる端末(iPad A16等)を自動救済する保険。手動で戻すには ?lite=0。
+window.addEventListener('message', (e) => {
+  if(e && e.data && e.data.type === 'tshirt3d-context-lost'){
+    try { localStorage.setItem('cocoro_force_lite','1'); } catch(_){}
+    try { if(!_LITE_3D){ location.href = location.pathname + '?lite=1'; } } catch(_){}
+  }
+});
 // viewer.html → 親への 'tshirt3d-ready' で発動
 window.addEventListener('message', (e) => {
   if(!e.data || e.data.type !== 'tshirt3d-ready') return;
@@ -4852,16 +4889,12 @@ window.addEventListener('message', (e) => {
       void oldActive.offsetWidth;
       oldActive.style.transition = '';
 
-      // ★ 2026-06-04: iOS実機(A16)では about:blank だけでは WebGLコンテキストが解放されず、
-      //   切替を繰り返すと積み重なって 縞→黒→クラッシュ。対策として「空にする前」に viewer へ
-      //   dispose 命令を送り、生きているうちに forceContextLoss(WebGL破棄API)で明示解放させる。
+      // ★ G2 2026-04-30: iOS メモリ対策 — 旧iframe の WebGL コンテキストを解放
+      //   src を空にすることで GLB / texture / WebGL リソースをすべて解放
       try {
-        if(oldActive.contentWindow) oldActive.contentWindow.postMessage({ type: 'tshirt3d-dispose' }, '*');
+        oldActive.src = 'about:blank';
+        oldActive.dataset.model = '';
       } catch(e){ /* ignore */ }
-      // 明示破棄が走る時間を与えてから空に（120ms）
-      setTimeout(() => {
-        try { oldActive.src = 'about:blank'; oldActive.dataset.model = ''; } catch(e){ /* ignore */ }
-      }, 120);
 
       // 新iframe に spin 発動（モデルが画面に出てから = スライド完了後 = ベスト）
       if(newActive.dataset.pendingSpin === '1'){
@@ -5216,6 +5249,8 @@ function switchLine(i){
    ======================================================================== */
 function renderHero(){
   const cat = CATEGORIES[state.catIndex];
+  // ★ 2026-06-05 ライトモード: 3Dの代わりにカテゴリのアイコンを大きく表示
+  if(_LITE_3D){ const _lv = document.getElementById('liteHeroVisual'); if(_lv) _lv.textContent = cat.icon || '👕'; }
   document.getElementById('heroName').textContent = cat.label;
   document.getElementById('heroSub').textContent =
     (state.catIndex+1) + ' / ' + CATEGORIES.length + '   ·   FROM ¥' + cat.priceFrom.toLocaleString();
