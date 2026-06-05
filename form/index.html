@@ -2956,7 +2956,11 @@ img{ display:block; max-width:100%; }
 .lite-3d .stage-tip{ display:none; }                                   /* DRAG/ROTATE/ZOOM は3D専用 */
 .lite-3d #viewer3d-a, .lite-3d #viewer3d-b{ display:none !important; } /* 3D iframe を非表示 */
 .lite-3d .lite-hero-visual svg{ width:auto; height:60%; max-width:78%; display:block; filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)); }
-@media (max-width:900px){ .lite-3d .lite-hero-visual{ font-size:96px; } .lite-3d .lite-hero-visual svg{ height:54%; max-width:86%; } }
+.lite-3d .pc-action-btn[data-act="adjustPos"]{ display:none !important; }                     /* 3Dドラッグ位置調整はフル3D専用 → ライトでは隠す */
+.lite-3d .lite-hero-visual.two-up{ gap:2vw; }                                                /* 前面＋背面の2面表示 */
+.lite-3d .lite-hero-visual.two-up svg{ height:auto; max-height:54%; max-width:45%; }
+@media (max-width:900px){ .lite-3d .lite-hero-visual{ font-size:96px; } .lite-3d .lite-hero-visual svg{ height:54%; max-width:86%; }
+  .lite-3d .lite-hero-visual.two-up svg{ max-height:44%; max-width:47%; } }
 </style>
 </head>
 <body>
@@ -4763,37 +4767,50 @@ function _liteColorGarment(raw, bodyColor){
   }
   return raw.replace(/\.cls-1\s*\{[^}]*\}/i, '.cls-1{fill:' + c + ';}');
 }
-// フォームのプリント箇所(area) → 絵型の座標キー(フロント面のみ。背面プリントはフロント絵型には出さない)
-const _LITE_AREA_KEY = { front_center:'front_center', left_chest:'chest_left', right_chest:'chest_right', left_sleeve:'left_sleeve', right_sleeve:'right_sleeve', front_hem:'front_hem' };
-// 指示書と同じ実機調整済み座標(フロント面・viewBox単位)
+// フォームのプリント箇所(area) → 絵型の座標キー(同名はそのまま。左右胸はwearer基準でcx入替)
+const _LITE_AREA_KEY = { front_center:'front_center', left_chest:'chest_left', right_chest:'chest_right', left_sleeve:'left_sleeve', right_sleeve:'right_sleeve', front_hem:'front_hem', back_center:'back_center', back_upper:'back_upper', back_hem:'back_hem' };
+// 指示書と同じ実機調整済み座標(front/back・各SVGのviewBox単位)
 const _LITE_COORDS = {
-  tshirt:  { uPerCm:2.7, locs:{ front_center:{cx:109,cy:78.3,cm:20}, chest_right:{cx:80,cy:62,cm:9}, chest_left:{cx:138,cy:62,cm:9}, front_hem:{cx:109,cy:150,cm:18}, right_sleeve:{cx:26.4,cy:38.4,cm:10}, left_sleeve:{cx:192.1,cy:37,cm:10} } },
-  longtee: { uPerCm:2.7, locs:{ front_center:{cx:109.6,cy:74.8,cm:20}, chest_right:{cx:81,cy:62,cm:9}, chest_left:{cx:139,cy:62,cm:9}, front_hem:{cx:110,cy:150,cm:18}, right_sleeve:{cx:34.4,cy:55.2,cm:10}, left_sleeve:{cx:186.4,cy:55.2,cm:10} } },
-  hoodie:  { uPerCm:2.5, locs:{ front_center:{cx:101.4,cy:113.8,cm:20}, chest_right:{cx:72.4,cy:103.4,cm:9}, chest_left:{cx:132.4,cy:103.2,cm:9}, right_sleeve:{cx:31.4,cy:95.4,cm:10}, left_sleeve:{cx:174.8,cy:97.7,cm:10} } },
-  sweat:   { uPerCm:2.7, locs:{ front_center:{cx:107.8,cy:78,cm:20}, chest_right:{cx:75.6,cy:62,cm:9}, chest_left:{cx:139.9,cy:62,cm:9}, front_hem:{cx:107,cy:139,cm:18}, right_sleeve:{cx:22,cy:56,cm:10}, left_sleeve:{cx:192,cy:58.8,cm:10} } },
-  polo:    { uPerCm:2.7, locs:{ chest_right:{cx:79.4,cy:58,cm:9}, chest_left:{cx:140.6,cy:57.6,cm:9}, front_hem:{cx:108,cy:143.6,cm:18}, right_sleeve:{cx:25,cy:40.8,cm:10}, left_sleeve:{cx:192.6,cy:39.6,cm:10} } },
+  tshirt:  { uPerCm:2.7, front:{ front_center:{cx:109,cy:78.3,cm:20}, chest_right:{cx:80,cy:62,cm:9}, chest_left:{cx:138,cy:62,cm:9}, front_hem:{cx:109,cy:150,cm:18}, right_sleeve:{cx:26.4,cy:38.4,cm:10}, left_sleeve:{cx:192.1,cy:37,cm:10} }, back:{ back_center:{cx:109,cy:69.8,cm:20}, back_upper:{cx:109,cy:37.5,cm:14}, back_hem:{cx:109,cy:150,cm:18} } },
+  longtee: { uPerCm:2.7, front:{ front_center:{cx:109.6,cy:74.8,cm:20}, chest_right:{cx:81,cy:62,cm:9}, chest_left:{cx:139,cy:62,cm:9}, front_hem:{cx:110,cy:150,cm:18}, right_sleeve:{cx:34.4,cy:55.2,cm:10}, left_sleeve:{cx:186.4,cy:55.2,cm:10} }, back:{ back_center:{cx:110.8,cy:65.6,cm:20}, back_upper:{cx:110,cy:34.4,cm:14}, back_hem:{cx:110,cy:150,cm:18} } },
+  hoodie:  { uPerCm:2.5, front:{ front_center:{cx:101.4,cy:113.8,cm:20}, chest_right:{cx:72.4,cy:103.4,cm:9}, chest_left:{cx:132.4,cy:103.2,cm:9}, right_sleeve:{cx:31.4,cy:95.4,cm:10}, left_sleeve:{cx:174.8,cy:97.7,cm:10} }, back:{ back_center:{cx:104,cy:111.8,cm:20}, back_upper:{cx:103.3,cy:90.2,cm:14}, back_hem:{cx:104.2,cy:173,cm:18} } },
+  sweat:   { uPerCm:2.7, front:{ front_center:{cx:107.8,cy:78,cm:20}, chest_right:{cx:75.6,cy:62,cm:9}, chest_left:{cx:139.9,cy:62,cm:9}, front_hem:{cx:107,cy:139,cm:18}, right_sleeve:{cx:22,cy:56,cm:10}, left_sleeve:{cx:192,cy:58.8,cm:10} }, back:{ back_center:{cx:108.2,cy:58.5,cm:20}, back_upper:{cx:108.2,cy:32.5,cm:14}, back_hem:{cx:109,cy:139,cm:18} } },
+  polo:    { uPerCm:2.7, front:{ chest_right:{cx:79.4,cy:58,cm:9}, chest_left:{cx:140.6,cy:57.6,cm:9}, front_hem:{cx:108,cy:143.6,cm:18}, right_sleeve:{cx:25,cy:40.8,cm:10}, left_sleeve:{cx:192.6,cy:39.6,cm:10} }, back:{ back_center:{cx:108.8,cy:66.8,cm:20}, back_upper:{cx:108.8,cy:36,cm:14}, back_hem:{cx:109.2,cy:144,cm:18} } },
 };
-// 指定要素に 絵型(front) を「ボディ色＋プリント箇所＋デザイン」付きで描画(取得失敗時は絵文字フォールバック)
+// 1面分の絵型SVGを「ボディ色＋プリント枠＋デザイン」付きで生成
+function _liteBuildSide(raw, bodyColor, locs, uPerCm, prints){
+  let svg = _liteColorGarment(raw, bodyColor);
+  if(locs && Array.isArray(prints) && prints.length){
+    let ov = '';
+    prints.forEach(p => {
+      const a = p && locs[_LITE_AREA_KEY[p.area]];
+      if(!a) return;   // この面に無い箇所はスキップ(前面に背面プリントは出さない等)
+      const sz = (a.cm || 14) * (uPerCm || 2.7);
+      const x = (a.cx - sz/2).toFixed(1), y = (a.cy - sz/2).toFixed(1), s = sz.toFixed(1);
+      ov += '<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="none" stroke="#1d3a8a" stroke-width="1" stroke-dasharray="3 2" rx="1.5"/>';
+      if(p.imageDataUrl){ ov += '<image x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" href="'+p.imageDataUrl+'" preserveAspectRatio="xMidYMid meet"/>'; }
+    });
+    if(ov) svg = svg.replace(/<\/svg>\s*$/i, ov + '</svg>');
+  }
+  return svg;
+}
+// 指定要素に 絵型 を「ボディ色＋プリント箇所＋デザイン」付きで描画。背面プリントがあれば前面＋背面の2面表示(取得失敗時は絵文字)
 function _liteRenderGarment(el, model3d, bodyColor, fallbackIcon, prints){
   if(!el) return;
   const ezKey = _liteEzKey(model3d);
-  _fetchEzSvg(ezKey, 'front').then(raw => {
-    if(!raw){ el.classList.remove('has-svg'); el.textContent = fallbackIcon || '👕'; return; }
-    let svg = _liteColorGarment(raw, bodyColor);
-    const cfg = _LITE_COORDS[ezKey];
-    if(cfg && Array.isArray(prints) && prints.length){
-      let ov = '';
-      prints.forEach(p => {
-        const a = p && cfg.locs[_LITE_AREA_KEY[p.area]];
-        if(!a) return;   // 背面/その他 はフロント絵型に出さない
-        const sz = (a.cm || 14) * cfg.uPerCm;
-        const x = (a.cx - sz/2).toFixed(1), y = (a.cy - sz/2).toFixed(1), s = sz.toFixed(1);
-        ov += '<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="none" stroke="#1d3a8a" stroke-width="1" stroke-dasharray="3 2" rx="1.5"/>';
-        if(p.imageDataUrl){ ov += '<image x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" href="'+p.imageDataUrl+'" preserveAspectRatio="xMidYMid meet"/>'; }
-      });
-      if(ov) svg = svg.replace(/<\/svg>\s*$/i, ov + '</svg>');
-    }
-    el.classList.add('has-svg'); el.innerHTML = svg;
+  const cfg = _LITE_COORDS[ezKey];
+  const arr = Array.isArray(prints) ? prints : [];
+  const hasBack = arr.some(p => p && /^back_/.test(p.area || ''));
+  const sides = hasBack ? ['front','back'] : ['front'];
+  Promise.all(sides.map(s => _fetchEzSvg(ezKey, s))).then(raws => {
+    if(!raws.some(Boolean)){ el.classList.remove('has-svg','two-up'); el.textContent = fallbackIcon || '👕'; return; }
+    let html = '';
+    sides.forEach((side, i) => {
+      if(!raws[i]) return;
+      html += _liteBuildSide(raws[i], bodyColor, cfg ? cfg[side] : null, cfg ? cfg.uPerCm : 2.7, arr);
+    });
+    el.classList.toggle('two-up', sides.length > 1 && raws.filter(Boolean).length > 1);
+    el.classList.add('has-svg'); el.innerHTML = html;
   });
 }
 const SLIDE_DURATION_MS = 620;        // CSS の transform transition と一致
@@ -5017,7 +5034,8 @@ function pushConfigToViewer(extras){
       const _ln = cur();
       const _m3 = (typeof _currentModel3d === 'function') ? _currentModel3d(_ln) : (_ln && _ln.category && _ln.category.model3d);
       const _bc = (_ln && _ln.color && _ln.color.hex) ? _ln.color.hex : null;
-      const _pr = (typeof buildPrintsForViewer === 'function') ? buildPrintsForViewer(_ln) : [];
+      // スタジオ書き出し等は printsOverride で最新デザインが来る → それを優先(無ければ現ラインから生成)
+      const _pr = extras.printsOverride || ((typeof buildPrintsForViewer === 'function') ? buildPrintsForViewer(_ln) : []);
       _liteRenderGarment(document.getElementById('liteHeroVisual'), _m3, _bc, (_ln && _ln.category && _ln.category.icon), _pr);
     } catch(e){}
     return;
