@@ -107,10 +107,10 @@ body.col-resizing *{cursor:col-resize!important}
 .sb-fav-btn{width:100%;padding:6px 10px;font-size:11px;font-weight:600;border:1px solid var(--bd);border-radius:4px;background:var(--bg3);color:var(--t2);cursor:pointer;font-family:var(--ff);transition:all var(--tr);letter-spacing:.02em;text-align:center;box-sizing:border-box}
 .sb-fav-btn:hover{border-color:var(--ac);color:var(--ac);background:rgba(245,158,11,.08)}
 .sb-fav-btn.on{background:var(--ac);color:#1a1a2e;border-color:var(--ac);font-weight:700}
-.sb-clip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:260px;overflow-y:auto}
+.sb-clip-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:78px;gap:4px;max-height:260px;overflow-y:auto}
 .sb-font-list{display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto}
 .sb-hint{font-size:9px;color:var(--t3);margin-top:6px;line-height:1.4}
-.sb-clip-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:22px;background:#f1f3f7;border:1px solid #d6dae2;border-radius:4px;cursor:grab;user-select:none;transition:transform .1s;overflow:hidden}
+.sb-clip-cell{height:78px;display:flex;align-items:center;justify-content:center;font-size:22px;background:#f1f3f7;border:1px solid #d6dae2;border-radius:4px;cursor:grab;user-select:none;transition:transform .1s;overflow:hidden}
 /* ★ 2026-06-05: 明るい背景に黒シルエット統一 (テンプレと同じ見え方)。クリップアートは黒/白が混在するため
    brightness(0) で必ず黒に揃える → 白いクリップアートが明背景に同化して消える(=つぶれ)のを防ぐ */
 .sb-clip-cell img,.sb-clip-cell svg{max-width:82%;max-height:82%;object-fit:contain;filter:brightness(0) drop-shadow(0 1px 2px rgba(0,0,0,.18))}
@@ -7674,6 +7674,8 @@ function setupZoomHandlers(){
   if(evCv && !evCv._pinchAttached){
     evCv._pinchAttached = true;
     let pinchDist = 0, pinchStartZoom = 1, pinchCenter = null, pinching = false;
+    // ★ 2026-06-07 iPad対応: 2本指で「選択中パーツの拡縮+回転」/ 未選択なら従来どおりキャンバスズーム
+    let partMode = false, partRef = null, partSX = 1, partSY = 1, partAngle = 0, partTouchAngle = 0, partCenter = null;
     const getDist = (touches) => {
       const dx = touches[0].clientX - touches[1].clientX;
       const dy = touches[0].clientY - touches[1].clientY;
@@ -7683,26 +7685,46 @@ function setupZoomHandlers(){
       clientX: (touches[0].clientX + touches[1].clientX) / 2,
       clientY: (touches[0].clientY + touches[1].clientY) / 2,
     });
+    const getTouchAngle = (touches) => Math.atan2(touches[1].clientY - touches[0].clientY, touches[1].clientX - touches[0].clientX);
     evCv.addEventListener('touchstart', (e) => {
       if(e.touches.length === 2){
         pinching = true;
         pinchDist = getDist(e.touches);
         pinchStartZoom = _zoom;
         pinchCenter = getCenter(e.touches);
+        const ao = (fabCanvas && fabCanvas.getActiveObject) ? fabCanvas.getActiveObject() : null;
+        if(ao){
+          partMode = true; partRef = ao;
+          partSX = ao.scaleX || 1; partSY = ao.scaleY || 1; partAngle = ao.angle || 0;
+          partTouchAngle = getTouchAngle(e.touches);
+          try { partCenter = ao.getCenterPoint(); } catch(_){ partCenter = null; }
+        } else { partMode = false; partRef = null; }
       }
     }, {passive: true, capture: true});
     evCv.addEventListener('touchmove', (e) => {
       if(!pinching || e.touches.length !== 2) return;
+      e.preventDefault();
+      if(partMode && partRef){
+        e.stopPropagation();
+        const ratio = getDist(e.touches) / Math.max(1, pinchDist);
+        const angDelta = (getTouchAngle(e.touches) - partTouchAngle) * 180 / Math.PI;
+        partRef.set({ scaleX: partSX * ratio, scaleY: partSY * ratio, angle: partAngle + angDelta });
+        if(partCenter && partRef.setPositionByOrigin){ try { partRef.setPositionByOrigin(partCenter, 'center', 'center'); } catch(_){} }
+        partRef.setCoords();
+        fabCanvas.requestRenderAll();
+        return;
+      }
       const d = getDist(e.touches);
       const ratio = d / pinchDist;
-      // ピンチ中は逐次更新（中心を保持）
       setZoomLevel(pinchStartZoom * ratio, pinchCenter);
-      e.preventDefault();
     }, {passive: false, capture: true});
     evCv.addEventListener('touchend', (e) => {
-      if(pinching && e.touches.length < 2){ pinching = false; }
+      if(pinching && e.touches.length < 2){
+        pinching = false;
+        if(partMode){ partMode = false; partRef = null; try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){} }
+      }
     }, {passive: true, capture: true});
-    evCv.addEventListener('touchcancel', () => { pinching = false; }, {passive: true, capture: true});
+    evCv.addEventListener('touchcancel', () => { pinching = false; partMode = false; partRef = null; }, {passive: true, capture: true});
   }
 }
 
@@ -12644,13 +12666,10 @@ function _3d_inlineRefresh(){
 (function _mobileShellInit(){
   // モバイル判定: viewport < 1024px AND (タッチデバイス OR モバイル UA)
   function isMobileMode(){
-    // ★ 2026-06-05 iPad対応: iPadOS Safari は UA="Macintosh" のため UA判定で拾えず、旧 w>=1024 一律PC判定で
-    //   iPad横向きがPC扱い→2本指ジェスチャ未配線だった。タッチ主体/モバイルUA/iPad は幅に関係なくモバイルUI。
+    // ★ 2026-06-07: iPadはPCレイアウト(ツール表示)＋PC側に2本指ジェスチャ追加の方針。モバイルUIはスマホのみ。
     const w = window.innerWidth;
-    const coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-    const isMobUA = /iPhone|iPad|Android|Mobile|Tablet/i.test(navigator.userAgent);
-    const isIpadOS = (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
-    if(coarse || isMobUA || isIpadOS) return true;
+    const isPhoneUA = /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(navigator.userAgent);
+    if(isPhoneUA) return true;
     return w < 768;
   }
   window._isMobileMode = isMobileMode;
