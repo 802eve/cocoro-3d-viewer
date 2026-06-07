@@ -7507,7 +7507,10 @@ function zoomFit(){
   // 2026-04-23: さらに視覚的な余裕（角マーカー＋ラベル分）として少し余白を追加
   const SAFETY = 24;
   const availW = Math.max(100, evCv.clientWidth - padX - SAFETY * 2);
-  const availH = Math.max(100, evCv.clientHeight - padY - SAFETY * 2);
+  // ★ 2026-06-07: 下部の固定ツールバー(.ev-tb)が canvas に重なる分を差し引いて、下端が隠れないようにフィット
+  let bottomReserve = 0;
+  try { const _tb = document.querySelector('.ev-tb'); if(_tb && _tb.offsetParent !== null){ const r = _tb.getBoundingClientRect(), ecr = evCv.getBoundingClientRect(); if(r.top < ecr.bottom) bottomReserve = (ecr.bottom - r.top) + 14; } } catch(_){}
+  const availH = Math.max(100, evCv.clientHeight - padY - SAFETY * 2 - bottomReserve);
   const z = Math.min(availW / CANVAS_BASE_W, availH / CANVAS_BASE_H);
   setZoomLevel(z);
   // ぴったり合わせたあとは中央にスクロール（フィット時はスクロールバー出ないので通常 0 でOK）
@@ -7706,9 +7709,30 @@ function setupZoomHandlers(){
       e.preventDefault();
       if(partMode && partRef){
         e.stopPropagation();
-        const ratio = getDist(e.touches) / Math.max(1, pinchDist);
+        let ratio = getDist(e.touches) / Math.max(1, pinchDist);
+        // ★ スケールスナップ (他パーツの端/キャンバス端・中央に吸着) — スマホと同じ感触
+        try {
+          if(partCenter && partRef.width && partRef.height){
+            const baseW = partRef.width, baseH = partRef.height, cx = partCenter.x, cy = partCenter.y;
+            const cwTotal = (typeof CANVAS_BASE_W !== 'undefined') ? CANVAS_BASE_W : (fabCanvas.width || 900);
+            const chTotal = (typeof CANVAS_BASE_H !== 'undefined') ? CANVAS_BASE_H : (fabCanvas.height || 700);
+            const xLines = [0, cwTotal, cwTotal/2], yLines = [0, chTotal, chTotal/2];
+            fabCanvas.getObjects().forEach(o => { if(o === partRef || !o.getBoundingRect) return; const r = o.getBoundingRect(true); xLines.push(r.left, r.left + r.width, r.left + r.width/2); yLines.push(r.top, r.top + r.height, r.top + r.height/2); });
+            const cand = [], _z = (typeof _zoom !== 'undefined' && _zoom) ? _zoom : 1;
+            const SNAP_PX = (partRef._lastScaleSnap ? 4 : 2) / Math.max(0.1, _z);
+            xLines.forEach(L => { const sR = (L-cx)*2/baseW; if(sR>0.05&&sR<50) cand.push({r:sR/Math.max(0.001,partSX), d:Math.abs(cx+(baseW*partSX*ratio)/2-L)}); const sL=(cx-L)*2/baseW; if(sL>0.05&&sL<50) cand.push({r:sL/Math.max(0.001,partSX), d:Math.abs(cx-(baseW*partSX*ratio)/2-L)}); });
+            yLines.forEach(L => { const sB = (L-cy)*2/baseH; if(sB>0.05&&sB<50) cand.push({r:sB/Math.max(0.001,partSY), d:Math.abs(cy+(baseH*partSY*ratio)/2-L)}); const sT=(cy-L)*2/baseH; if(sT>0.05&&sT<50) cand.push({r:sT/Math.max(0.001,partSY), d:Math.abs(cy-(baseH*partSY*ratio)/2-L)}); });
+            let best = ratio, bestD = SNAP_PX + 1;
+            cand.forEach(c => { if(c.d < SNAP_PX && c.d < bestD){ bestD = c.d; best = c.r; } });
+            if(best !== ratio){ ratio = best; partRef._lastScaleSnap = true; } else { partRef._lastScaleSnap = false; }
+          }
+        } catch(_){}
+        // ★ 回転スナップ (0/90/180/270) — スマホと同じ
         const angDelta = (getTouchAngle(e.touches) - partTouchAngle) * 180 / Math.PI;
-        partRef.set({ scaleX: partSX * ratio, scaleY: partSY * ratio, angle: partAngle + angDelta });
+        let finalAngle = partAngle + angDelta, normAngle = ((finalAngle % 360) + 360) % 360;
+        const SNAP_T = [0,90,180,270,360];
+        for(const t of SNAP_T){ if(Math.abs(normAngle - t) < 2){ finalAngle += (t - normAngle); break; } }
+        partRef.set({ scaleX: partSX * ratio, scaleY: partSY * ratio, angle: finalAngle });
         if(partCenter && partRef.setPositionByOrigin){ try { partRef.setPositionByOrigin(partCenter, 'center', 'center'); } catch(_){} }
         partRef.setCoords();
         fabCanvas.requestRenderAll();
