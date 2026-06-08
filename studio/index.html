@@ -325,7 +325,7 @@ body.col-resizing *{cursor:col-resize!important}
 .ev-t{width:36px;height:36px;border-radius:50%;background:none;border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--tr)}.ev-t:hover:not(:disabled){background:rgba(255,255,255,.15)}.ev-t.act{background:var(--ac);color:#000}
 .ev-t:disabled{opacity:.3;cursor:not-allowed}
 /* ズームコントロール（右下固定） */
-.ev-zoom{position:fixed;bottom:50px;right:calc(280px + 20px);display:flex;gap:2px;background:rgba(0,0,0,.7);border-radius:20px;padding:6px 8px;backdrop-filter:blur(8px);z-index:50;align-items:center}
+.ev-zoom{position:fixed;bottom:calc(env(safe-area-inset-bottom, 0px) + 50px);right:calc(280px + 20px);display:flex;gap:2px;background:rgba(0,0,0,.7);border-radius:20px;padding:6px 8px;backdrop-filter:blur(8px);z-index:50;align-items:center}
 .ev-z{min-width:32px;height:32px;border-radius:50%;background:none;border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--tr);padding:0 6px}
 .ev-z:hover{background:rgba(255,255,255,.15)}
 .ev-z-label{min-width:56px;font-size:11px;font-weight:700;font-family:var(--ff)}
@@ -2291,34 +2291,35 @@ body.cocoro-customer-confirm .m-main {
     <div class="ev" id="editorView">
       <!-- 2026-04-23: 戻るボタンは .ev 直下に配置（左ツール領域の右端にピタッと追従、キャンバススクロールに影響されない） -->
       <button class="dv-back ev-back" onclick="closeEditor()">← 戻る</button>
+      <!-- ★ 2026-06-08 Bug B: 下部ツールバー/ズームを .ev-cv(overflow:auto) の外＝.ev直下へ移動。
+           iOS Safari は overflow:auto コンテナ内の position:fixed(下アンカー)が
+           スクロール内容の下端を追って画面外へ見切れるため。position:fixed は維持。 -->
+      <div class="ev-tb">
+        <button class="ev-t" id="undoBtn" title="元に戻す (Ctrl+Z)" onclick="undoHistory()">↶</button>
+        <button class="ev-t" id="redoBtn" title="やり直す (Ctrl+Y)" onclick="redoHistory()">↷</button>
+        <span style="width:1px;background:rgba(255,255,255,.2);margin:4px 2px"></span>
+        <button class="ev-t" title="テキスト追加" onclick="edAddText()">T</button>
+        <button class="ev-t" title="画像追加" onclick="document.getElementById('edFile').click()">🖼</button>
+        <span style="width:1px;background:rgba(255,255,255,.2);margin:4px 2px"></span>
+        <button class="ev-t" id="groupBtn" title="グループ化 (Ctrl+G)" onclick="groupSelected()">🔗</button>
+        <button class="ev-t" id="ungroupBtn" title="グループ解除 (Ctrl+Shift+G)" onclick="ungroupSelected()">🔓</button>
+        <span style="width:1px;background:rgba(255,255,255,.2);margin:4px 2px"></span>
+        <button class="ev-t" title="削除" onclick="edDel()">🗑</button>
+      </div>
+      <div class="ev-zoom">
+        <button class="ev-z" id="rotateCanvasBtn" title="キャンバスを縦↔横に回転" onclick="rotateCanvasSize()" style="display:none;">↕↔</button>
+        <button class="ev-z" id="zoomOutBtn" title="縮小 (Ctrl+-)" onclick="zoomOut()">−</button>
+        <button class="ev-z ev-z-label" id="zoomLabel" title="クリックで100%にリセット" onclick="zoomReset()">100%</button>
+        <button class="ev-z" id="zoomInBtn" title="拡大 (Ctrl+=)" onclick="zoomIn()">＋</button>
+        <span style="width:1px;background:rgba(255,255,255,.2);margin:2px 4px;align-self:stretch"></span>
+        <button class="ev-z" id="zoomFitBtn" title="画面にぴったり合わせる (Ctrl+0)" onclick="zoomFit()">⛶</button>
+      </div>
       <div class="ev-cv">
         <!-- キャンバス本体はスクロール内のinner -->
         <div class="ev-cv-inner">
           <!-- 2026-04-22: キャンバス範囲ラベル。装飾のみで出力には含まれない。 -->
           <div class="ev-cv-label">キャンバス範囲</div>
           <canvas id="fabCanvas" width="900" height="700"></canvas>
-        </div>
-        <!-- 下部ツールバー（sticky/fixed位置） -->
-        <div class="ev-tb">
-          <button class="ev-t" id="undoBtn" title="元に戻す (Ctrl+Z)" onclick="undoHistory()">↶</button>
-          <button class="ev-t" id="redoBtn" title="やり直す (Ctrl+Y)" onclick="redoHistory()">↷</button>
-          <span style="width:1px;background:rgba(255,255,255,.2);margin:4px 2px"></span>
-          <button class="ev-t" title="テキスト追加" onclick="edAddText()">T</button>
-          <button class="ev-t" title="画像追加" onclick="document.getElementById('edFile').click()">🖼</button>
-          <span style="width:1px;background:rgba(255,255,255,.2);margin:4px 2px"></span>
-          <button class="ev-t" id="groupBtn" title="グループ化 (Ctrl+G)" onclick="groupSelected()">🔗</button>
-          <button class="ev-t" id="ungroupBtn" title="グループ解除 (Ctrl+Shift+G)" onclick="ungroupSelected()">🔓</button>
-          <span style="width:1px;background:rgba(255,255,255,.2);margin:4px 2px"></span>
-          <button class="ev-t" title="削除" onclick="edDel()">🗑</button>
-        </div>
-        <!-- 右側ズームコントロール -->
-        <div class="ev-zoom">
-          <button class="ev-z" id="rotateCanvasBtn" title="キャンバスを縦↔横に回転" onclick="rotateCanvasSize()" style="display:none;">↕↔</button>
-          <button class="ev-z" id="zoomOutBtn" title="縮小 (Ctrl+-)" onclick="zoomOut()">−</button>
-          <button class="ev-z ev-z-label" id="zoomLabel" title="クリックで100%にリセット" onclick="zoomReset()">100%</button>
-          <button class="ev-z" id="zoomInBtn" title="拡大 (Ctrl+=)" onclick="zoomIn()">＋</button>
-          <span style="width:1px;background:rgba(255,255,255,.2);margin:2px 4px;align-self:stretch"></span>
-          <button class="ev-z" id="zoomFitBtn" title="画面にぴったり合わせる (Ctrl+0)" onclick="zoomFit()">⛶</button>
         </div>
         <input type="file" id="edFile" accept=".png,.jpg,.jpeg,.svg" multiple style="display:none" onchange="edAddImg(this)">
         <div class="ev-top">
@@ -3210,13 +3211,25 @@ function _showLoadingOverlay(message, sub){
   const s = el.querySelector('#clSub');
   if(m && message) m.textContent = message;
   if(s){ s.textContent = sub || '少々お待ちください'; }
-  // 1フレーム待ってから transition (CSS) を発火
-  requestAnimationFrame(() => el.classList.add('cl-show'));
+  // ★ 2026-06-08 Bug A 根治: 別タブ(3Dビューア)を開くと当タブはバックグラウンド化し、
+  //   requestAnimationFrame が発火保留される。その間に戻って _hideLoadingOverlay が
+  //   走っても、後から保留中のrAFが cl-show を付け直し「🎽3Dビューアを起動中」が固まる。
+  //   → 表示意図フラグ + rAFキャンセルで、hide後のshowを確実に無効化する。
+  el._coWantShow = true;
+  if(el._coRaf){ try { cancelAnimationFrame(el._coRaf); } catch(_){} }
+  el._coRaf = requestAnimationFrame(() => {
+    el._coRaf = 0;
+    if(el._coWantShow) el.classList.add('cl-show');
+  });
 }
 function _hideLoadingOverlay(delay){
   const el = document.getElementById('cocoroLoadingOverlay');
   if(!el) return;
-  const _doHide = () => el.classList.remove('cl-show');
+  const _doHide = () => {
+    el._coWantShow = false;
+    if(el._coRaf){ try { cancelAnimationFrame(el._coRaf); } catch(_){} el._coRaf = 0; }
+    el.classList.remove('cl-show');
+  };
   if(delay && delay > 0) setTimeout(_doHide, delay);
   else _doHide();
 }
