@@ -7679,6 +7679,7 @@ function setupZoomHandlers(){
     let pinchDist = 0, pinchStartZoom = 1, pinchCenter = null, pinching = false;
     // ★ 2026-06-07 iPad対応: 2本指で「選択中パーツの拡縮+回転」/ 未選択なら従来どおりキャンバスズーム
     let partMode = false, partRef = null, partSX = 1, partSY = 1, partAngle = 0, partTouchAngle = 0, partCenter = null;
+    let firstTouchActive = null, firstTouchTime = 0;   // 1本目タッチ時の選択退避(選択枠外ピンチ対応)
     const getDist = (touches) => {
       const dx = touches[0].clientX - touches[1].clientX;
       const dy = touches[0].clientY - touches[1].clientY;
@@ -7690,12 +7691,19 @@ function setupZoomHandlers(){
     });
     const getTouchAngle = (touches) => Math.atan2(touches[1].clientY - touches[0].clientY, touches[1].clientX - touches[0].clientX);
     evCv.addEventListener('touchstart', (e) => {
+      if(e.touches.length === 1){
+        try { const a0 = fabCanvas && fabCanvas.getActiveObject && fabCanvas.getActiveObject(); firstTouchActive = a0 || null; firstTouchTime = Date.now(); } catch(_){ firstTouchActive = null; }
+        return;
+      }
       if(e.touches.length === 2){
         pinching = true;
         pinchDist = getDist(e.touches);
         pinchStartZoom = _zoom;
         pinchCenter = getCenter(e.touches);
-        const ao = (fabCanvas && fabCanvas.getActiveObject) ? fabCanvas.getActiveObject() : null;
+        let ao = (fabCanvas && fabCanvas.getActiveObject) ? fabCanvas.getActiveObject() : null;
+        if(!ao && firstTouchActive && (Date.now() - firstTouchTime < 250)){
+          try { const stillThere = fabCanvas.contains ? fabCanvas.contains(firstTouchActive) : true; if(stillThere){ ao = firstTouchActive; fabCanvas.setActiveObject(ao); fabCanvas.requestRenderAll(); } } catch(_){}
+        }
         if(ao){
           partMode = true; partRef = ao;
           partSX = ao.scaleX || 1; partSY = ao.scaleY || 1; partAngle = ao.angle || 0;
@@ -7745,7 +7753,11 @@ function setupZoomHandlers(){
     evCv.addEventListener('touchend', (e) => {
       if(pinching && e.touches.length < 2){
         pinching = false;
-        if(partMode){ partMode = false; partRef = null; try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){} }
+        if(partMode && partRef){
+          const _ref = partRef; partMode = false; partRef = null;
+          try { const stillThere = fabCanvas.contains ? fabCanvas.contains(_ref) : true; if(stillThere){ fabCanvas.setActiveObject(_ref); fabCanvas.requestRenderAll(); firstTouchActive = _ref; firstTouchTime = Date.now(); } } catch(_){}
+          try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+        } else if(partMode){ partMode = false; partRef = null; }
       }
     }, {passive: true, capture: true});
     evCv.addEventListener('touchcancel', () => { pinching = false; partMode = false; partRef = null; }, {passive: true, capture: true});
