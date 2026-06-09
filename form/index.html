@@ -7237,22 +7237,24 @@ function _applyDeliveryMinDate(){
     //   アラート → 再オープン … の無限ループだった。クランプは値が常に有効になり再発しない。
     if(!el._iosMinBound){
       el._iosMinBound = true;
-      // ★ 2026-06-09(改) iOS順番修正: 旧版は change と blur の両方でクランプ＋即アラートしていた。
-      //   iOSはdate入力をタップしてピッカーが「今日」で開いた瞬間(値=今日<最短)に change が発火するため、
-      //   日付を選ぶ前に・選択カレンダーの裏でアラートが出て「順番が悪い」状態だった。
-      //   → 判定は blur(ピッカーを閉じた後)だけにし、アラートも閉じてから(setTimeout)出す。
-      el.addEventListener('blur', function(){
+      // ★ 2026-06-09(再) iOS誘導の最終形: 「選んだ瞬間(change)」に即クランプ → el.blur()でピッカーを閉じて → alert。
+      //   - change で反応するので早い日付を選んだ"その場"で訂正が出る(blurだけだと別要素タップまで出ない問題を解消)
+      //   - 先に el.blur() でピッカーを閉じる → alert がネイティブ選択カレンダーの裏に隠れない(順番OK)
+      //   - el.value=min はプログラム代入なので change を再発火しない=ループしない / 有効日(>=最短)は無反応・無アラート
+      const _clampNotify = function(){
         const cur = el.value;
         const lim = el.getAttribute('min');
         if(cur && lim && cur < lim){
-          el.value = lim;   // 最短の出荷予定日にクランプ(プログラム代入はinput/changeを再発火しない=ループしない)
+          el.value = lim;   // 最短の出荷予定日に即クランプ
           if(state.delivery && key) state.delivery[key] = lim;
-          // ピッカーが完全に閉じてからアラート(開いている最中=選択カレンダーの裏に隠れるのを防ぐ)
+          try { el.blur(); } catch(_){}   // 先にピッカーを閉じる(alertが裏に隠れないように)
           setTimeout(function(){
-            alert('「希望日」は出荷予定日 (' + lim + ') 以降のため、最短の ' + lim + ' に設定しました。\nそれ以降に変更する場合は日付を選び直してください。');
-          }, 400);
+            alert('「希望日」は出荷予定日 (' + lim + ') 以降のため、最短の ' + lim + ' に設定しました。\nそれ以降にするには日付を選び直してください。');
+          }, 120);
         }
-      });
+      };
+      el.addEventListener('change', _clampNotify);   // 日付を選んだ瞬間に反応
+      el.addEventListener('blur', _clampNotify);      // バックストップ(クランプ済みなら無反応)
     }
   };
   _bindIosCheck(pane.querySelector('[data-deliv="date"]'), 'date');
