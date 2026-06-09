@@ -4810,9 +4810,14 @@ const _LITE_COORDS = {
 // プリントサイズ文字列 → cm (Ncm角内=正方形 / 34x12cm=縦34×幅12)
 function _liteSizeCm(sizeStr){
   if(!sizeStr) return null;
-  let m = String(sizeStr).match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*cm/i);
+  const s = String(sizeStr);
+  // ★ 2026-06-09: 転写の用紙サイズ A4/B4/A3 は実寸の縦長(指示書 _printDimCm と一致)。シルク角/小サイズ(Ncm角内)は従来の正方。
+  if(/A3/i.test(s)) return { w:29.7, h:42.0 };
+  if(/B4/i.test(s)) return { w:25.7, h:36.4 };
+  if(/A4/i.test(s)) return { w:21.0, h:29.7 };
+  let m = s.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*cm/i);
   if(m) return { w: parseFloat(m[2]), h: parseFloat(m[1]) };   // 34x12cm = 縦34×幅12 → w=12,h=34
-  m = String(sizeStr).match(/(\d+(?:\.\d+)?)\s*cm/);
+  m = s.match(/(\d+(?:\.\d+)?)\s*cm/);
   if(m){ const n = parseFloat(m[1]); return { w:n, h:n }; }    // Ncm角内 = 正方形
   return null;
 }
