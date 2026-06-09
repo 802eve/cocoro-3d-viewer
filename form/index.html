@@ -7232,18 +7232,18 @@ function _applyDeliveryMinDate(){
       el.value = '';
       if(state.delivery && key) state.delivery[key] = '';
     }
-    // iOS フォールバック: change/blur で min 未満ならアラートして空にする
+    // ★ 2026-06-09 iOS フォールバック: min 未満を選んだら「空クリア＋自動再オープン」をやめ、最短有効日にクランプする。
+    //   旧実装は el.value='' にして picker を focus/click で再オープン → iOSは空だと「今日」を初期表示 → また今日(無効) →
+    //   アラート → 再オープン … の無限ループだった。クランプは値が常に有効になり再発しない。
     if(!el._iosMinBound){
       el._iosMinBound = true;
       const checker = (ev) => {
         const cur = el.value;
         const lim = el.getAttribute('min');
         if(cur && lim && cur < lim){
-          alert('「希望日」は出荷予定日 (' + lim + ') 以降からお選びください。');
-          el.value = '';
-          if(state.delivery && key) state.delivery[key] = '';
-          // フォーカスし直して再選択を促す
-          setTimeout(()=>{ try{ el.focus(); el.click(); }catch(e){} }, 0);
+          el.value = lim;   // 最短の出荷予定日にクランプ(プログラム代入はinput/changeを再発火しない=ループしない)
+          if(state.delivery && key) state.delivery[key] = lim;
+          alert('「希望日」は出荷予定日 (' + lim + ') 以降のため、最短の ' + lim + ' に設定しました。\nそれ以降に変更する場合は日付を選び直してください。');
         }
       };
       el.addEventListener('change', checker);
