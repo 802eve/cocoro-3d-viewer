@@ -7237,17 +7237,22 @@ function _applyDeliveryMinDate(){
     //   アラート → 再オープン … の無限ループだった。クランプは値が常に有効になり再発しない。
     if(!el._iosMinBound){
       el._iosMinBound = true;
-      const checker = (ev) => {
+      // ★ 2026-06-09(改) iOS順番修正: 旧版は change と blur の両方でクランプ＋即アラートしていた。
+      //   iOSはdate入力をタップしてピッカーが「今日」で開いた瞬間(値=今日<最短)に change が発火するため、
+      //   日付を選ぶ前に・選択カレンダーの裏でアラートが出て「順番が悪い」状態だった。
+      //   → 判定は blur(ピッカーを閉じた後)だけにし、アラートも閉じてから(setTimeout)出す。
+      el.addEventListener('blur', function(){
         const cur = el.value;
         const lim = el.getAttribute('min');
         if(cur && lim && cur < lim){
           el.value = lim;   // 最短の出荷予定日にクランプ(プログラム代入はinput/changeを再発火しない=ループしない)
           if(state.delivery && key) state.delivery[key] = lim;
-          alert('「希望日」は出荷予定日 (' + lim + ') 以降のため、最短の ' + lim + ' に設定しました。\nそれ以降に変更する場合は日付を選び直してください。');
+          // ピッカーが完全に閉じてからアラート(開いている最中=選択カレンダーの裏に隠れるのを防ぐ)
+          setTimeout(function(){
+            alert('「希望日」は出荷予定日 (' + lim + ') 以降のため、最短の ' + lim + ' に設定しました。\nそれ以降に変更する場合は日付を選び直してください。');
+          }, 400);
         }
-      };
-      el.addEventListener('change', checker);
-      el.addEventListener('blur', checker);
+      });
     }
   };
   _bindIosCheck(pane.querySelector('[data-deliv="date"]'), 'date');
