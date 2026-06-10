@@ -1547,6 +1547,78 @@
       "created": "2026-06-10T09:55:36.360Z",
       "updated": "2026-06-10T09:55:36.360Z",
       "svgPath": "cliparts/clipA-1781085165370.svg"
+    },
+    {
+      "id": "clipA-1781085165369",
+      "name": "マラソン06",
+      "cat": "マラソン",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085165369.svg"
+    },
+    {
+      "id": "clipA-1781085165368",
+      "name": "マラソン07",
+      "cat": "マラソン",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085165368.svg"
+    },
+    {
+      "id": "clipA-1781085165367",
+      "name": "マラソン04",
+      "cat": "マラソン",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085165367.svg"
+    },
+    {
+      "id": "clipA-1781085165366",
+      "name": "マラソン05",
+      "cat": "マラソン",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085165366.svg"
+    },
+    {
+      "id": "clipA-1781085165365",
+      "name": "マラソン03",
+      "cat": "マラソン",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085165365.svg"
+    },
+    {
+      "id": "clipA-1781085150000",
+      "name": "ボクシング07",
+      "cat": "ボクシング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085150000.svg"
+    },
+    {
+      "id": "clipA-1781085149999",
+      "name": "ボクシング06",
+      "cat": "ボクシング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085149999.svg"
+    },
+    {
+      "id": "clipA-1781085149998",
+      "name": "ボクシング05",
+      "cat": "ボクシング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:47.350Z",
+      "updated": "2026-06-10T09:55:47.350Z",
+      "svgPath": "cliparts/clipA-1781085149998.svg"
     }
   ],
   "categories": {
@@ -1570,5 +1642,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:55:36.361Z"
+  "updatedAt": "2026-06-10T09:55:47.351Z"
 }
