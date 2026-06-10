@@ -1475,6 +1475,78 @@
       "created": "2026-06-10T09:55:24.233Z",
       "updated": "2026-06-10T09:55:24.233Z",
       "svgPath": "cliparts/clipA-1781085192993.svg"
+    },
+    {
+      "id": "clipA-1781085192992",
+      "name": "剣道01",
+      "cat": "剣道",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085192992.svg"
+    },
+    {
+      "id": "clipA-1781085179451",
+      "name": "レスリング05",
+      "cat": "レスリング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085179451.svg"
+    },
+    {
+      "id": "clipA-1781085179450",
+      "name": "レスリング04",
+      "cat": "レスリング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085179450.svg"
+    },
+    {
+      "id": "clipA-1781085179449",
+      "name": "レスリング03",
+      "cat": "レスリング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085179449.svg"
+    },
+    {
+      "id": "clipA-1781085179448",
+      "name": "レスリング02",
+      "cat": "レスリング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085179448.svg"
+    },
+    {
+      "id": "clipA-1781085179447",
+      "name": "レスリング01",
+      "cat": "レスリング",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085179447.svg"
+    },
+    {
+      "id": "clipA-1781085165371",
+      "name": "マラソン01",
+      "cat": "マラソン",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085165371.svg"
+    },
+    {
+      "id": "clipA-1781085165370",
+      "name": "マラソン02",
+      "cat": "マラソン",
+      "thumb": "",
+      "created": "2026-06-10T09:55:36.360Z",
+      "updated": "2026-06-10T09:55:36.360Z",
+      "svgPath": "cliparts/clipA-1781085165370.svg"
     }
   ],
   "categories": {
@@ -1498,5 +1570,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:55:24.235Z"
+  "updatedAt": "2026-06-10T09:55:36.361Z"
 }
