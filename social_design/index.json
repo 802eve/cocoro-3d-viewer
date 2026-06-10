@@ -1403,6 +1403,78 @@
       "created": "2026-06-10T09:55:12.358Z",
       "updated": "2026-06-10T09:55:12.358Z",
       "svgPath": "cliparts/clipA-1781085206778.svg"
+    },
+    {
+      "id": "clipA-1781085206777",
+      "name": "乗馬04",
+      "cat": "乗馬",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085206777.svg"
+    },
+    {
+      "id": "clipA-1781085206776",
+      "name": "乗馬02",
+      "cat": "乗馬",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085206776.svg"
+    },
+    {
+      "id": "clipA-1781085206775",
+      "name": "乗馬01",
+      "cat": "乗馬",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085206775.svg"
+    },
+    {
+      "id": "clipA-1781085192997",
+      "name": "剣道02",
+      "cat": "剣道",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085192997.svg"
+    },
+    {
+      "id": "clipA-1781085192996",
+      "name": "剣道06",
+      "cat": "剣道",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085192996.svg"
+    },
+    {
+      "id": "clipA-1781085192995",
+      "name": "剣道05",
+      "cat": "剣道",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085192995.svg"
+    },
+    {
+      "id": "clipA-1781085192994",
+      "name": "剣道04",
+      "cat": "剣道",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085192994.svg"
+    },
+    {
+      "id": "clipA-1781085192993",
+      "name": "剣道03",
+      "cat": "剣道",
+      "thumb": "",
+      "created": "2026-06-10T09:55:24.233Z",
+      "updated": "2026-06-10T09:55:24.233Z",
+      "svgPath": "cliparts/clipA-1781085192993.svg"
     }
   ],
   "categories": {
@@ -1426,5 +1498,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:55:12.361Z"
+  "updatedAt": "2026-06-10T09:55:24.235Z"
 }
