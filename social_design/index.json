@@ -1187,6 +1187,78 @@
       "created": "2026-06-10T09:54:31.294Z",
       "updated": "2026-06-10T09:54:31.294Z",
       "svgPath": "cliparts/clipA-1781085257800.svg"
+    },
+    {
+      "id": "clipA-1781085257799",
+      "name": "陸上03",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085257799.svg"
+    },
+    {
+      "id": "clipA-1781085257798",
+      "name": "陸上02",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085257798.svg"
+    },
+    {
+      "id": "clipA-1781085257797",
+      "name": "陸上01",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085257797.svg"
+    },
+    {
+      "id": "clipA-1781085243893",
+      "name": "野球07",
+      "cat": "野球",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085243893.svg"
+    },
+    {
+      "id": "clipA-1781085243892",
+      "name": "野球06",
+      "cat": "野球",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085243892.svg"
+    },
+    {
+      "id": "clipA-1781085243891",
+      "name": "野球05",
+      "cat": "野球",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085243891.svg"
+    },
+    {
+      "id": "clipA-1781085243890",
+      "name": "野球04",
+      "cat": "野球",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085243890.svg"
+    },
+    {
+      "id": "clipA-1781085243889",
+      "name": "野球03",
+      "cat": "野球",
+      "thumb": "",
+      "created": "2026-06-10T09:54:46.729Z",
+      "updated": "2026-06-10T09:54:46.729Z",
+      "svgPath": "cliparts/clipA-1781085243889.svg"
     }
   ],
   "categories": {
@@ -1210,5 +1282,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:54:31.296Z"
+  "updatedAt": "2026-06-10T09:54:46.730Z"
 }
