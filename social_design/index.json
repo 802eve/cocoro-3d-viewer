@@ -1331,6 +1331,78 @@
       "created": "2026-06-10T09:55:00.872Z",
       "updated": "2026-06-10T09:55:00.872Z",
       "svgPath": "cliparts/clipA-1781085219975.svg"
+    },
+    {
+      "id": "clipA-1781085219974",
+      "name": "体操07",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085219974.svg"
+    },
+    {
+      "id": "clipA-1781085219973",
+      "name": "体操05",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085219973.svg"
+    },
+    {
+      "id": "clipA-1781085219972",
+      "name": "体操06",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085219972.svg"
+    },
+    {
+      "id": "clipA-1781085219971",
+      "name": "体操04",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085219971.svg"
+    },
+    {
+      "id": "clipA-1781085219970",
+      "name": "体操03",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085219970.svg"
+    },
+    {
+      "id": "clipA-1781085219969",
+      "name": "体操02",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085219969.svg"
+    },
+    {
+      "id": "clipA-1781085219968",
+      "name": "体操01",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085219968.svg"
+    },
+    {
+      "id": "clipA-1781085206778",
+      "name": "乗馬03",
+      "cat": "乗馬",
+      "thumb": "",
+      "created": "2026-06-10T09:55:12.358Z",
+      "updated": "2026-06-10T09:55:12.358Z",
+      "svgPath": "cliparts/clipA-1781085206778.svg"
     }
   ],
   "categories": {
@@ -1354,5 +1426,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:55:00.873Z"
+  "updatedAt": "2026-06-10T09:55:12.361Z"
 }
