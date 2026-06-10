@@ -1691,6 +1691,78 @@
       "created": "2026-06-10T09:56:06.536Z",
       "updated": "2026-06-10T09:56:06.536Z",
       "svgPath": "cliparts/clipA-1781085137607.svg"
+    },
+    {
+      "id": "clipA-1781085137606",
+      "name": "ボーリング03",
+      "cat": "ボーリング",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085137606.svg"
+    },
+    {
+      "id": "clipA-1781085137605",
+      "name": "ボーリング02",
+      "cat": "ボーリング",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085137605.svg"
+    },
+    {
+      "id": "clipA-1781085137604",
+      "name": "ボーリング01",
+      "cat": "ボーリング",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085137604.svg"
+    },
+    {
+      "id": "clipA-1781085122539",
+      "name": "プロレス06",
+      "cat": "プロレス",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085122539.svg"
+    },
+    {
+      "id": "clipA-1781085122538",
+      "name": "プロレス05",
+      "cat": "プロレス",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085122538.svg"
+    },
+    {
+      "id": "clipA-1781085122537",
+      "name": "プロレス04",
+      "cat": "プロレス",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085122537.svg"
+    },
+    {
+      "id": "clipA-1781085122536",
+      "name": "プロレス03",
+      "cat": "プロレス",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085122536.svg"
+    },
+    {
+      "id": "clipA-1781085122535",
+      "name": "プロレス02",
+      "cat": "プロレス",
+      "thumb": "",
+      "created": "2026-06-10T09:56:17.776Z",
+      "updated": "2026-06-10T09:56:17.776Z",
+      "svgPath": "cliparts/clipA-1781085122535.svg"
     }
   ],
   "categories": {
@@ -1714,5 +1786,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:56:06.537Z"
+  "updatedAt": "2026-06-10T09:56:17.778Z"
 }
