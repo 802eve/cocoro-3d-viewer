@@ -1979,6 +1979,42 @@
       "created": "2026-06-10T09:56:56.742Z",
       "updated": "2026-06-10T09:56:56.742Z",
       "svgPath": "cliparts/clipA-1781085056575.svg"
+    },
+    {
+      "id": "clipA-1781085056574",
+      "name": "バスケ04",
+      "cat": "バスケ",
+      "thumb": "",
+      "created": "2026-06-10T09:57:03.867Z",
+      "updated": "2026-06-10T09:57:03.867Z",
+      "svgPath": "cliparts/clipA-1781085056574.svg"
+    },
+    {
+      "id": "clipA-1781085056573",
+      "name": "バスケ03",
+      "cat": "バスケ",
+      "thumb": "",
+      "created": "2026-06-10T09:57:03.867Z",
+      "updated": "2026-06-10T09:57:03.867Z",
+      "svgPath": "cliparts/clipA-1781085056573.svg"
+    },
+    {
+      "id": "clipA-1781085056572",
+      "name": "バスケ02",
+      "cat": "バスケ",
+      "thumb": "",
+      "created": "2026-06-10T09:57:03.867Z",
+      "updated": "2026-06-10T09:57:03.867Z",
+      "svgPath": "cliparts/clipA-1781085056572.svg"
+    },
+    {
+      "id": "clipA-1781085056571",
+      "name": "バスケ01",
+      "cat": "バスケ",
+      "thumb": "",
+      "created": "2026-06-10T09:57:03.867Z",
+      "updated": "2026-06-10T09:57:03.867Z",
+      "svgPath": "cliparts/clipA-1781085056571.svg"
     }
   ],
   "categories": {
@@ -2002,5 +2038,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:56:56.743Z"
+  "updatedAt": "2026-06-10T09:57:03.869Z"
 }
