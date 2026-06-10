@@ -1259,6 +1259,78 @@
       "created": "2026-06-10T09:54:46.729Z",
       "updated": "2026-06-10T09:54:46.729Z",
       "svgPath": "cliparts/clipA-1781085243889.svg"
+    },
+    {
+      "id": "clipA-1781085243888",
+      "name": "野球02",
+      "cat": "野球",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085243888.svg"
+    },
+    {
+      "id": "clipA-1781085243887",
+      "name": "野球01",
+      "cat": "野球",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085243887.svg"
+    },
+    {
+      "id": "clipA-1781085231874",
+      "name": "砲丸投げ05",
+      "cat": "砲丸投げ",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085231874.svg"
+    },
+    {
+      "id": "clipA-1781085231873",
+      "name": "砲丸投げ04",
+      "cat": "砲丸投げ",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085231873.svg"
+    },
+    {
+      "id": "clipA-1781085231872",
+      "name": "砲丸投げ03",
+      "cat": "砲丸投げ",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085231872.svg"
+    },
+    {
+      "id": "clipA-1781085231871",
+      "name": "砲丸投げ02",
+      "cat": "砲丸投げ",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085231871.svg"
+    },
+    {
+      "id": "clipA-1781085231870",
+      "name": "砲丸投げ01",
+      "cat": "砲丸投げ",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085231870.svg"
+    },
+    {
+      "id": "clipA-1781085219975",
+      "name": "体操08",
+      "cat": "体操",
+      "thumb": "",
+      "created": "2026-06-10T09:55:00.872Z",
+      "updated": "2026-06-10T09:55:00.872Z",
+      "svgPath": "cliparts/clipA-1781085219975.svg"
     }
   ],
   "categories": {
@@ -1282,5 +1354,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:54:46.730Z"
+  "updatedAt": "2026-06-10T09:55:00.873Z"
 }
