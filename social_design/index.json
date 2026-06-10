@@ -701,6 +701,78 @@
       "created": "2026-06-10T09:45:48.388Z",
       "updated": "2026-06-10T09:45:48.388Z",
       "svgPath": "cliparts/clipA-1781084702072.svg"
+    },
+    {
+      "id": "clipA-1781084960683",
+      "name": "テニス06",
+      "cat": "テニス",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084960683.svg"
+    },
+    {
+      "id": "clipA-1781084960682",
+      "name": "テニス04",
+      "cat": "テニス",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084960682.svg"
+    },
+    {
+      "id": "clipA-1781084960681",
+      "name": "テニス05",
+      "cat": "テニス",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084960681.svg"
+    },
+    {
+      "id": "clipA-1781084960680",
+      "name": "テニス03",
+      "cat": "テニス",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084960680.svg"
+    },
+    {
+      "id": "clipA-1781084960679",
+      "name": "テニス02",
+      "cat": "テニス",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084960679.svg"
+    },
+    {
+      "id": "clipA-1781084960678",
+      "name": "テニス01",
+      "cat": "テニス",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084960678.svg"
+    },
+    {
+      "id": "clipA-1781084947210",
+      "name": "スノーボード08",
+      "cat": "スノーボード",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084947210.svg"
+    },
+    {
+      "id": "clipA-1781084947209",
+      "name": "スノーボード07",
+      "cat": "スノーボード",
+      "thumb": "",
+      "created": "2026-06-10T09:49:38.254Z",
+      "updated": "2026-06-10T09:49:38.254Z",
+      "svgPath": "cliparts/clipA-1781084947209.svg"
     }
   ],
   "categories": {
@@ -716,5 +788,5 @@
       "キャラクター"
     ]
   },
-  "updatedAt": "2026-06-10T09:45:52.066Z"
+  "updatedAt": "2026-06-10T09:49:38.256Z"
 }
