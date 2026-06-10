@@ -917,6 +917,78 @@
       "created": "2026-06-10T09:50:06.894Z",
       "updated": "2026-06-10T09:50:06.894Z",
       "svgPath": "cliparts/clipA-1781084895437.svg"
+    },
+    {
+      "id": "clipA-1781084895436",
+      "name": "サッカー02",
+      "cat": "サッカー",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084895436.svg"
+    },
+    {
+      "id": "clipA-1781084895435",
+      "name": "サッカー01",
+      "cat": "サッカー",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084895435.svg"
+    },
+    {
+      "id": "clipA-1781084881719",
+      "name": "ゴルフ01",
+      "cat": "ゴルフ",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084881719.svg"
+    },
+    {
+      "id": "clipA-1781084881718",
+      "name": "ゴルフ07",
+      "cat": "ゴルフ",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084881718.svg"
+    },
+    {
+      "id": "clipA-1781084881717",
+      "name": "ゴルフ06",
+      "cat": "ゴルフ",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084881717.svg"
+    },
+    {
+      "id": "clipA-1781084881716",
+      "name": "ゴルフ05",
+      "cat": "ゴルフ",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084881716.svg"
+    },
+    {
+      "id": "clipA-1781084881715",
+      "name": "ゴルフ04",
+      "cat": "ゴルフ",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084881715.svg"
+    },
+    {
+      "id": "clipA-1781084881714",
+      "name": "ゴルフ03",
+      "cat": "ゴルフ",
+      "thumb": "",
+      "created": "2026-06-10T09:50:18.340Z",
+      "updated": "2026-06-10T09:50:18.340Z",
+      "svgPath": "cliparts/clipA-1781084881714.svg"
     }
   ],
   "categories": {
@@ -932,5 +1004,5 @@
       "キャラクター"
     ]
   },
-  "updatedAt": "2026-06-10T09:50:06.895Z"
+  "updatedAt": "2026-06-10T09:50:18.342Z"
 }
