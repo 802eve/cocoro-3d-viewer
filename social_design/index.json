@@ -1115,6 +1115,78 @@
       "created": "2026-06-10T09:50:42.057Z",
       "updated": "2026-06-10T09:50:42.057Z",
       "svgPath": "cliparts/clipA-1781084782605.svg"
+    },
+    {
+      "id": "clipA-1781085257807",
+      "name": "陸上11",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257807.svg"
+    },
+    {
+      "id": "clipA-1781085257806",
+      "name": "陸上10",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257806.svg"
+    },
+    {
+      "id": "clipA-1781085257805",
+      "name": "陸上09",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257805.svg"
+    },
+    {
+      "id": "clipA-1781085257804",
+      "name": "陸上08",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257804.svg"
+    },
+    {
+      "id": "clipA-1781085257803",
+      "name": "陸上07",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257803.svg"
+    },
+    {
+      "id": "clipA-1781085257802",
+      "name": "陸上06",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257802.svg"
+    },
+    {
+      "id": "clipA-1781085257801",
+      "name": "陸上05",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257801.svg"
+    },
+    {
+      "id": "clipA-1781085257800",
+      "name": "陸上04",
+      "cat": "陸上",
+      "thumb": "",
+      "created": "2026-06-10T09:54:31.294Z",
+      "updated": "2026-06-10T09:54:31.294Z",
+      "svgPath": "cliparts/clipA-1781085257800.svg"
     }
   ],
   "categories": {
@@ -1138,5 +1210,5 @@
       "テニス"
     ]
   },
-  "updatedAt": "2026-06-10T09:50:45.458Z"
+  "updatedAt": "2026-06-10T09:54:31.296Z"
 }
