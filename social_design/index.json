@@ -4040,6 +4040,78 @@
       "created": "2026-06-11T11:41:48.893Z",
       "updated": "2026-06-11T11:41:48.893Z",
       "svgPath": "cliparts/clipA-1781177513559.svg"
+    },
+    {
+      "id": "clipA-1781177513558",
+      "name": "景色02",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177513558.svg"
+    },
+    {
+      "id": "clipA-1781177513557",
+      "name": "景色06",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177513557.svg"
+    },
+    {
+      "id": "clipA-1781177513556",
+      "name": "景色05",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177513556.svg"
+    },
+    {
+      "id": "clipA-1781177513555",
+      "name": "景色04",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177513555.svg"
+    },
+    {
+      "id": "clipA-1781177492128",
+      "name": "ヘッドホン01",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177492128.svg"
+    },
+    {
+      "id": "clipA-1781177492127",
+      "name": "ピアノ05",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177492127.svg"
+    },
+    {
+      "id": "clipA-1781177492126",
+      "name": "ピアノ04",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177492126.svg"
+    },
+    {
+      "id": "clipA-1781177492125",
+      "name": "ピアノ03",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:41:59.498Z",
+      "updated": "2026-06-11T11:41:59.498Z",
+      "svgPath": "cliparts/clipA-1781177492125.svg"
     }
   ],
   "categories": {
@@ -4079,5 +4151,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:41:48.896Z"
+  "updatedAt": "2026-06-11T11:41:59.499Z"
 }
