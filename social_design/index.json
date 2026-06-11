@@ -3032,6 +3032,78 @@
       "created": "2026-06-11T11:38:51.189Z",
       "updated": "2026-06-11T11:38:51.189Z",
       "svgPath": "cliparts/clipA-1781177743006.svg"
+    },
+    {
+      "id": "clipA-1781177743005",
+      "name": "ペンギン07",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177743005.svg"
+    },
+    {
+      "id": "clipA-1781177743004",
+      "name": "ペンギン06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177743004.svg"
+    },
+    {
+      "id": "clipA-1781177743003",
+      "name": "ペンギン05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177743003.svg"
+    },
+    {
+      "id": "clipA-1781177743002",
+      "name": "ペンギン04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177743002.svg"
+    },
+    {
+      "id": "clipA-1781177743001",
+      "name": "ペンギン03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177743001.svg"
+    },
+    {
+      "id": "clipA-1781177743000",
+      "name": "ペンギン02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177743000.svg"
+    },
+    {
+      "id": "clipA-1781177742999",
+      "name": "ペンギン01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177742999.svg"
+    },
+    {
+      "id": "clipA-1781177742998",
+      "name": "ブタ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:05.712Z",
+      "updated": "2026-06-11T11:39:05.712Z",
+      "svgPath": "cliparts/clipA-1781177742998.svg"
     }
   ],
   "categories": {
@@ -3071,5 +3143,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:38:51.192Z"
+  "updatedAt": "2026-06-11T11:39:05.712Z"
 }
