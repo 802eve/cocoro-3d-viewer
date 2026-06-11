@@ -3680,6 +3680,78 @@
       "created": "2026-06-11T11:40:50.740Z",
       "updated": "2026-06-11T11:40:50.740Z",
       "svgPath": "cliparts/clipA-1781177742934.svg"
+    },
+    {
+      "id": "clipA-1781177742933",
+      "name": "イノシシ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177742933.svg"
+    },
+    {
+      "id": "clipA-1781177742932",
+      "name": "イノシシ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177742932.svg"
+    },
+    {
+      "id": "clipA-1781177742931",
+      "name": "鷲01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177742931.svg"
+    },
+    {
+      "id": "clipA-1781177742930",
+      "name": "狼04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177742930.svg"
+    },
+    {
+      "id": "clipA-1781177742929",
+      "name": "狼02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177742929.svg"
+    },
+    {
+      "id": "clipA-1781177742928",
+      "name": "狼03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177742928.svg"
+    },
+    {
+      "id": "clipA-1781177554673",
+      "name": "人14",
+      "cat": "人",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177554673.svg"
+    },
+    {
+      "id": "clipA-1781177554672",
+      "name": "人16",
+      "cat": "人",
+      "thumb": "",
+      "created": "2026-06-11T11:41:02.454Z",
+      "updated": "2026-06-11T11:41:02.454Z",
+      "svgPath": "cliparts/clipA-1781177554672.svg"
     }
   ],
   "categories": {
@@ -3719,5 +3791,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:40:50.742Z"
+  "updatedAt": "2026-06-11T11:41:02.456Z"
 }
