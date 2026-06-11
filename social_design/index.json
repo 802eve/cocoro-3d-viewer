@@ -3320,6 +3320,78 @@
       "created": "2026-06-11T11:39:44.418Z",
       "updated": "2026-06-11T11:39:44.418Z",
       "svgPath": "cliparts/clipA-1781177742974.svg"
+    },
+    {
+      "id": "clipA-1781177742973",
+      "name": "ゴリラ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742973.svg"
+    },
+    {
+      "id": "clipA-1781177742972",
+      "name": "ゴリラ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742972.svg"
+    },
+    {
+      "id": "clipA-1781177742971",
+      "name": "コアラ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742971.svg"
+    },
+    {
+      "id": "clipA-1781177742970",
+      "name": "コアラ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742970.svg"
+    },
+    {
+      "id": "clipA-1781177742969",
+      "name": "コアラ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742969.svg"
+    },
+    {
+      "id": "clipA-1781177742968",
+      "name": "コアラ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742968.svg"
+    },
+    {
+      "id": "clipA-1781177742967",
+      "name": "クモ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742967.svg"
+    },
+    {
+      "id": "clipA-1781177742966",
+      "name": "クジラ05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:54.311Z",
+      "updated": "2026-06-11T11:39:54.311Z",
+      "svgPath": "cliparts/clipA-1781177742966.svg"
     }
   ],
   "categories": {
@@ -3359,5 +3431,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:39:44.419Z"
+  "updatedAt": "2026-06-11T11:39:54.312Z"
 }
