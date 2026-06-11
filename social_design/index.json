@@ -3968,6 +3968,78 @@
       "created": "2026-06-11T11:41:37.865Z",
       "updated": "2026-06-11T11:41:37.865Z",
       "svgPath": "cliparts/clipA-1781177554648.svg"
+    },
+    {
+      "id": "clipA-1781177554647",
+      "name": "人18",
+      "cat": "人",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177554647.svg"
+    },
+    {
+      "id": "clipA-1781177513565",
+      "name": "景色09",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177513565.svg"
+    },
+    {
+      "id": "clipA-1781177513564",
+      "name": "景色11",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177513564.svg"
+    },
+    {
+      "id": "clipA-1781177513563",
+      "name": "景色08",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177513563.svg"
+    },
+    {
+      "id": "clipA-1781177513562",
+      "name": "景色10",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177513562.svg"
+    },
+    {
+      "id": "clipA-1781177513561",
+      "name": "景色07",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177513561.svg"
+    },
+    {
+      "id": "clipA-1781177513560",
+      "name": "景色01",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177513560.svg"
+    },
+    {
+      "id": "clipA-1781177513559",
+      "name": "景色03",
+      "cat": "景色",
+      "thumb": "",
+      "created": "2026-06-11T11:41:48.893Z",
+      "updated": "2026-06-11T11:41:48.893Z",
+      "svgPath": "cliparts/clipA-1781177513559.svg"
     }
   ],
   "categories": {
@@ -4007,5 +4079,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:41:37.866Z"
+  "updatedAt": "2026-06-11T11:41:48.896Z"
 }
