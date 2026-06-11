@@ -2600,6 +2600,78 @@
       "created": "2026-06-11T11:37:32.621Z",
       "updated": "2026-06-11T11:37:32.621Z",
       "svgPath": "cliparts/clipA-1781177743054.svg"
+    },
+    {
+      "id": "clipA-1781177743053",
+      "name": "犬12",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743053.svg"
+    },
+    {
+      "id": "clipA-1781177743052",
+      "name": "犬11",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743052.svg"
+    },
+    {
+      "id": "clipA-1781177743051",
+      "name": "犬10",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743051.svg"
+    },
+    {
+      "id": "clipA-1781177743050",
+      "name": "犬09",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743050.svg"
+    },
+    {
+      "id": "clipA-1781177743049",
+      "name": "犬08",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743049.svg"
+    },
+    {
+      "id": "clipA-1781177743048",
+      "name": "犬07",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743048.svg"
+    },
+    {
+      "id": "clipA-1781177743047",
+      "name": "犬06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743047.svg"
+    },
+    {
+      "id": "clipA-1781177743046",
+      "name": "犬05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:37:46.159Z",
+      "updated": "2026-06-11T11:37:46.159Z",
+      "svgPath": "cliparts/clipA-1781177743046.svg"
     }
   ],
   "categories": {
@@ -2639,5 +2711,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:37:32.622Z"
+  "updatedAt": "2026-06-11T11:37:46.160Z"
 }
