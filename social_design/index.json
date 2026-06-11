@@ -3608,6 +3608,78 @@
       "created": "2026-06-11T11:40:36.151Z",
       "updated": "2026-06-11T11:40:36.151Z",
       "svgPath": "cliparts/clipA-1781177742942.svg"
+    },
+    {
+      "id": "clipA-1781177742941",
+      "name": "ウサギ06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742941.svg"
+    },
+    {
+      "id": "clipA-1781177742940",
+      "name": "ウサギ05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742940.svg"
+    },
+    {
+      "id": "clipA-1781177742939",
+      "name": "ウサギ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742939.svg"
+    },
+    {
+      "id": "clipA-1781177742938",
+      "name": "ウサギ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742938.svg"
+    },
+    {
+      "id": "clipA-1781177742937",
+      "name": "ウサギ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742937.svg"
+    },
+    {
+      "id": "clipA-1781177742936",
+      "name": "ウサギ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742936.svg"
+    },
+    {
+      "id": "clipA-1781177742935",
+      "name": "イノシシ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742935.svg"
+    },
+    {
+      "id": "clipA-1781177742934",
+      "name": "イノシシ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:50.740Z",
+      "updated": "2026-06-11T11:40:50.740Z",
+      "svgPath": "cliparts/clipA-1781177742934.svg"
     }
   ],
   "categories": {
@@ -3647,5 +3719,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:40:36.154Z"
+  "updatedAt": "2026-06-11T11:40:50.742Z"
 }
