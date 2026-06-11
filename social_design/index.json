@@ -384,7 +384,7 @@
       "cat": "動物",
       "thumb": "",
       "created": "2026-05-08T14:41:18.204Z",
-      "updated": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-06-11T11:42:33.405Z",
       "svgPath": "cliparts/clipA-1778251227708.svg"
     },
     {
@@ -393,7 +393,7 @@
       "cat": "動物",
       "thumb": "",
       "created": "2026-05-08T14:41:18.204Z",
-      "updated": "2026-05-08T14:41:18.204Z",
+      "updated": "2026-06-11T11:42:33.405Z",
       "svgPath": "cliparts/clipA-1778251227707.svg"
     },
     {
@@ -4256,6 +4256,60 @@
       "created": "2026-06-11T11:42:21.502Z",
       "updated": "2026-06-11T11:42:21.502Z",
       "svgPath": "cliparts/clipA-1781177492109.svg"
+    },
+    {
+      "id": "clipA-1781177492108",
+      "name": "マラカス03",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:33.405Z",
+      "updated": "2026-06-11T11:42:33.405Z",
+      "svgPath": "cliparts/clipA-1781177492108.svg"
+    },
+    {
+      "id": "clipA-1781177492107",
+      "name": "マラカス02",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:33.405Z",
+      "updated": "2026-06-11T11:42:33.405Z",
+      "svgPath": "cliparts/clipA-1781177492107.svg"
+    },
+    {
+      "id": "clipA-1781177492106",
+      "name": "マラカス01",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:33.405Z",
+      "updated": "2026-06-11T11:42:33.405Z",
+      "svgPath": "cliparts/clipA-1781177492106.svg"
+    },
+    {
+      "id": "clipA-1781177492105",
+      "name": "ヘッドホン04",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:33.405Z",
+      "updated": "2026-06-11T11:42:33.405Z",
+      "svgPath": "cliparts/clipA-1781177492105.svg"
+    },
+    {
+      "id": "clipA-1781177492104",
+      "name": "ヘッドホン03",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:33.405Z",
+      "updated": "2026-06-11T11:42:33.405Z",
+      "svgPath": "cliparts/clipA-1781177492104.svg"
+    },
+    {
+      "id": "clipA-1781177492103",
+      "name": "ヘッドホン02",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:33.405Z",
+      "updated": "2026-06-11T11:42:33.405Z",
+      "svgPath": "cliparts/clipA-1781177492103.svg"
     }
   ],
   "categories": {
@@ -4295,5 +4349,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:42:21.505Z"
+  "updatedAt": "2026-06-11T11:42:33.406Z"
 }
