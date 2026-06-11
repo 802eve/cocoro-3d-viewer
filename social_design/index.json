@@ -114,6 +114,31 @@
       "created": "2026-06-11T12:11:16.219Z",
       "updated": "2026-06-11T12:11:16.219Z",
       "svgPath": "templates/tplA-1781179873306.svg"
+    },
+    {
+      "id": "tplA-1781190260519",
+      "name": "カレッジロゴ04",
+      "cat": "その他",
+      "style": "",
+      "thumb": "🎨",
+      "tags": [],
+      "colors": [
+        "#231815",
+        "#fff"
+      ],
+      "parts": {
+        "0": "エンブレム",
+        "1": "Champ",
+        "2": "Ball",
+        "3": "バナー",
+        "4": "Football",
+        "5": "WING",
+        "6": "Star",
+        "7": "WASHINGTON"
+      },
+      "created": "2026-06-11T15:04:24.327Z",
+      "updated": "2026-06-11T15:04:24.327Z",
+      "svgPath": "templates/tplA-1781190260519.svg"
     }
   ],
   "cliparts": [
@@ -4442,5 +4467,5 @@
       "人"
     ]
   },
-  "updatedAt": "2026-06-11T12:11:16.220Z"
+  "updatedAt": "2026-06-11T15:04:24.327Z"
 }
