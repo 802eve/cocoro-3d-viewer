@@ -4184,6 +4184,78 @@
       "created": "2026-06-11T11:42:10.424Z",
       "updated": "2026-06-11T11:42:10.424Z",
       "svgPath": "cliparts/clipA-1781177492117.svg"
+    },
+    {
+      "id": "clipA-1781177492116",
+      "name": "ギター07",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492116.svg"
+    },
+    {
+      "id": "clipA-1781177492115",
+      "name": "ギター06",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492115.svg"
+    },
+    {
+      "id": "clipA-1781177492114",
+      "name": "ギター05",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492114.svg"
+    },
+    {
+      "id": "clipA-1781177492113",
+      "name": "ギター04",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492113.svg"
+    },
+    {
+      "id": "clipA-1781177492112",
+      "name": "ギター03",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492112.svg"
+    },
+    {
+      "id": "clipA-1781177492111",
+      "name": "ギター02",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492111.svg"
+    },
+    {
+      "id": "clipA-1781177492110",
+      "name": "ギター01",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492110.svg"
+    },
+    {
+      "id": "clipA-1781177492109",
+      "name": "音楽01",
+      "cat": "音楽",
+      "thumb": "",
+      "created": "2026-06-11T11:42:21.502Z",
+      "updated": "2026-06-11T11:42:21.502Z",
+      "svgPath": "cliparts/clipA-1781177492109.svg"
     }
   ],
   "categories": {
@@ -4223,5 +4295,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:42:10.425Z"
+  "updatedAt": "2026-06-11T11:42:21.505Z"
 }
