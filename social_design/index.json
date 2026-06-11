@@ -2816,6 +2816,78 @@
       "created": "2026-06-11T11:38:09.402Z",
       "updated": "2026-06-11T11:38:09.402Z",
       "svgPath": "cliparts/clipA-1781177743030.svg"
+    },
+    {
+      "id": "clipA-1781177743029",
+      "name": "猿02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743029.svg"
+    },
+    {
+      "id": "clipA-1781177743028",
+      "name": "猿01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743028.svg"
+    },
+    {
+      "id": "clipA-1781177743027",
+      "name": "ワニ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743027.svg"
+    },
+    {
+      "id": "clipA-1781177743026",
+      "name": "ライオン16",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743026.svg"
+    },
+    {
+      "id": "clipA-1781177743025",
+      "name": "リス01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743025.svg"
+    },
+    {
+      "id": "clipA-1781177743024",
+      "name": "ライオン15",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743024.svg"
+    },
+    {
+      "id": "clipA-1781177743023",
+      "name": "ライオン14",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743023.svg"
+    },
+    {
+      "id": "clipA-1781177743022",
+      "name": "ライオン13",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:38:24.075Z",
+      "updated": "2026-06-11T11:38:24.075Z",
+      "svgPath": "cliparts/clipA-1781177743022.svg"
     }
   ],
   "categories": {
@@ -2855,5 +2927,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:38:09.415Z"
+  "updatedAt": "2026-06-11T11:38:24.077Z"
 }
