@@ -3176,6 +3176,78 @@
       "created": "2026-06-11T11:39:18.178Z",
       "updated": "2026-06-11T11:39:18.178Z",
       "svgPath": "cliparts/clipA-1781177742990.svg"
+    },
+    {
+      "id": "clipA-1781177742989",
+      "name": "トラ06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742989.svg"
+    },
+    {
+      "id": "clipA-1781177742988",
+      "name": "トラ05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742988.svg"
+    },
+    {
+      "id": "clipA-1781177742987",
+      "name": "トラ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742987.svg"
+    },
+    {
+      "id": "clipA-1781177742986",
+      "name": "トラ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742986.svg"
+    },
+    {
+      "id": "clipA-1781177742985",
+      "name": "トラ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742985.svg"
+    },
+    {
+      "id": "clipA-1781177742984",
+      "name": "シマウマ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742984.svg"
+    },
+    {
+      "id": "clipA-1781177742983",
+      "name": "トラ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742983.svg"
+    },
+    {
+      "id": "clipA-1781177742982",
+      "name": "シマウマ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:33.070Z",
+      "updated": "2026-06-11T11:39:33.070Z",
+      "svgPath": "cliparts/clipA-1781177742982.svg"
     }
   ],
   "categories": {
@@ -3215,5 +3287,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:39:18.180Z"
+  "updatedAt": "2026-06-11T11:39:33.077Z"
 }
