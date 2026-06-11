@@ -3104,6 +3104,78 @@
       "created": "2026-06-11T11:39:05.712Z",
       "updated": "2026-06-11T11:39:05.712Z",
       "svgPath": "cliparts/clipA-1781177742998.svg"
+    },
+    {
+      "id": "clipA-1781177742997",
+      "name": "ブタ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742997.svg"
+    },
+    {
+      "id": "clipA-1781177742996",
+      "name": "パンダ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742996.svg"
+    },
+    {
+      "id": "clipA-1781177742995",
+      "name": "パンダ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742995.svg"
+    },
+    {
+      "id": "clipA-1781177742994",
+      "name": "ネズミ05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742994.svg"
+    },
+    {
+      "id": "clipA-1781177742993",
+      "name": "ネズミ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742993.svg"
+    },
+    {
+      "id": "clipA-1781177742992",
+      "name": "ネズミ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742992.svg"
+    },
+    {
+      "id": "clipA-1781177742991",
+      "name": "ネズミ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742991.svg"
+    },
+    {
+      "id": "clipA-1781177742990",
+      "name": "ネズミ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:18.178Z",
+      "updated": "2026-06-11T11:39:18.178Z",
+      "svgPath": "cliparts/clipA-1781177742990.svg"
     }
   ],
   "categories": {
@@ -3143,5 +3215,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:39:05.712Z"
+  "updatedAt": "2026-06-11T11:39:18.180Z"
 }
