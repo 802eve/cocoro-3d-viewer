@@ -3464,6 +3464,78 @@
       "created": "2026-06-11T11:40:05.619Z",
       "updated": "2026-06-11T11:40:05.619Z",
       "svgPath": "cliparts/clipA-1781177742958.svg"
+    },
+    {
+      "id": "clipA-1781177742957",
+      "name": "キリン03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742957.svg"
+    },
+    {
+      "id": "clipA-1781177742956",
+      "name": "キリン02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742956.svg"
+    },
+    {
+      "id": "clipA-1781177742955",
+      "name": "キリン01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742955.svg"
+    },
+    {
+      "id": "clipA-1781177742954",
+      "name": "キツネ07",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742954.svg"
+    },
+    {
+      "id": "clipA-1781177742953",
+      "name": "キツネ06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742953.svg"
+    },
+    {
+      "id": "clipA-1781177742952",
+      "name": "キツネ05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742952.svg"
+    },
+    {
+      "id": "clipA-1781177742951",
+      "name": "キツネ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742951.svg"
+    },
+    {
+      "id": "clipA-1781177742950",
+      "name": "キツネ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:24.401Z",
+      "updated": "2026-06-11T11:40:24.401Z",
+      "svgPath": "cliparts/clipA-1781177742950.svg"
     }
   ],
   "categories": {
@@ -3503,5 +3575,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:40:05.621Z"
+  "updatedAt": "2026-06-11T11:40:24.403Z"
 }
