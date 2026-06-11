@@ -3392,6 +3392,78 @@
       "created": "2026-06-11T11:39:54.311Z",
       "updated": "2026-06-11T11:39:54.311Z",
       "svgPath": "cliparts/clipA-1781177742966.svg"
+    },
+    {
+      "id": "clipA-1781177742965",
+      "name": "クジラ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742965.svg"
+    },
+    {
+      "id": "clipA-1781177742964",
+      "name": "クジラ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742964.svg"
+    },
+    {
+      "id": "clipA-1781177742963",
+      "name": "クジラ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742963.svg"
+    },
+    {
+      "id": "clipA-1781177742962",
+      "name": "クジラ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742962.svg"
+    },
+    {
+      "id": "clipA-1781177742961",
+      "name": "キリン07",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742961.svg"
+    },
+    {
+      "id": "clipA-1781177742960",
+      "name": "キリン06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742960.svg"
+    },
+    {
+      "id": "clipA-1781177742959",
+      "name": "キリン05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742959.svg"
+    },
+    {
+      "id": "clipA-1781177742958",
+      "name": "キリン04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:40:05.619Z",
+      "updated": "2026-06-11T11:40:05.619Z",
+      "svgPath": "cliparts/clipA-1781177742958.svg"
     }
   ],
   "categories": {
@@ -3431,5 +3503,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:39:54.312Z"
+  "updatedAt": "2026-06-11T11:40:05.621Z"
 }
