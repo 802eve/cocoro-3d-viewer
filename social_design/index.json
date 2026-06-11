@@ -3248,6 +3248,78 @@
       "created": "2026-06-11T11:39:33.070Z",
       "updated": "2026-06-11T11:39:33.070Z",
       "svgPath": "cliparts/clipA-1781177742982.svg"
+    },
+    {
+      "id": "clipA-1781177742981",
+      "name": "サソリ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742981.svg"
+    },
+    {
+      "id": "clipA-1781177742980",
+      "name": "サイ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742980.svg"
+    },
+    {
+      "id": "clipA-1781177742979",
+      "name": "サイ02",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742979.svg"
+    },
+    {
+      "id": "clipA-1781177742978",
+      "name": "サイ01",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742978.svg"
+    },
+    {
+      "id": "clipA-1781177742977",
+      "name": "ゴリラ06",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742977.svg"
+    },
+    {
+      "id": "clipA-1781177742976",
+      "name": "ゴリラ05",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742976.svg"
+    },
+    {
+      "id": "clipA-1781177742975",
+      "name": "ゴリラ04",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742975.svg"
+    },
+    {
+      "id": "clipA-1781177742974",
+      "name": "ゴリラ03",
+      "cat": "動物",
+      "thumb": "",
+      "created": "2026-06-11T11:39:44.418Z",
+      "updated": "2026-06-11T11:39:44.418Z",
+      "svgPath": "cliparts/clipA-1781177742974.svg"
     }
   ],
   "categories": {
@@ -3287,5 +3359,5 @@
       "陸上"
     ]
   },
-  "updatedAt": "2026-06-11T11:39:33.077Z"
+  "updatedAt": "2026-06-11T11:39:44.419Z"
 }
