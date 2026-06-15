@@ -5153,6 +5153,43 @@ function switchView(v){
 
 // ── ギャラリー ──
 // Base64 エンコードされた data:image/svg+xml を生SVGテキストにデコード
+// ★ 2026-06-09: テンプレSVGの font-family を「Google Fontsの正式名」へ正規化する。
+//   原因: テンプレ(Illustrator/旧スタジオ書出し)の font-family が
+//     ・"AlfaSlabOne-Regular,"(PostScript名のみ・フォールバック無し) や
+//     ・"Ewert-Regular, Ewert"(PostScript名＋1語ファミリ)
+//   になっており、複数語フォント(Alfa Slab One/Bebas Neue/Bungee Shade/Kaushan Script/Zen Antique 等)は
+//   スペース無しPostScript名がロード名(スペース有)と一致せずフォールバック＝フォント化け＋中央寄せ崩れ。
+//   → スペース/ハイフン無視のキー照合で <link>(Google Fonts)の正式名へ寄せる。描画/解析の前に通す。
+let _CANON_FONT_MAP = null;
+function _canonFontMap(){
+  if(_CANON_FONT_MAP) return _CANON_FONT_MAP;
+  const map = {};
+  const add = n => { if(!n) return; const k = String(n).toLowerCase().replace(/[\s\-_]/g,''); if(k && !map[k]) map[k] = n; };
+  try { if(document.fonts && document.fonts.forEach) document.fonts.forEach(f => add(f.family)); } catch(_){}
+  try { if(typeof FONTS !== 'undefined' && FONTS.forEach) FONTS.forEach(f => f && f.name && add(f.name)); } catch(_){}
+  try { document.querySelectorAll('link[href*="fonts.googleapis.com"]').forEach(l => { (l.href.match(/family=([^&:]+)/g)||[]).forEach(m => add(decodeURIComponent(m.slice(7).replace(/\+/g,' ')))); }); } catch(_){}
+  _CANON_FONT_MAP = map;
+  return map;
+}
+function _pickCanonFont(value, map){
+  const toks = String(value == null ? '' : value).split(',').map(s => s.trim().replace(/^['"]+|['"]+$/g,'')).filter(Boolean);
+  for(const t of toks){
+    const cands = [t, t.replace(/[-_ ]?(Thin|ExtraLight|UltraLight|Light|Regular|Normal|Book|Medium|SemiBold|DemiBold|Bold|ExtraBold|UltraBold|Heavy|Black|Italic|Oblique)+$/i,'').trim()];
+    for(const c of cands){ const k = c.toLowerCase().replace(/[\s\-_]/g,''); if(k && map[k]) return map[k]; }
+  }
+  return toks[0] || String(value == null ? '' : value);
+}
+function _normalizeSvgFontFamilies(svgText){
+  if(!svgText || typeof svgText !== 'string' || svgText.indexOf('font-family') < 0) return svgText;
+  const map = _canonFontMap();
+  const fix = v => _pickCanonFont(v, map);
+  return svgText
+    .replace(/font-family\s*=\s*"([^"]*)"/gi, (m,v)=>'font-family="'+fix(v)+'"')
+    .replace(/font-family\s*=\s*'([^']*)'/gi, (m,v)=>"font-family='"+fix(v)+"'")
+    .replace(/font-family\s*:\s*"([^"]*)"/gi, (m,v)=>'font-family:"'+fix(v)+'"')
+    .replace(/font-family\s*:\s*'([^']*)'/gi, (m,v)=>"font-family:'"+fix(v)+"'")
+    .replace(/font-family\s*:\s*([^;}"'<>]+)/gi, (m,v)=>'font-family:'+fix(v.trim()));
+}
 function _decodeSvgDataUri(dataUri){
   if(!dataUri || typeof dataUri !== 'string') return '';
   const m = dataUri.match(/^data:image\/svg\+xml;base64,(.+)$/);
@@ -5162,7 +5199,8 @@ function _decodeSvgDataUri(dataUri){
     // UTF-8デコード
     const bytes = new Uint8Array(binary.length);
     for(let i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return new TextDecoder('utf-8').decode(bytes);
+    // ★ 2026-06-09: font-family を正式名へ正規化（ギャラリー/プレビューの生SVG挿入で化けを防ぐ）
+    return _normalizeSvgFontFamilies(new TextDecoder('utf-8').decode(bytes));
   } catch(e){ return ''; }
 }
 // サムネ用のインラインSVG HTML（ページのWebFontが効くように）
@@ -5788,7 +5826,7 @@ function openDetail(id){
       pvEl.innerHTML = '<div style="color:#999;font-size:14px;">📷 読み込み中...</div>';
       loadSvgText(d.svgKey).then(svgText => {
         if (svgText) {
-          pvEl.innerHTML = svgText;
+          pvEl.innerHTML = _normalizeSvgFontFamilies(svgText);
           const svgEl = pvEl.querySelector('svg');
           if (svgEl) { svgEl.style.maxWidth='80%'; svgEl.style.maxHeight='80%'; svgEl.style.width='auto'; svgEl.style.height='auto'; }
         } else { pvEl.innerHTML = '<div style="color:#999;">⚠ SVG読み込みに失敗しました</div>'; }
@@ -6019,6 +6057,10 @@ async function openEditor(id){
             svgText = await loadSvgText(editorKey);
           }
           if (!svgText) throw new Error('SVG load failed');
+          // ★ 2026-06-09: fabric解析の前に font-family を Google Fonts 正式名へ正規化。
+          //   下のフォント先読みも正式名で走り、fabricが正しいフォントで幅を測る→中央寄せが崩れない。
+          //   (未正規化だとPostScript名で幅をフォールバック測定し、後で名前だけ直しても位置がズレる)
+          svgText = _normalizeSvgFontFamilies(svgText);
           // ★ groupSVGElementsを使わず、個別オブジェクトとして読み込む
           // カスタムフォントの読み込みを先に完了させてからSVGを読み込む（テキスト寸法の正確性のため）
           try { if(document.fonts && document.fonts.ready) await document.fonts.ready; } catch(_){}
@@ -15952,7 +15994,7 @@ function _3d_inlineRefresh(){
           holder.style.cssText = 'width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; padding:6px; box-sizing:border-box;';
           fetch(SVG_TEMPLATE_PATHS[d.svgKey]).then(r => r.text()).then(svg => {
             // SVGの幅高を 100% にして親にフィット
-            holder.innerHTML = svg.replace(/<svg([^>]*)>/, '<svg$1 style="width:100%;height:100%;max-width:100%;max-height:100%;">');
+            holder.innerHTML = _normalizeSvgFontFamilies(svg).replace(/<svg([^>]*)>/, '<svg$1 style="width:100%;height:100%;max-width:100%;max-height:100%;">');
           }).catch(() => { holder.textContent = d.name; });
           c.appendChild(holder);
         } else if(d.thumb){
@@ -16399,7 +16441,7 @@ function _3d_inlineRefresh(){
       if(kind === 'template' && item.svgKey && typeof SVG_TEMPLATE_PATHS !== 'undefined' && SVG_TEMPLATE_PATHS[item.svgKey]){
         // ★ N2.9: img→inline SVG (ページ内 @font-face を反映)
         fetch(SVG_TEMPLATE_PATHS[item.svgKey]).then(r => r.text()).then(svg => {
-          thumbEl.innerHTML = svg.replace(/<svg([^>]*)>/, '<svg$1 style="width:auto;height:auto;max-width:100%;max-height:100%;">');
+          thumbEl.innerHTML = _normalizeSvgFontFamilies(svg).replace(/<svg([^>]*)>/, '<svg$1 style="width:auto;height:auto;max-width:100%;max-height:100%;">');
         }).catch(() => { thumbEl.textContent = item.name || ''; });
       } else if(item.thumb){
         if(kind === 'mydesign'){
