@@ -5183,12 +5183,16 @@ function _normalizeSvgFontFamilies(svgText){
   if(!svgText || typeof svgText !== 'string' || svgText.indexOf('font-family') < 0) return svgText;
   const map = _canonFontMap();
   const fix = v => _pickCanonFont(v, map);
+  // ★ CSS値はスペースを含む正式名(例 Bebas Neue)を引用符で囲む。
+  //   ★ 2026-06-09 修正: CSSは "BebasNeue-Regular, 'Bebas Neue'" の様に引用符付きトークンを含むため、
+  //   最後の正規表現は ' を除外しない([^;}"<>]+)で値全体を捕捉する(以前は ' で切れて
+  //   "Bebas Neue'Bebas Neue'" と壊れていた)。属性(=)とCSS二重引用符は個別に処理。
+  const cssVal = v => { const n = fix(v); return /\s/.test(n) ? "'" + n + "'" : n; };
   return svgText
     .replace(/font-family\s*=\s*"([^"]*)"/gi, (m,v)=>'font-family="'+fix(v)+'"')
     .replace(/font-family\s*=\s*'([^']*)'/gi, (m,v)=>"font-family='"+fix(v)+"'")
     .replace(/font-family\s*:\s*"([^"]*)"/gi, (m,v)=>'font-family:"'+fix(v)+'"')
-    .replace(/font-family\s*:\s*'([^']*)'/gi, (m,v)=>"font-family:'"+fix(v)+"'")
-    .replace(/font-family\s*:\s*([^;}"'<>]+)/gi, (m,v)=>'font-family:'+fix(v.trim()));
+    .replace(/font-family\s*:\s*([^;}"<>]+)/gi, (m,v)=>'font-family:'+cssVal(v));
 }
 function _decodeSvgDataUri(dataUri){
   if(!dataUri || typeof dataUri !== 'string') return '';
