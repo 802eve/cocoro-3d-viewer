@@ -1581,6 +1581,13 @@ body.mobile-mode #mShell.in-editor .m-launcher { display: none; }
   /* ★ 2026-05-08: 黒シルエット → 白に反転 + ダーク背景に統一 */
   filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,.4));
 }
+/* ★ 2026-06-16: brightness(0) invert(1) は「クリップアートの黒→白統一」専用。
+   デザインアイデア/テンプレ/マイデザイン(多色・白抜き文字・写真)に掛けると、白抜き文字や
+   元の色が白シルエットに溶けて消える(例: 「31 CLUB」「1992」が出ない)。
+   → これらは PC ギャラリー/プレビューと同じく 白背景＋フィルタ無しで忠実表示する。 */
+.m-launcher-card.m-card-design { background: #ffffff; }
+.m-launcher-card.m-card-design img,
+.m-launcher-card.m-card-design svg { filter: none; }
 .m-launcher-card-empty {
   color: var(--t3);
   font-size: 10px;
@@ -2622,6 +2629,8 @@ function _applyAdminData(adm){
       } catch(e){ console.warn('admin clip merge fail', e); }
     });
   }
+  // ★ 2026-06-16: クリップアートは名前順に統一（サイドバー/ピッカー/メインの既定順を名前順にする・初回＋クラウド同期後の両方）
+  try { CLIPARTS.sort((a,b)=> String(a.name||'').localeCompare(String(b.name||''), 'ja')); } catch(_){}
 }
 
 // localStorage fast path (即時)
@@ -12211,7 +12220,7 @@ function renderIdeaCatBar(){
   const counts = {};
   DESIGNS.forEach(d => { counts[d.cat] = (counts[d.cat] || 0) + 1; });
   const pills = [`<button type="button" class="fcat-pill${_ideaCatFilter==='all'?' on':''}" data-cat="all" onclick="selectIdeaCat('all')">すべて<span class="pn">${DESIGNS.length}</span></button>`];
-  Object.keys(counts).forEach(c => {
+  Object.keys(counts).sort((a,b)=>String(a).localeCompare(String(b),'ja')).forEach(c => {
     pills.push(`<button type="button" class="fcat-pill${_ideaCatFilter===c?' on':''}" data-cat="${c}" onclick="selectIdeaCat('${c}')">${c}<span class="pn">${counts[c]}</span></button>`);
   });
   bar.innerHTML = pills.join('');
@@ -12222,7 +12231,7 @@ function renderClipCatBar(){
   const counts = {};
   CLIPARTS.forEach(c => { counts[c.cat] = (counts[c.cat] || 0) + 1; });
   const pills = [`<button type="button" class="fcat-pill${_clipCatFilter==='all'?' on':''}" data-cat="all" onclick="selectClipCat('all')">すべて<span class="pn">${CLIPARTS.length}</span></button>`];
-  Object.keys(counts).forEach(c => {
+  Object.keys(counts).sort((a,b)=>String(a).localeCompare(String(b),'ja')).forEach(c => {
     pills.push(`<button type="button" class="fcat-pill${_clipCatFilter===c?' on':''}" data-cat="${c}" onclick="selectClipCat('${c}')">${c}<span class="pn">${counts[c]}</span></button>`);
   });
   bar.innerHTML = pills.join('');
@@ -15900,7 +15909,7 @@ function _3d_inlineRefresh(){
       } else {
         designs.slice(0, 3).forEach(d => {
           const c = document.createElement('div');
-          c.className = 'm-launcher-card';
+          c.className = 'm-launcher-card m-card-design';
           if(d.thumb){
             const img = document.createElement('img');
             img.src = d.thumb;
@@ -15924,12 +15933,13 @@ function _3d_inlineRefresh(){
       tplGrid.innerHTML = '';
       DESIGNS.slice(0, 6).forEach(d => {
         const c = document.createElement('div');
-        c.className = 'm-launcher-card';
+        c.className = 'm-launcher-card m-card-design';
         if(d.svgKey && typeof SVG_TEMPLATE_PATHS !== 'undefined' && SVG_TEMPLATE_PATHS[d.svgKey]){
-          const img = document.createElement('img');
-          img.src = SVG_TEMPLATE_PATHS[d.svgKey];
-          img.alt = d.name;
-          c.appendChild(img);
+          // ★ 2026-06-16: img(SVG-as-image=Webフォント不可)→ インラインSVG化(フォント反映＋白抜き保持)
+          const holder = document.createElement('div');
+          holder.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;';
+          fetch(SVG_TEMPLATE_PATHS[d.svgKey]).then(r=>r.text()).then(svg=>{ holder.innerHTML = _prepInlineSvg(svg).replace(/<svg([^>]*)>/, '<svg$1 style="width:100%;height:100%;max-width:100%;max-height:100%;">'); }).catch(()=>{ holder.textContent = d.name; });
+          c.appendChild(holder);
         } else if(d.thumb){
           const big = document.createElement('div');
           big.style.cssText = 'font-size: 32px;';
@@ -16004,13 +16014,17 @@ function _3d_inlineRefresh(){
     const catWrap = document.createElement('div');
     catWrap.className = 'm-fp-cats';
     let cats = ['all'];
+    let _catSrc = [];
     if(_fpKind === 'ideas' && typeof DESIGNS !== 'undefined'){
-      cats = ['all', ...new Set(DESIGNS.map(d => d.cat).filter(Boolean))];
+      _catSrc = [...new Set(DESIGNS.map(d => d.cat).filter(Boolean))];
     } else if(_fpKind === 'clip' && typeof CLIPARTS !== 'undefined'){
-      cats = ['all', ...new Set(CLIPARTS.map(d => d.cat).filter(Boolean))];
+      _catSrc = [...new Set(CLIPARTS.map(d => d.cat).filter(Boolean))];
     } else if(_fpKind === 'font' && typeof FONTS !== 'undefined'){
-      cats = ['all', ...new Set(FONTS.map(d => d.cat).filter(Boolean))];
+      _catSrc = [...new Set(FONTS.map(d => d.cat).filter(Boolean))];
     }
+    // ★ 2026-06-16: カテゴリは名前順
+    _catSrc.sort((a,b)=>String(a).localeCompare(String(b),'ja'));
+    cats = ['all', ..._catSrc];
     cats.forEach(c => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -16069,7 +16083,7 @@ function _3d_inlineRefresh(){
       }
       items.forEach(d => {
         const c = document.createElement('div');
-        c.className = 'm-launcher-card';
+        c.className = 'm-launcher-card m-card-design';
         if(d.svgKey && typeof SVG_TEMPLATE_PATHS !== 'undefined' && SVG_TEMPLATE_PATHS[d.svgKey]){
           // ★ N2.9: img→inline SVG (ページ内 @font-face を反映するため)
           const holder = document.createElement('div');
@@ -16343,7 +16357,7 @@ function _3d_inlineRefresh(){
       }
       items.forEach(d => {
         const c = document.createElement('div');
-        c.className = 'm-launcher-card' + (_mFpMySelMode && _mFpMySelIds.has(d.id) ? ' selected' : '');
+        c.className = 'm-launcher-card m-card-design' + (_mFpMySelMode && _mFpMySelIds.has(d.id) ? ' selected' : '');
         c.style.position = 'relative';
         if(d.thumb){
           const img = document.createElement('img');
