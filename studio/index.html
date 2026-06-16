@@ -5199,6 +5199,35 @@ function _normalizeSvgFontFamilies(svgText){
   try { if(document.fonts && document.fonts.load) used.forEach(f=>{ document.fonts.load('1em "'+f+'"').catch(function(){}); document.fonts.load('700 1em "'+f+'"').catch(function(){}); }); } catch(_){}
   return out;
 }
+// ★ 2026-06-16: インラインSVGのクラス名を一意化して衝突を防ぐ（フォント化けの真因）。
+//   原因: Illustrator書出しSVGは .cls-1/.cls-2… 等の汎用クラス名を使う。複数テンプレSVGを
+//   ページに同時インライン展開すると <style> がドキュメント全体にグローバル適用され、同名
+//   クラス(.cls-4 等)が後勝ちで衝突 → フォント/色/サイズ/中央寄せが別デザインの定義で上書き
+//   されて化ける（ギャラリー/プレビューで顕著・実機で .cls-4 が Rowdies→Alfa Slab One に化けるのを確認）。
+//   → 各インスタンスのクラス名に一意プレフィックスを付与し <style>セレクタ と class属性 を同時に
+//     書き換えて完全分離する。エディタ(fabric)は単一SVGを隔離解釈するため対象外。
+let _svgScopeCtr = 0;
+function _scopeSvgClasses(svgText){
+  if(!svgText || typeof svgText !== 'string' || svgText.indexOf('class') < 0) return svgText;
+  const prefix = '_s' + (++_svgScopeCtr) + '_';
+  const tokens = new Set();
+  const collect = v => { String(v).trim().split(/\s+/).forEach(t=>{ if(t) tokens.add(t); }); };
+  // class属性のトークン収集（先頭は空白必須＝data-class等の誤爆防止）
+  svgText.replace(/(\s)class\s*=\s*"([^"]*)"/gi, (m,sp,v)=>{ collect(v); return m; });
+  svgText.replace(/(\s)class\s*=\s*'([^']*)'/gi, (m,sp,v)=>{ collect(v); return m; });
+  if(!tokens.size) return svgText;
+  let out = svgText
+    .replace(/(\s)class\s*=\s*"([^"]*)"/gi, (m,sp,v)=>sp+'class="'+v.trim().split(/\s+/).map(t=>t?prefix+t:t).join(' ')+'"')
+    .replace(/(\s)class\s*=\s*'([^']*)'/gi, (m,sp,v)=>sp+"class='"+v.trim().split(/\s+/).map(t=>t?prefix+t:t).join(' ')+"'");
+  // <style>セレクタ内の .token を .prefix+token へ（長い順に処理し cls-1 が cls-10 を壊さない）
+  Array.from(tokens).sort((a,b)=>b.length-a.length).forEach(t=>{
+    const esc = t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    out = out.replace(new RegExp('\\.'+esc+'(?![\\w-])','g'), '.'+prefix+t);
+  });
+  return out;
+}
+// インラインDOM挿入用: フォント正規化 ＋ クラス一意化 をまとめて行う
+function _prepInlineSvg(svgText){ return _scopeSvgClasses(_normalizeSvgFontFamilies(svgText)); }
 function _decodeSvgDataUri(dataUri){
   if(!dataUri || typeof dataUri !== 'string') return '';
   const m = dataUri.match(/^data:image\/svg\+xml;base64,(.+)$/);
@@ -5208,8 +5237,8 @@ function _decodeSvgDataUri(dataUri){
     // UTF-8デコード
     const bytes = new Uint8Array(binary.length);
     for(let i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    // ★ 2026-06-09: font-family を正式名へ正規化（ギャラリー/プレビューの生SVG挿入で化けを防ぐ）
-    return _normalizeSvgFontFamilies(new TextDecoder('utf-8').decode(bytes));
+    // ★ 2026-06-09/16: font-family 正規化 ＋ クラス名一意化（ギャラリー/プレビューの生SVG挿入で化け防止）
+    return _prepInlineSvg(new TextDecoder('utf-8').decode(bytes));
   } catch(e){ return ''; }
 }
 // サムネ用のインラインSVG HTML（ページのWebFontが効くように）
@@ -5835,7 +5864,7 @@ function openDetail(id){
       pvEl.innerHTML = '<div style="color:#999;font-size:14px;">📷 読み込み中...</div>';
       loadSvgText(d.svgKey).then(svgText => {
         if (svgText) {
-          pvEl.innerHTML = _normalizeSvgFontFamilies(svgText);
+          pvEl.innerHTML = _prepInlineSvg(svgText);
           const svgEl = pvEl.querySelector('svg');
           if (svgEl) { svgEl.style.maxWidth='80%'; svgEl.style.maxHeight='80%'; svgEl.style.width='auto'; svgEl.style.height='auto'; }
         } else { pvEl.innerHTML = '<div style="color:#999;">⚠ SVG読み込みに失敗しました</div>'; }
@@ -12446,22 +12475,66 @@ function _3d_openFromEditor(){
 }
 
 // 2) テンプレート詳細: SVG/data-URI を3Dへ
+// ★ 2026-06-16: テンプレSVGを fabric でラスタライズして PNG を返す。
+//   SVG-as-image(data-URIをtextureに使う)はセキュリティ上Webフォントを一切読めず必ずフォールバック
+//   ＝3Dでフォント化け。エディタ→3D と同じく fabric にロードしてフォントを焼き込んだPNGにする。
+function _3d_rasterizeSvgToPng(svgText){
+  return new Promise(async (resolve, reject) => {
+    try {
+      await loadFabric();
+      const text = _normalizeSvgFontFamilies(svgText);
+      // SVG内のフォントを明示ロード→fabricが正しい字形で幅を測る（中央寄せズレ防止）
+      try {
+        const fonts = [];
+        (text.match(/font-family\s*[:=]\s*['"]?([^;'"<>]+)['"]?/gi)||[]).forEach(m=>{
+          const v=m.split(/[:=]/)[1].replace(/['"]/g,'').trim();
+          v.split(',').forEach(t=>{ const n=t.trim().replace(/-(Regular|Bold|Italic|Light|Medium|Thin|Black)$/i,''); if(n && !fonts.includes(n)) fonts.push(n); });
+        });
+        if(document.fonts && document.fonts.load) await Promise.all(fonts.map(f=>document.fonts.load('1em "'+f+'"').catch(()=>null)));
+        if(document.fonts && document.fonts.ready) await document.fonts.ready;
+      } catch(_){}
+      fabric.loadSVGFromString(text, (objects, options) => {
+        try {
+          if(!objects || !objects.length){ reject(new Error('SVG parse empty')); return; }
+          const vbW = Math.max(1, options.viewBoxWidth || options.width || 800);
+          const vbH = Math.max(1, options.viewBoxHeight || options.height || 800);
+          let mult = Math.min(4, 2048 / Math.max(vbW, vbH));
+          if(!isFinite(mult) || mult < 1) mult = 1;
+          const host = document.createElement('canvas');
+          host.style.cssText='position:absolute;left:-10000px;top:-10000px;visibility:hidden';
+          document.body.appendChild(host);
+          const tmp = new fabric.StaticCanvas(host, { width: vbW, height: vbH, enableRetinaScaling:false, backgroundColor:'' });
+          const grp = fabric.util.groupSVGElements(objects, options);
+          grp.set({ left:0, top:0, originX:'left', originY:'top' });
+          tmp.add(grp); tmp.renderAll();
+          const url = tmp.toDataURL({ format:'png', quality:1.0, multiplier: mult });
+          try{ tmp.dispose(); }catch(_){}
+          if(host.parentNode) host.parentNode.removeChild(host);
+          resolve(url);
+        } catch(err){ reject(err); }
+      });
+    } catch(e){ reject(e); }
+  });
+}
 async function _3d_openFromTemplate(id){
   const d = (typeof DESIGNS !== 'undefined') ? DESIGNS.find(x => x.id === id) : null;
   if(!d){ alert('テンプレートが見つかりません'); return; }
-  let imageDataUrl = '';
+  let svgText = '';
   try {
     if(d.svgKey && typeof loadSvgText === 'function'){
-      const text = await loadSvgText(d.svgKey);
-      if(text){
-        imageDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(text)));
-      } else {
-        const src = (typeof SVG_TEMPLATE_PATHS !== 'undefined') ? SVG_TEMPLATE_PATHS[d.svgKey] : '';
-        if(src && src.startsWith('data:')) imageDataUrl = src;
-      }
+      svgText = await loadSvgText(d.svgKey) || '';
+    }
+    if(!svgText && typeof SVG_TEMPLATE_PATHS !== 'undefined'){
+      const src = SVG_TEMPLATE_PATHS[d.svgKey];
+      if(src && src.startsWith('data:')) svgText = _decodeSvgDataUri(src);
     }
   } catch(e){ console.warn('template svg load failed', e); }
-  if(!imageDataUrl){ alert('このテンプレートは3Dプレビューに対応していません'); return; }
+  if(!svgText){ alert('このテンプレートは3Dプレビューに対応していません'); return; }
+  // ★ fabricでラスタライズ（フォント焼き込み）。失敗時のみ従来のSVG-as-imageへフォールバック
+  let imageDataUrl = '';
+  try { imageDataUrl = await _3d_rasterizeSvgToPng(svgText); }
+  catch(e){ console.warn('[3D] template rasterize failed, fallback to svg-image', e); imageDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(_normalizeSvgFontFamilies(svgText)))); }
+  if(!imageDataUrl){ alert('3Dプレビュー画像の生成に失敗しました'); return; }
   const method = _3d_getPrintMethodForViewer();
   const area = _3d_getAreaKey();
   const cfg = {
@@ -16003,7 +16076,7 @@ function _3d_inlineRefresh(){
           holder.style.cssText = 'width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; padding:6px; box-sizing:border-box;';
           fetch(SVG_TEMPLATE_PATHS[d.svgKey]).then(r => r.text()).then(svg => {
             // SVGの幅高を 100% にして親にフィット
-            holder.innerHTML = _normalizeSvgFontFamilies(svg).replace(/<svg([^>]*)>/, '<svg$1 style="width:100%;height:100%;max-width:100%;max-height:100%;">');
+            holder.innerHTML = _prepInlineSvg(svg).replace(/<svg([^>]*)>/, '<svg$1 style="width:100%;height:100%;max-width:100%;max-height:100%;">');
           }).catch(() => { holder.textContent = d.name; });
           c.appendChild(holder);
         } else if(d.thumb){
@@ -16450,7 +16523,7 @@ function _3d_inlineRefresh(){
       if(kind === 'template' && item.svgKey && typeof SVG_TEMPLATE_PATHS !== 'undefined' && SVG_TEMPLATE_PATHS[item.svgKey]){
         // ★ N2.9: img→inline SVG (ページ内 @font-face を反映)
         fetch(SVG_TEMPLATE_PATHS[item.svgKey]).then(r => r.text()).then(svg => {
-          thumbEl.innerHTML = _normalizeSvgFontFamilies(svg).replace(/<svg([^>]*)>/, '<svg$1 style="width:auto;height:auto;max-width:100%;max-height:100%;">');
+          thumbEl.innerHTML = _prepInlineSvg(svg).replace(/<svg([^>]*)>/, '<svg$1 style="width:auto;height:auto;max-width:100%;max-height:100%;">');
         }).catch(() => { thumbEl.textContent = item.name || ''; });
       } else if(item.thumb){
         if(kind === 'mydesign'){
