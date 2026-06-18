@@ -4130,8 +4130,11 @@ function newPrintDesign(area){
     area,                    // location key (例: 'front_center')
     memo:        '',         // 加工位置メモ (任意)
     method:      '',         // 'シルクスクリーン' | '転写' | 'インクジェット' | 'DTF' | '刺繍' | 'その他'
-    size:        '',         // methodSizes のキー (例: '15cm角内')
+    size:        '',         // methodSizes のキー (例: '15cm角内') ★別版時は「大版(大人)」サイズ
     rotated:     false,      // ★ サイズ縦横切替 (true=横向き)
+    // ★ 2026-06-17: 別サイズ(N区分・同デザインで複数サイズ)
+    dualSize:    false,      // 別サイズを使うか
+    dualVariants: null,      // [{size:'価格区分キー', bands:['ボディサイズ',...], cm:'任意の実寸メモ'}] (null=未設定)
     colorCount:  '',         // シルク: '1色'..'4色' / 転写: '単色' | 'フルカラー'
     isSpecial:   false,      // シルク特色フラグ
     inkSlots:    [],         // 色数分のインク id 配列 (例: ['C-22','C-26']) シルクのみ
@@ -4155,6 +4158,39 @@ function newPrintDesign(area){
   };
 }
 
+// ★ 2026-06-17: 別サイズ(N区分) ヘルパー
+// 既定の「子供/小さい」ボディサイズ = 数字(100〜160等) + XS
+function _defaultSmallBands(line){
+  const sizes = (line && line.product && line.product.sizes) || [];
+  return sizes.filter(s => /^\d+$/.test(String(s)) || String(s).toUpperCase() === 'XS');
+}
+// 別サイズ初期2区分: [区分1=大人(残りサイズ), 区分2=子供(数字+XS)]
+function _defaultDualVariants(line, d){
+  const all = (line && line.product && line.product.sizes) || [];
+  const kids = _defaultSmallBands(line);
+  const adults = all.filter(s => kids.indexOf(s) < 0);
+  return [
+    { size: (d && d.size) || '', bands: adults.slice(), cm: '' },
+    { size: '', bands: kids.slice(), cm: '' },
+  ];
+}
+// 各区分の枚数を返す (未割り当てサイズは区分0へ寄せる)。戻り: [qty0, qty1, ...]
+function _variantQtys(line, variants){
+  const vs = variants || [];
+  const qtys = vs.map(() => 0);
+  if(!vs.length) return qtys;
+  Object.entries(line.qtyBySize || {}).forEach(([sz, n]) => {
+    const c = Number(n) || 0; if(!c) return;
+    let idx = vs.findIndex(v => (v.bands || []).indexOf(sz) >= 0);
+    if(idx < 0) idx = 0;
+    qtys[idx] += c;
+  });
+  return qtys;
+}
+// 別サイズが「有効」か (1区分以上にサイズが入っている)
+function _dualActive(d){
+  return !!(d && d.dualSize && Array.isArray(d.dualVariants) && d.dualVariants.some(v => v && v.size));
+}
 // 既存 printDesigns に旧スキーマがあれば最低限を補完
 function ensurePrintDesign(line, area){
   if(!line.printDesigns[area] || typeof line.printDesigns[area] !== 'object'){
@@ -6547,6 +6583,58 @@ function renderPrintDetailHtml(loc, d){
     </div>
   ` : '';
 
+  // ★ 2026-06-17: 別サイズ(N区分) UI (シルク=区分数×色数の版/転写等=区分ごと加工代・版なし)
+  let dualHtml = '';
+  if(d.method && !isConsult){
+    const isSilk = (d.method === 'シルクスクリーン');
+    const dualOn = !!d.dualSize;
+    let dualInner = '';
+    if(dualOn){
+      const allowedD = getAllowedSizeKeys(d.method, loc.name, cat);
+      const sizesD = (PRICING.methodSizes[d.method] || {});
+      const bodySizes = (line.product && line.product.sizes) || [];
+      const variants = (Array.isArray(d.dualVariants) && d.dualVariants.length) ? d.dualVariants : _defaultDualVariants(line, d);
+      const assignOf = {};
+      variants.forEach((v, vi) => (v.bands || []).forEach(s => { if(assignOf[s] == null) assignOf[s] = vi; }));
+      const cards = variants.map((v, vi) => {
+        const sizeSel = `<select class="pc-select pc-dvar-size" data-area="${loc.area}" data-idx="${vi}">
+            <option value="">サイズを選択</option>
+            ${allowedD.map(k => `<option value="${k}"${v.size===k?' selected':''}>${sizesD[k].label}</option>`).join('')}
+          </select>`;
+        const chips = bodySizes.map(s => {
+          const mine = (v.bands || []).indexOf(s) >= 0;
+          const other = (assignOf[s] != null && assignOf[s] !== vi);
+          return `<button class="pc-chip pc-dvar-band ${mine?'is-on':''}" data-area="${loc.area}" data-idx="${vi}" data-val="${s}" type="button" style="${other?'opacity:.4;':''}">${s}</button>`;
+        }).join('');
+        const delBtn = (variants.length > 1) ? `<button class="pc-dvar-del" data-area="${loc.area}" data-idx="${vi}" type="button" title="この区分を削除" style="border:none;background:none;color:#c0392b;cursor:pointer;font-size:12px;">✕ 削除</button>` : '';
+        return `
+          <div style="border:1px solid #e6dcff;border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#faf8ff;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;font-weight:700;color:#7c3aed;">サイズ区分 ${vi+1}</span>${delBtn}
+            </div>
+            <div class="pc-row"><label class="pc-lbl">大きさ <span class="pc-lbl-req">必須</span></label>${sizeSel}</div>
+            <div class="pc-row"><label class="pc-lbl">この大きさにするボディサイズ</label><div class="pc-chips">${chips || '<span style="color:#888;font-size:11px;">先にサイズ別の枚数を入力してください</span>'}</div></div>
+            <div class="pc-row"><label class="pc-lbl">実寸メモ <span class="pc-lbl-opt">任意</span></label><input class="pc-input pc-dvar-cm" type="text" data-area="${loc.area}" data-idx="${vi}" value="${escapeAttr(v.cm||'')}" placeholder="例：横20cm（後日相談でもOK）"></div>
+          </div>`;
+      }).join('');
+      const noteTxt = isSilk
+        ? '各区分ごとに版が必要です（区分数×色数＝版数）。インク代は区分ごとに、その区分の枚数で計算します。'
+        : '版がないため、区分ごとの加工代×枚数で計算します（区分は何通りでも追加できます）。';
+      dualInner = `
+        ${cards}
+        <button class="pc-dvar-add" data-area="${loc.area}" type="button" style="width:100%;padding:7px;border:1px dashed #b794f6;background:#fff;color:#7c3aed;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;">＋ サイズ区分を追加</button>
+        <div style="font-size:11px;color:#7c3aed;background:#f5f0ff;border:1px solid #e6dcff;border-radius:6px;padding:6px 10px;margin-top:8px;line-height:1.5;">${noteTxt}</div>
+      `;
+    }
+    dualHtml = `
+      <div class="pc-row">
+        <label class="pc-lbl">🧒 別サイズ（子供用など複数サイズ）<span class="pc-lbl-opt">任意</span></label>
+        <button class="pc-chip ${dualOn?'is-on':''}" data-act="dualSize" data-area="${loc.area}" type="button">${dualOn?'✓ 別サイズを適用中（同デザイン・大きさ違い）':'別サイズを適用する（子供用など）'}</button>
+      </div>
+      ${dualInner}
+    `;
+  }
+
   return `
     ${consultMsg}
     <div class="pc-row">
@@ -6561,6 +6649,7 @@ function renderPrintDetailHtml(loc, d){
     ${colorCountHtml}
     ${inkHtml}
     ${plateHtml}
+    ${dualHtml}
     ${dataStateHtml}
     ${adjustHtml}
     <div class="pc-row">
@@ -6612,6 +6701,25 @@ function bindPrintDetailEvents(grid){
       // blur 時に再描画 (ステータス更新)
       refreshChrome();
     });
+  });
+  // ★ 2026-06-17: 別サイズ(N区分) コントロール
+  grid.querySelectorAll('select.pc-dvar-size').forEach(s => {
+    s.addEventListener('change', e => { e.stopPropagation(); _dvarOp(s.dataset.area, 'size', parseInt(s.dataset.idx,10), s.value); });
+    s.addEventListener('click', e => e.stopPropagation());
+  });
+  grid.querySelectorAll('.pc-dvar-band').forEach(b => {
+    b.addEventListener('click', e => { e.stopPropagation(); _dvarOp(b.dataset.area, 'band', parseInt(b.dataset.idx,10), b.dataset.val); });
+  });
+  grid.querySelectorAll('.pc-dvar-cm').forEach(el => {
+    el.addEventListener('input', () => { _dvarOp(el.dataset.area, 'cm', parseInt(el.dataset.idx,10), el.value); });
+    el.addEventListener('click', e => e.stopPropagation());
+    el.addEventListener('blur', () => refreshChrome());
+  });
+  grid.querySelectorAll('.pc-dvar-add').forEach(b => {
+    b.addEventListener('click', e => { e.stopPropagation(); _dvarOp(b.dataset.area, 'add'); });
+  });
+  grid.querySelectorAll('.pc-dvar-del').forEach(b => {
+    b.addEventListener('click', e => { e.stopPropagation(); _dvarOp(b.dataset.area, 'del', parseInt(b.dataset.idx,10)); });
   });
   // ink slot クリック → ピッカー起動
   grid.querySelectorAll('.ink-slot[data-act="ink"]').forEach(s => {
@@ -6979,6 +7087,14 @@ function setPrintField(area, field, value){
       d.plateYear = '';
       d.plateMonth = '';
       d.rotated = false;
+      d.dualSize = false; d.dualVariants = null;
+    }
+  }
+  // ★ 2026-06-17: 別サイズ(N区分)トグル (区分の追加/削除/サイズ/割当/cm は専用ハンドラ _dvarOp)
+  else if(field === 'dualSize'){
+    d.dualSize = !d.dualSize;
+    if(d.dualSize && (!Array.isArray(d.dualVariants) || !d.dualVariants.length)){
+      d.dualVariants = _defaultDualVariants(line, d);
     }
   }
   // 色数変更時は inkSlots を切り詰め
@@ -7003,6 +7119,27 @@ function setPrintField(area, field, value){
   pushPrintsTo3D();
   renderPrintGrid();
   refreshChrome();
+}
+
+// ★ 2026-06-17: 別サイズ区分の操作 (add/del/size/band/cm)
+function _dvarOp(area, op, idx, value){
+  const line = cur();
+  const d = ensurePrintDesign(line, area);
+  if(!Array.isArray(d.dualVariants) || !d.dualVariants.length) d.dualVariants = _defaultDualVariants(line, d);
+  const vs = d.dualVariants;
+  if(op === 'add'){ vs.push({ size:'', bands:[], cm:'' }); }
+  else if(op === 'del'){ if(vs.length > 1) vs.splice(idx, 1); }
+  else if(op === 'size'){ if(vs[idx]) vs[idx].size = value; }
+  else if(op === 'cm'){ if(vs[idx]) vs[idx].cm = value; return; /* 入力中は再描画しない(フォーカス維持) */ }
+  else if(op === 'band'){
+    if(vs[idx]){
+      const has = (vs[idx].bands || []).indexOf(value) >= 0;
+      // 1サイズは1区分のみ: 全区分から外してから当区分へ
+      vs.forEach(v => { const i = (v.bands || []).indexOf(value); if(i >= 0) v.bands.splice(i, 1); });
+      if(!has) vs[idx].bands.push(value);
+    }
+  }
+  pushPrintsTo3D(); renderPrintGrid(); refreshChrome();
 }
 
 function togglePrint(name, area){
@@ -7593,14 +7730,35 @@ function calcEstimate(){
           //   plate=reuse → 流用版代 ¥1,000 (色数倍率なし)
           //   plate=unknown → 新規版代と同じ扱い (未定として最大想定)
           const colCount = parseInt(d.colorCount, 10) || 1;
-          if(d.plate === 'new')          plateCost += (PRICING.plateCost[d.size] || 0) * colCount;
-          else if(d.plate === 'reuse')   plateCost += (PRICING.plateCost.reuse || 0);
-          else if(d.plate === 'unknown') plateCost += (PRICING.plateCost[d.size] || 0) * colCount;
+          // ★ 2026-06-17: 別サイズ(N区分)は版を区分ごとに作る → 版代 = Σ区分(版代 × 色数)。reuseは区分数分。
+          if(_dualActive(d)){
+            const vqs = _variantQtys(l, d.dualVariants);
+            d.dualVariants.forEach((v, vi) => {
+              if(!v || !v.size || !(vqs[vi] > 0)) return;
+              if(d.plate === 'new' || d.plate === 'unknown') plateCost += (PRICING.plateCost[v.size] || 0) * colCount;
+              else if(d.plate === 'reuse') plateCost += (PRICING.plateCost.reuse || 0);
+            });
+          } else {
+            if(d.plate === 'new')          plateCost += (PRICING.plateCost[d.size] || 0) * colCount;
+            else if(d.plate === 'reuse')   plateCost += (PRICING.plateCost.reuse || 0);
+            else if(d.plate === 'unknown') plateCost += (PRICING.plateCost[d.size] || 0) * colCount;
+          }
         }
         // インク代 (★ 素材上乗せはプリント毎: ロンTは袖いっぱい時のみ)
         const colorKey = colorCountToInkKey(d.colorCount, d.isSpecial);
         const sizeTbl = (PRICING.inkCost[d.size] || {})[colorKey];
-        if(sizeTbl){
+        // ★ 2026-06-17: 別サイズ(N区分)=版が別=各区分を“その区分の枚数”で数量帯(単価)を決めて計算(合算しない・各々1から)。
+        //   例: 小版20枚→「10〜29枚」帯×20 / 大版80枚→「50〜99枚」帯×80。合算は「同じ版で色替え」時のみ(色替え代機構)。
+        if(_dualActive(d)){
+          const vqs = _variantQtys(l, d.dualVariants);
+          let anyUp = false;
+          d.dualVariants.forEach((v, vi) => {
+            if(!v || !v.size || !(vqs[vi] > 0)) return;
+            const tbl = (PRICING.inkCost[v.size] || {})[colorKey];
+            if(tbl){ inkCost += (tbl[getInkQtyKey(vqs[vi])] || 0) * vqs[vi]; anyUp = true; }
+          });
+          if(anyUp) upchargeCost += upch * lineQty;
+        } else if(sizeTbl){
           const perPiece = sizeTbl[inkQtyKey] || 0;
           inkCost += perPiece * lineQty;
           upchargeCost += upch * lineQty;
@@ -7620,11 +7778,23 @@ function calcEstimate(){
         });
       } else if(d.method === '転写'){
         const tColorKey = transferColorToCostKey(d.colorCount);
-        const sizeTbl = PRICING.transferCost[d.size];
-        if(sizeTbl){
-          const perPiece = sizeTbl[tColorKey] || 0;
-          transferCost += perPiece * lineQty;
-          upchargeCost += upch * lineQty;
+        // ★ 2026-06-17: 別サイズ(N区分)=区分ごとの転写代×その区分の枚数(版なし)。
+        if(_dualActive(d)){
+          const vqs = _variantQtys(l, d.dualVariants);
+          let anyT = false;
+          d.dualVariants.forEach((v, vi) => {
+            if(!v || !v.size || !(vqs[vi] > 0)) return;
+            const tbl = PRICING.transferCost[v.size];
+            if(tbl){ transferCost += (tbl[tColorKey] || 0) * vqs[vi]; anyT = true; }
+          });
+          if(anyT) upchargeCost += upch * lineQty;
+        } else {
+          const sizeTbl = PRICING.transferCost[d.size];
+          if(sizeTbl){
+            const perPiece = sizeTbl[tColorKey] || 0;
+            transferCost += perPiece * lineQty;
+            upchargeCost += upch * lineQty;
+          }
         }
         // ★ 2026-04-30 転写でも特殊色アップチャージ (フルカラー価格時のみ inkSlots 走査)
         const evalSlots = isColorVariant
@@ -7982,6 +8152,12 @@ function _buildSubmitItemForLine(l){
         locMemo:   d.memo || '',
         method:    d.method || '',
         size:      d.size || '',
+        // ★ 2026-06-17: 別サイズ(N区分) — 各区分 {size:価格区分, bands:ボディサイズ, cm:実寸メモ, qty:枚数}
+        dualSize:  _dualActive(d),
+        dualVariants: _dualActive(d) ? (function(){
+          const vqs = _variantQtys(l, d.dualVariants);
+          return d.dualVariants.map((v, vi) => ({ size: v.size||'', bands: Array.isArray(v.bands)?v.bands.slice():[], cm: v.cm||'', qty: vqs[vi]||0 }));
+        })() : [],
         colorType: d.colorCount || '',
         plateType: d.plate || '',
         plateYear: d.plate === 'reuse' ? (d.plateYear || '') : '',
