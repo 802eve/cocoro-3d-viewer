@@ -6592,7 +6592,9 @@ function renderPrintDetailHtml(loc, d){
     if(dualOn){
       const allowedD = getAllowedSizeKeys(d.method, loc.name, cat);
       const sizesD = (PRICING.methodSizes[d.method] || {});
-      const bodySizes = (line.product && line.product.sizes) || [];
+      const _allSizes = (line.product && line.product.sizes) || [];
+      // ★ 2026-06-17: 枚数を入力したボディサイズだけ表示(未入力は出さない)
+      const bodySizes = _allSizes.filter(s => (Number((line.qtyBySize || {})[s]) || 0) > 0);
       const variants = (Array.isArray(d.dualVariants) && d.dualVariants.length) ? d.dualVariants : _defaultDualVariants(line, d);
       const assignOf = {};
       variants.forEach((v, vi) => (v.bands || []).forEach(s => { if(assignOf[s] == null) assignOf[s] = vi; }));
@@ -6603,8 +6605,12 @@ function renderPrintDetailHtml(loc, d){
           </select>`;
         const chips = bodySizes.map(s => {
           const mine = (v.bands || []).indexOf(s) >= 0;
-          const other = (assignOf[s] != null && assignOf[s] !== vi);
-          return `<button class="pc-chip pc-dvar-band ${mine?'is-on':''}" data-area="${loc.area}" data-idx="${vi}" data-val="${s}" type="button" style="${other?'opacity:.4;':''}">${s}</button>`;
+          const owner = assignOf[s];
+          const st = mine
+            ? 'background:#16a34a;color:#fff;border:2px solid #16a34a;font-weight:700;'
+            : 'background:transparent;color:#e2e8f0;border:1px dashed #94a3b8;';
+          const tag = (!mine && owner != null) ? ` <span style="font-size:8px;opacity:.8;">→区分${owner+1}</span>` : '';
+          return `<button class="pc-dvar-band" data-area="${loc.area}" data-idx="${vi}" data-val="${s}" type="button" style="${st}padding:6px 11px;border-radius:8px;cursor:pointer;font-size:12px;line-height:1.2;margin:2px;">${mine?'✓ ':''}${s}${tag}</button>`;
         }).join('');
         const delBtn = (variants.length > 1) ? `<button class="pc-dvar-del" data-area="${loc.area}" data-idx="${vi}" type="button" title="この区分を削除" style="border:none;background:none;color:#c0392b;cursor:pointer;font-size:12px;">✕ 削除</button>` : '';
         return `
@@ -6613,7 +6619,7 @@ function renderPrintDetailHtml(loc, d){
               <span style="font-size:12px;font-weight:700;color:#7c3aed;">サイズ区分 ${vi+1}</span>${delBtn}
             </div>
             <div class="pc-row"><label class="pc-lbl">大きさ <span class="pc-lbl-req">必須</span></label>${sizeSel}</div>
-            <div class="pc-row"><label class="pc-lbl">この大きさにするボディサイズ</label><div class="pc-chips">${chips || '<span style="color:#888;font-size:11px;">先にサイズ別の枚数を入力してください</span>'}</div></div>
+            <div class="pc-row"><label class="pc-lbl">この大きさにするボディサイズ <span class="pc-lbl-opt" style="color:#16a34a;">緑＝この区分・タップで割当</span></label><div class="pc-chips">${chips || '<span style="color:#888;font-size:11px;">先に上のサイズ別枚数を入力してください</span>'}</div></div>
             <div class="pc-row"><label class="pc-lbl">実寸メモ <span class="pc-lbl-opt">任意</span></label><input class="pc-input pc-dvar-cm" type="text" data-area="${loc.area}" data-idx="${vi}" value="${escapeAttr(v.cm||'')}" placeholder="例：横20cm（後日相談でもOK）"></div>
           </div>`;
       }).join('');
@@ -7133,10 +7139,9 @@ function _dvarOp(area, op, idx, value){
   else if(op === 'cm'){ if(vs[idx]) vs[idx].cm = value; return; /* 入力中は再描画しない(フォーカス維持) */ }
   else if(op === 'band'){
     if(vs[idx]){
-      const has = (vs[idx].bands || []).indexOf(value) >= 0;
-      // 1サイズは1区分のみ: 全区分から外してから当区分へ
+      // 1サイズは1区分のみ: 全区分から外して当区分へ移動(タップ=この区分に割り当て)
       vs.forEach(v => { const i = (v.bands || []).indexOf(value); if(i >= 0) v.bands.splice(i, 1); });
-      if(!has) vs[idx].bands.push(value);
+      vs[idx].bands.push(value);
     }
   }
   pushPrintsTo3D(); renderPrintGrid(); refreshChrome();
