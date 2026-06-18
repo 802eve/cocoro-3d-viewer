@@ -4170,8 +4170,8 @@ function _defaultDualVariants(line, d){
   const kids = _defaultSmallBands(line);
   const adults = all.filter(s => kids.indexOf(s) < 0);
   return [
-    { size: (d && d.size) || '', bands: adults.slice(), cm: '' },
-    { size: '', bands: kids.slice(), cm: '' },
+    { size: (d && d.size) || '', bands: adults.slice(), cm: '', label: '' },
+    { size: '', bands: kids.slice(), cm: '', label: '' },
   ];
 }
 // 各区分の枚数を返す (未割り当てサイズは区分0へ寄せる)。戻り: [qty0, qty1, ...]
@@ -6285,7 +6285,35 @@ function renderColorVariantPrintGrid(grid, line){
           </div>
         `;
       } else {
-        inkBlock = `<div style="font-size:11px;color:var(--fg-muted);padding:8px 0;">転写は色替え代なし。元のデザインがそのまま転写されます。</div>`;
+        // ★ 2026-06-17: 転写・刺繍など版なし加工も、別ボディ色用に色を変更できる(色替え代¥0)。
+        //   デザインが持つ色数分のスロットを編集可能に。色指定が無いデザインはそのまま転写。
+        const baseSlots = baseDesign.inkSlots || [];
+        if(baseSlots.length){
+          const slots = [];
+          for(let j = 0; j < baseSlots.length; j++){
+            const inkId = effInkSlots[j] || '';
+            const ink = INK_COLORS.find(c => c.id === inkId);
+            const filled = !!ink;
+            const swatch = filled
+              ? `<div style="width:100%;height:100%;background:${ink.hex};border:1px solid rgba(0,0,0,.15);"></div>`
+              : `<div class="ink-slot-empty">+</div>`;
+            slots.push(`
+              <div class="ink-slot ${filled?'is-filled':''}" data-act="ink-override" data-area="${loc.area}" data-slot="${j}" title="${filled?ink.name:'色を選ぶ'}">
+                <div class="ink-slot-num">${j+1}</div>
+                ${swatch}
+              </div>
+            `);
+          }
+          inkBlock = `
+            <div class="pc-row">
+              <label class="pc-lbl">色（このボディ色用に変更可）${isChanged ? ' <span style="color:var(--accent);font-size:9px;letter-spacing:.04em;text-transform:none;font-weight:700;">[色替え中]</span>' : ''}</label>
+              <div class="ink-slots">${slots.join('')}</div>
+              ${isChanged ? `<button type="button" class="pc-color-reset" data-area="${loc.area}" style="margin-top:8px;background:transparent;border:1px solid var(--line-strong);color:var(--fg-muted);padding:6px 12px;font-family:inherit;font-size:11px;cursor:pointer;align-self:flex-start;">↺ 元の色に戻す</button>` : ''}
+              <div style="font-size:10px;color:var(--fg-dim);margin-top:6px;">※ 転写・刺繍などは色替え代はかかりません（¥0）。</div>
+            </div>`;
+        } else {
+          inkBlock = `<div style="font-size:11px;color:var(--fg-muted);padding:8px 0;">このデザインは色指定がないため、元のデザインがそのまま転写されます（色替え代なし）。</div>`;
+        }
       }
 
       html.push(`
@@ -6615,8 +6643,8 @@ function renderPrintDetailHtml(loc, d){
         const delBtn = (variants.length > 1) ? `<button class="pc-dvar-del" data-area="${loc.area}" data-idx="${vi}" type="button" title="この区分を削除" style="border:none;background:none;color:#c0392b;cursor:pointer;font-size:12px;">✕ 削除</button>` : '';
         return `
           <div style="border:1px solid #e6dcff;border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#faf8ff;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span style="font-size:12px;font-weight:700;color:#7c3aed;">サイズ区分 ${vi+1}</span>${delBtn}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;">
+              <input class="pc-input pc-dvar-label" type="text" data-area="${loc.area}" data-idx="${vi}" value="${escapeAttr(v.label||'')}" placeholder="サイズ区分${vi+1}（例：大人用）" style="flex:1;min-width:0;font-size:12px;font-weight:700;color:#7c3aed;background:transparent;border:none;border-bottom:1px dashed #c4b5fd;padding:2px 0;">${delBtn}
             </div>
             <div class="pc-row"><label class="pc-lbl">大きさ <span class="pc-lbl-req">必須</span></label>${sizeSel}</div>
             <div class="pc-row"><label class="pc-lbl">この大きさにするボディサイズ <span class="pc-lbl-opt" style="color:#16a34a;">緑＝この区分・タップで割当</span></label><div class="pc-chips">${chips || '<span style="color:#888;font-size:11px;">先に上のサイズ別枚数を入力してください</span>'}</div></div>
@@ -6718,6 +6746,11 @@ function bindPrintDetailEvents(grid){
   });
   grid.querySelectorAll('.pc-dvar-cm').forEach(el => {
     el.addEventListener('input', () => { _dvarOp(el.dataset.area, 'cm', parseInt(el.dataset.idx,10), el.value); });
+    el.addEventListener('click', e => e.stopPropagation());
+    el.addEventListener('blur', () => refreshChrome());
+  });
+  grid.querySelectorAll('.pc-dvar-label').forEach(el => {
+    el.addEventListener('input', () => { _dvarOp(el.dataset.area, 'label', parseInt(el.dataset.idx,10), el.value); });
     el.addEventListener('click', e => e.stopPropagation());
     el.addEventListener('blur', () => refreshChrome());
   });
@@ -7133,10 +7166,11 @@ function _dvarOp(area, op, idx, value){
   const d = ensurePrintDesign(line, area);
   if(!Array.isArray(d.dualVariants) || !d.dualVariants.length) d.dualVariants = _defaultDualVariants(line, d);
   const vs = d.dualVariants;
-  if(op === 'add'){ vs.push({ size:'', bands:[], cm:'' }); }
+  if(op === 'add'){ vs.push({ size:'', bands:[], cm:'', label:'' }); }
   else if(op === 'del'){ if(vs.length > 1) vs.splice(idx, 1); }
   else if(op === 'size'){ if(vs[idx]) vs[idx].size = value; }
   else if(op === 'cm'){ if(vs[idx]) vs[idx].cm = value; return; /* 入力中は再描画しない(フォーカス維持) */ }
+  else if(op === 'label'){ if(vs[idx]) vs[idx].label = value; return; /* 入力中は再描画しない */ }
   else if(op === 'band'){
     if(vs[idx]){
       // 1サイズは1区分のみ: 全区分から外して当区分へ移動(タップ=この区分に割り当て)
@@ -7727,7 +7761,11 @@ function calcEstimate(){
             for(let j = 0; j < maxLen; j++){
               if((parentSlots[j] || '') !== (childSlots[j] || '')) changedCount++;
             }
-            colorChangeCost += 1000 * changedCount;
+            // ★ 2026-06-17: 別サイズ(N区分)は版が区分ごとにある → 色替え代も「色数 × 区分数」分カウント
+            //   例: 小版2色+大版2色で両方色替え = 4版分の色替え代。
+            const _pd = (parentLine && parentLine.printDesigns) ? parentLine.printDesigns[loc.area] : null;
+            const _vc = (_pd && _dualActive(_pd)) ? _pd.dualVariants.filter(v => v && v.size).length : 1;
+            colorChangeCost += 1000 * changedCount * _vc;
           }
         } else {
           // 通常ライン: 版代 (★ v12 互換: 版代 × 色数)
@@ -8161,7 +8199,7 @@ function _buildSubmitItemForLine(l){
         dualSize:  _dualActive(d),
         dualVariants: _dualActive(d) ? (function(){
           const vqs = _variantQtys(l, d.dualVariants);
-          return d.dualVariants.map((v, vi) => ({ size: v.size||'', bands: Array.isArray(v.bands)?v.bands.slice():[], cm: v.cm||'', qty: vqs[vi]||0 }));
+          return d.dualVariants.map((v, vi) => ({ size: v.size||'', bands: Array.isArray(v.bands)?v.bands.slice():[], cm: v.cm||'', label: v.label||('サイズ区分'+(vi+1)), qty: vqs[vi]||0 }));
         })() : [],
         colorType: d.colorCount || '',
         plateType: d.plate || '',
