@@ -1821,9 +1821,20 @@ img{ display:block; max-width:100%; }
 
 .color-grid{
   display:grid;
-  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
-  gap:8px;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap:6px;
 }
+.swatch-item{
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  cursor:pointer;
+}
+.swatch-item .swatch-name{
+  font-size:9px; color:var(--fg-muted);
+  text-align:center; line-height:1.2;
+  word-break:break-all;
+  max-width:100%;
+}
+.swatch-item:hover .swatch-name{ color:var(--fg); }
 .swatch{
   width:100%;
   aspect-ratio:1;
@@ -4164,14 +4175,14 @@ function _defaultSmallBands(line){
   const sizes = (line && line.product && line.product.sizes) || [];
   return sizes.filter(s => /^\d+$/.test(String(s)) || String(s).toUpperCase() === 'XS');
 }
-// 別サイズ初期2区分: [区分1=大人(残りサイズ), 区分2=子供(数字+XS)]
+// 別サイズ初期2区分: [区分1=子供(数字+XS), 区分2=大人(残りサイズ)]
 function _defaultDualVariants(line, d){
   const all = (line && line.product && line.product.sizes) || [];
   const kids = _defaultSmallBands(line);
   const adults = all.filter(s => kids.indexOf(s) < 0);
   return [
-    { size: (d && d.size) || '', bands: adults.slice(), cm: '', label: '' },
     { size: '', bands: kids.slice(), cm: '', label: '' },
+    { size: (d && d.size) || '', bands: adults.slice(), cm: '', label: '' },
   ];
 }
 // 各区分の枚数を返す (未割り当てサイズは区分0へ寄せる)。戻り: [qty0, qty1, ...]
@@ -5833,12 +5844,12 @@ function renderColorGrid(){
     const hex = COLOR_HEX[name];
     const active = line.color && line.color.name === name;
     const lightCls = isLightHex(hex) ? 'is-light' : '';
-    return `<div class="swatch ${active?'is-active':''} ${lightCls}"
-                 data-name="${name}" style="background:${hex}"
-                 role="button" tabindex="0"
-                 aria-label="${name}" title="${name}"></div>`;
+    return `<div class="swatch-item" data-name="${escapeHtml(name)}" role="button" tabindex="0" aria-label="${escapeHtml(name)}">
+      <div class="swatch ${active?'is-active':''} ${lightCls}" style="background:${hex}"></div>
+      <div class="swatch-name">${escapeHtml(name)}</div>
+    </div>`;
   }).join('');
-  grid.querySelectorAll('.swatch').forEach(el => {
+  grid.querySelectorAll('.swatch-item').forEach(el => {
     el.addEventListener('click', () => selectColor(el.dataset.name));
     el.addEventListener('keydown', (e) => {
       if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectColor(el.dataset.name); }
@@ -5882,7 +5893,13 @@ function renderSizeGrid(){
   const grid = document.getElementById('sizeGrid');
   const line = cur();
   if(!line.product){ grid.innerHTML = '<div class="muted center">先に商品を選んでください</div>'; return; }
-  const sizes = line.product.sizes || ['S','M','L','XL'];
+  let sizes = line.product.sizes || ['S','M','L','XL'];
+  // TOMSグループ(Printstar/glimmer)でXSがある品番は160cmとSSを非表示
+  // (XSと160cmは同じサイズ帯の重複表記のため)
+  const isToms = ['Printstar','glimmer'].includes(line.product.maker);
+  if(isToms && sizes.includes('XS')){
+    sizes = sizes.filter(s => s !== '160cm' && s !== 'SS');
+  }
   grid.innerHTML = sizes.map(sz => {
     const qty = line.qtyBySize[sz] || 0;
     const has = qty > 0;
@@ -6636,7 +6653,7 @@ function renderPrintDetailHtml(loc, d){
           const owner = assignOf[s];
           const st = mine
             ? 'background:#16a34a;color:#fff;border:2px solid #16a34a;font-weight:700;'
-            : 'background:transparent;color:#e2e8f0;border:1px dashed #94a3b8;';
+            : 'background:transparent;color:#94a3b8;border:1px dashed #94a3b8;';
           const tag = (!mine && owner != null) ? ` <span style="font-size:8px;opacity:.8;">→区分${owner+1}</span>` : '';
           return `<button class="pc-dvar-band" data-area="${loc.area}" data-idx="${vi}" data-val="${s}" type="button" style="${st}padding:6px 11px;border-radius:8px;cursor:pointer;font-size:12px;line-height:1.2;margin:2px;">${mine?'✓ ':''}${s}${tag}</button>`;
         }).join('');
@@ -6644,7 +6661,7 @@ function renderPrintDetailHtml(loc, d){
         return `
           <div style="border:1px solid #e6dcff;border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#faf8ff;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;">
-              <input class="pc-input pc-dvar-label" type="text" data-area="${loc.area}" data-idx="${vi}" value="${escapeAttr(v.label||'')}" placeholder="サイズ区分${vi+1}（例：大人用）" style="flex:1;min-width:0;font-size:12px;font-weight:700;color:#7c3aed;background:transparent;border:none;border-bottom:1px dashed #c4b5fd;padding:2px 0;">${delBtn}
+              <input class="pc-input pc-dvar-label" type="text" data-area="${loc.area}" data-idx="${vi}" value="${escapeAttr(v.label||'')}" placeholder="${vi===0?'サイズ区分1（例：子供用）':vi===1?'サイズ区分2（例：大人用）':'サイズ区分'+(vi+1)+'（例：〇〇用）'}" style="flex:1;min-width:0;font-size:12px;font-weight:700;color:#7c3aed;background:transparent;border:none;border-bottom:1px dashed #c4b5fd;padding:2px 0;">${delBtn}
             </div>
             <div class="pc-row"><label class="pc-lbl">大きさ <span class="pc-lbl-req">必須</span></label>${sizeSel}</div>
             <div class="pc-row"><label class="pc-lbl">この大きさにするボディサイズ <span class="pc-lbl-opt" style="color:#16a34a;">緑＝この区分・タップで割当</span></label><div class="pc-chips">${chips || '<span style="color:#888;font-size:11px;">先に上のサイズ別枚数を入力してください</span>'}</div></div>
