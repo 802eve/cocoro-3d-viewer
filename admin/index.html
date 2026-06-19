@@ -482,14 +482,11 @@ async function _sha256Browser(text){
 function checkGate(){
   const pw = document.getElementById('gatePw').value;
   const errEl = document.getElementById('gateErr');
-  const btn = document.querySelector('#gate button');
   if(!pw){ errEl.textContent = 'パスワードを入力してください'; return; }
-  errEl.textContent = '認証中...';
-  if(btn) btn.disabled = true;
-  _sha256Browser(pw).then(hash => {
-    if(btn) btn.disabled = false;
-    if(hash === ADMIN_PW_HASH){
-      _setAdminToken(hash); // ハッシュ値をトークンとして保存 (GAS書込時に送信)
+  // 同期チェック: btoa (GitHub Pages は元からソース公開なので難読化で十分)
+  try {
+    if(btoa(pw) === 'Y29jb3JvMjAyNg=='){
+      _setAdminToken(ADMIN_PW_HASH);
       errEl.textContent = '';
       document.getElementById('gate').style.display = 'none';
       document.getElementById('gatePw').value = '';
@@ -498,10 +495,9 @@ function checkGate(){
       errEl.textContent = 'パスワードが違います';
       document.getElementById('gatePw').value = '';
     }
-  }).catch(() => {
-    if(btn) btn.disabled = false;
-    errEl.textContent = '認証エラー (ブラウザが暗号APIに非対応)';
-  });
+  } catch(e) {
+    errEl.textContent = '認証エラー';
+  }
 }
 
 // セッション復元: ハッシュトークンが残ってれば即通過 (GAS不要)
