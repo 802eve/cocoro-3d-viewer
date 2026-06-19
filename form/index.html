@@ -4173,16 +4173,17 @@ function newPrintDesign(area){
 // 既定の「子供/小さい」ボディサイズ = 数字(100〜160等) + XS
 function _defaultSmallBands(line){
   const sizes = (line && line.product && line.product.sizes) || [];
-  return sizes.filter(s => /^\d+$/.test(String(s)) || String(s).toUpperCase() === 'XS');
+  // ★ 2026-06-19: cmで終わるサイズ=子供サイズ (100cm,110cm…)、XSは大人サイズなので除外
+  return sizes.filter(s => /cm$/i.test(String(s).trim()));
 }
-// 別サイズ初期2区分: [区分1=子供(数字+XS), 区分2=大人(残りサイズ)]
+// 別サイズ初期2区分: [区分1=子供版(cmサイズ), 区分2=大人版(残りサイズ)]
 function _defaultDualVariants(line, d){
   const all = (line && line.product && line.product.sizes) || [];
   const kids = _defaultSmallBands(line);
   const adults = all.filter(s => kids.indexOf(s) < 0);
   return [
-    { size: '', bands: kids.slice(), cm: '', label: '' },
-    { size: (d && d.size) || '', bands: adults.slice(), cm: '', label: '' },
+    { size: '15cm角内',             bands: kids.slice(),   cm: '', label: '子供版' },
+    { size: (d && d.size) || '',   bands: adults.slice(), cm: '', label: '大人版' },
   ];
 }
 // 各区分の枚数を返す (未割り当てサイズは区分0へ寄せる)。戻り: [qty0, qty1, ...]
