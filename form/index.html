@@ -5844,9 +5844,9 @@ function renderColorGrid(){
     const hex = COLOR_HEX[name];
     const active = line.color && line.color.name === name;
     const lightCls = isLightHex(hex) ? 'is-light' : '';
-    return `<div class="swatch-item" data-name="${escapeHtml(name)}" role="button" tabindex="0" aria-label="${escapeHtml(name)}">
+    return `<div class="swatch-item" data-name="${escapeHtmlSimple(name)}" role="button" tabindex="0" aria-label="${escapeHtmlSimple(name)}">
       <div class="swatch ${active?'is-active':''} ${lightCls}" style="background:${hex}"></div>
-      <div class="swatch-name">${escapeHtml(name)}</div>
+      <div class="swatch-name">${escapeHtmlSimple(name)}</div>
     </div>`;
   }).join('');
   grid.querySelectorAll('.swatch-item').forEach(el => {
