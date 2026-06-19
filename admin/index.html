@@ -468,6 +468,17 @@ function _gasJsonp(params, cb){
   }, 30000);
 }
 
+// ブラウザ側 SHA-256 (GAS 非依存。パスワードハッシュを HTML に埋め込み比較)
+// ★ パスワード変更時は下記 ADMIN_PW_HASH を更新すること
+//   更新方法: ブラウザコンソールで
+//   crypto.subtle.digest('SHA-256',new TextEncoder().encode('新パスワード')).then(b=>console.log(Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')))
+const ADMIN_PW_HASH = 'c51e8561378ed0020ab01aad09b2721df0a187f7869fbdce757679b94b45aaef'; // SHA-256('cocoro2026')
+
+async function _sha256Browser(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 function checkGate(){
   const pw = document.getElementById('gatePw').value;
   const errEl = document.getElementById('gateErr');
@@ -475,34 +486,35 @@ function checkGate(){
   if(!pw){ errEl.textContent = 'パスワードを入力してください'; return; }
   errEl.textContent = '認証中...';
   if(btn) btn.disabled = true;
-  _gasJsonp({ action:'admin_login', password: pw }, (resp) => {
+  _sha256Browser(pw).then(hash => {
     if(btn) btn.disabled = false;
-    if(resp && resp.ok && resp.token){
-      _setAdminToken(resp.token);
+    if(hash === ADMIN_PW_HASH){
+      _setAdminToken(hash); // ハッシュ値をトークンとして保存 (GAS書込時に送信)
       errEl.textContent = '';
       document.getElementById('gate').style.display = 'none';
       document.getElementById('gatePw').value = '';
       initAdmin();
     } else {
-      errEl.textContent = (resp && resp.error) ? ('認証失敗: ' + resp.error) : 'パスワードが違います';
+      errEl.textContent = 'パスワードが違います';
       document.getElementById('gatePw').value = '';
     }
+  }).catch(() => {
+    if(btn) btn.disabled = false;
+    errEl.textContent = '認証エラー (ブラウザが暗号APIに非対応)';
   });
 }
 
-// セッション復元: トークンが残ってれば検証して通過
+// セッション復元: ハッシュトークンが残ってれば即通過 (GAS不要)
 (function _restoreAdminSession(){
   const tok = _adminToken();
   if(!tok) return;
-  // 起動時に検証 (失敗したらゲート表示のまま)
-  _gasJsonp({ action:'admin_verify', token: tok }, (resp) => {
-    if(resp && resp.ok){
-      document.getElementById('gate').style.display = 'none';
-      setTimeout(initAdmin, 0);
-    } else {
-      _setAdminToken('');
-    }
-  });
+  // SHA-256ハッシュ形式(64文字hex)なら即通過
+  if(/^[a-f0-9]{64}$/.test(tok)){
+    document.getElementById('gate').style.display = 'none';
+    setTimeout(initAdmin, 0);
+  } else {
+    _setAdminToken(''); // 旧形式トークンはクリア
+  }
 })();
 
 // ===== 関連ページ URL (本番/ローカル切替) =====
