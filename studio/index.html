@@ -3165,6 +3165,7 @@ async function _platformPreloadDesign(){
         const ok = await _custReviewLoadJsonParts(PLATFORM_CONTEXT.designJsonDriveId);
         if(ok){
           console.log('[platformPreload] JSON 復元 OK');
+          try { _platformApplyRecolorToParts(); } catch(_){}
           try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
           try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
           return;
@@ -3178,6 +3179,7 @@ async function _platformPreloadDesign(){
         const ok = await _custReviewLoadSvgParts(PLATFORM_CONTEXT.designSvgDriveId);
         if(ok){
           console.log('[platformPreload] SVG 復元 OK');
+          try { _platformApplyRecolorToParts(); } catch(_){}
           try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
           try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
           return;
@@ -3204,6 +3206,60 @@ async function _platformPreloadDesign(){
       _platformAddImageToCanvas(img);
     }, { crossOrigin: 'anonymous' });
   } catch(e){ console.warn('platform preload err', e); }
+}
+
+// ★ 2026-06-24: 社内編集画面で変更したインク色(PANTONE含む)を スタジオのパーツfillに反映。
+//   platform が _designRecolorPairsFor で計算した [{from:現色hex, to:新色hex}] を recolorPairs(JSON) で受領。
+//   各パーツの fill/stroke を normalizeToInk で最近傍INK正規化し、 from と一致したら to に置換。
+//   色を変えていない注文は pairs 空 → 何もしない (no-op)。 ベクター想定で明度差は無視。
+function _platformApplyRecolorToParts(){
+  try {
+    if(!PLATFORM_CONTEXT.recolorPairs || !window.fabCanvas) return 0;
+    let pairs;
+    try { pairs = JSON.parse(PLATFORM_CONTEXT.recolorPairs); } catch(_){ return 0; }
+    if(!Array.isArray(pairs) || !pairs.length) return 0;
+    const _norm = (c) => {
+      if(!c || typeof c !== 'string') return null;
+      try { return (typeof normalizeToInk === 'function') ? String(normalizeToInk(c)).toLowerCase() : String(c).toLowerCase(); }
+      catch(_){ return String(c).toLowerCase(); }
+    };
+    const map = {};
+    pairs.forEach(p => {
+      if(!p || !p.from || !p.to) return;
+      const k = _norm(p.from);
+      if(k) map[k] = p.to;
+    });
+    if(!Object.keys(map).length) return 0;
+    const recolorOne = (obj) => {
+      let did = 0;
+      if(!obj) return 0;
+      if(obj.type === 'group' && obj.getObjects){
+        obj.getObjects().forEach(c => { did += recolorOne(c); });
+        if(did){ try { obj.set('dirty', true); } catch(_){ obj.dirty = true; } }
+      }
+      ['fill','stroke'].forEach(prop => {
+        const v = obj[prop];
+        if(v && typeof v === 'string'){
+          const nk = _norm(v);
+          if(nk && map[nk] && String(map[nk]).toLowerCase() !== String(v).toLowerCase()){
+            try { obj.set(prop, map[nk]); did++; } catch(_){}
+          }
+        }
+      });
+      if(obj.setCoords){ try { obj.setCoords(); } catch(_){} }
+      return did;
+    };
+    let changed = 0;
+    fabCanvas.getObjects().forEach(o => { changed += recolorOne(o); });
+    if(changed){
+      try { fabCanvas.renderAll(); } catch(_){}
+      try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}
+      try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
+      try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
+    }
+    console.log('[platformPreload] recolor applied:', { pairs: pairs.length, changed: changed });
+    return changed;
+  } catch(e){ console.warn('[platformPreload] recolor fail:', e); return 0; }
 }
 
 // ★ F1 2026-05-14: 全画面ローディングオーバーレイ ヘルパー
@@ -4504,6 +4560,7 @@ const PLATFORM_CONTEXT = {
   designSvgDriveId: '', // ★ F6 2026-05-14: SVG drive ID (旧データ fallback)
   cloudEmail: '',       // 取引先メール (マイデザイン同期)
   size: '',
+  recolorPairs: '',     // ★ 2026-06-24: 編集画面のインク色(PANTONE含む)→デザイン反映用 [{from,to}] hexペア(JSON文字列)
 };
 // GAS endpoint (お客様確認モード用)
 const PLATFORM_GAS_URL = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
@@ -4533,6 +4590,7 @@ function _parseFormContext(){
     PLATFORM_CONTEXT.designSvgDriveId  = sp.get('designSvgDriveId')  || '';
     PLATFORM_CONTEXT.cloudEmail     = sp.get('cloudEmail') || '';
     PLATFORM_CONTEXT.size           = sp.get('size')       || '';
+    PLATFORM_CONTEXT.recolorPairs   = sp.get('recolorPairs') || '';
     // 色モード判定:
     //   silk       → INK_COLORS 50色のみ
     //   transfer-spot → 転写 白/黒（単色） ＝ INK_COLORS のみ
