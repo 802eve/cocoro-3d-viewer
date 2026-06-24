@@ -3140,13 +3140,21 @@ async function _platformPreloadDesign(){
   try {
     if(!PLATFORM_CONTEXT.designUrl && !PLATFORM_CONTEXT.designJsonDriveId && !PLATFORM_CONTEXT.designSvgDriveId) return;
     // エディタを開く (まだなら)
+    // ★ 2026-06-24: openEditor は async (内部 await loadFabric = fabric.js を CDN/Pages から DL)。
+    //   await しないと、 続く固定400ms待ちでは fabric 読込が間に合わず window.fabCanvas 未生成 →
+    //   「fabric not ready」で return → JSON 復元に到達できずパーツが出ない (GitHub Pages 越しの
+    //   fabric.js DL は 400ms を超える)。 → openEditor を await + fabCanvas 準備をポーリング。
     if(typeof openEditor === 'function' && !document.getElementById('mShell')?.classList.contains('in-editor') && !document.body.classList.contains('mobile-mode')){
-      try { openEditor(null); } catch(_){}
+      try { await openEditor(null); } catch(_){}
     } else if(typeof m_startBlank === 'function' && document.body.classList.contains('mobile-mode')){
-      try { m_startBlank(); } catch(_){}
+      try { await m_startBlank(); } catch(_){}
     }
-    // canvas 準備待ち
-    await new Promise(res => setTimeout(res, 400));
+    // canvas 準備待ち — 固定待ちでは間に合わないので fabric+fabCanvas が揃うまで最大~6秒ポーリング
+    let _ppWaited = 0;
+    while((typeof fabric === 'undefined' || !window.fabCanvas) && _ppWaited < 6000){
+      await new Promise(res => setTimeout(res, 150));
+      _ppWaited += 150;
+    }
     if(typeof fabric === 'undefined' || !window.fabCanvas){
       console.warn('[platformPreload] fabric not ready');
       return;
