@@ -3208,28 +3208,52 @@ async function _platformPreloadDesign(){
   } catch(e){ console.warn('platform preload err', e); }
 }
 
-// ★ 2026-06-24: 社内編集画面で変更したインク色(PANTONE含む)を スタジオのパーツfillに反映。
-//   platform が _designRecolorPairsFor で計算した [{from:現色hex, to:新色hex}] を recolorPairs(JSON) で受領。
-//   各パーツの fill/stroke を normalizeToInk で最近傍INK正規化し、 from と一致したら to に置換。
-//   色を変えていない注文は pairs 空 → 何もしない (no-op)。 ベクター想定で明度差は無視。
+// ★ 2026-06-24: 社内編集画面の現在インク色(PANTONE含む)を スタジオのデザインに反映。
+//   platform から inkHexes (現inkColorsを _inkNameToHex で hex 化, カンマ区切り) を受領。
+//   originalInkColors は Step1(PNG再着色保存) で新色に上書き済=「現色→新色」の diff が消えるため、
+//   diff ではなく「デザインの実fill色 → inkHexes」へ直接アライン再着色する。
+//   アライン: ①INK名一致(inkNameOf)で対応付け ②残りは明度順でペア。 色未変更なら結果同色=no-op。
 function _platformApplyRecolorToParts(){
   try {
-    if(!PLATFORM_CONTEXT.recolorPairs || !window.fabCanvas) return 0;
-    let pairs;
-    try { pairs = JSON.parse(PLATFORM_CONTEXT.recolorPairs); } catch(_){ return 0; }
-    if(!Array.isArray(pairs) || !pairs.length) return 0;
-    const _norm = (c) => {
-      if(!c || typeof c !== 'string') return null;
-      try { return (typeof normalizeToInk === 'function') ? String(normalizeToInk(c)).toLowerCase() : String(c).toLowerCase(); }
-      catch(_){ return String(c).toLowerCase(); }
+    if(!PLATFORM_CONTEXT.inkHexes || !window.fabCanvas) return 0;
+    const orderHexes = String(PLATFORM_CONTEXT.inkHexes).split(',').map(s => s.trim()).filter(Boolean);
+    if(!orderHexes.length) return 0;
+    const _toHex = (c) => { try { return (typeof rgbOrNameToHex === 'function') ? rgbOrNameToHex(c) : String(c); } catch(_){ return String(c); } };
+    const _lum = (c) => {
+      const m = String(_toHex(c)).match(/^#?([0-9a-f]{6})$/i); if(!m) return 0;
+      const r = parseInt(m[1].substr(0,2),16), g = parseInt(m[1].substr(2,2),16), b = parseInt(m[1].substr(4,2),16);
+      return 0.299*r + 0.587*g + 0.114*b;
     };
-    const map = {};
-    pairs.forEach(p => {
-      if(!p || !p.from || !p.to) return;
-      const k = _norm(p.from);
-      if(k) map[k] = p.to;
+    const _name = (c) => { try { return (typeof inkNameOf === 'function') ? inkNameOf(c) : String(c); } catch(_){ return String(c); } };
+    // 1) デザインの実 fill 色 (distinct, 出現順)
+    const seen = new Set(); const designCols = [];
+    const collect = (obj) => {
+      if(!obj) return;
+      if(obj.type === 'group' && obj.getObjects){ obj.getObjects().forEach(collect); return; }
+      const f = obj.fill;
+      if(f && typeof f === 'string'){
+        const k = f.toLowerCase();
+        if(!seen.has(k)){ seen.add(k); designCols.push({ hex:f, name:_name(f), lum:_lum(f) }); }
+      }
+    };
+    fabCanvas.getObjects().forEach(collect);
+    if(!designCols.length) return 0;
+    // 2) order 色 {hex,name,lum}
+    const orderCols = orderHexes.map(h => ({ hex:h, name:_name(h), lum:_lum(h) }));
+    // 3) アライン → pairMap[ designHex(lower) ] = orderHex
+    const pairMap = {};
+    const dUsed = new Array(designCols.length).fill(false);
+    const oUsed = new Array(orderCols.length).fill(false);
+    designCols.forEach((d, di) => {           // ① INK名一致
+      const oi = orderCols.findIndex((o, k) => !oUsed[k] && o.name === d.name);
+      if(oi >= 0){ dUsed[di] = true; oUsed[oi] = true; pairMap[d.hex.toLowerCase()] = orderCols[oi].hex; }
     });
-    if(!Object.keys(map).length) return 0;
+    const dLeft = designCols.map((d, i) => ({ d, i })).filter(x => !dUsed[x.i]).sort((a, b) => a.d.lum - b.d.lum);
+    const oLeft = orderCols.map((o, i) => ({ o, i })).filter(x => !oUsed[x.i]).sort((a, b) => a.o.lum - b.o.lum);
+    const _n = Math.min(dLeft.length, oLeft.length);   // ② 残りは明度順でペア
+    for(let k = 0; k < _n; k++){ pairMap[dLeft[k].d.hex.toLowerCase()] = oLeft[k].o.hex; }
+    // 4) 適用 (fill/stroke)
+    let changed = 0;
     const recolorOne = (obj) => {
       let did = 0;
       if(!obj) return 0;
@@ -3240,16 +3264,13 @@ function _platformApplyRecolorToParts(){
       ['fill','stroke'].forEach(prop => {
         const v = obj[prop];
         if(v && typeof v === 'string'){
-          const nk = _norm(v);
-          if(nk && map[nk] && String(map[nk]).toLowerCase() !== String(v).toLowerCase()){
-            try { obj.set(prop, map[nk]); did++; } catch(_){}
-          }
+          const t = pairMap[v.toLowerCase()];
+          if(t && String(t).toLowerCase() !== String(v).toLowerCase()){ try { obj.set(prop, t); did++; } catch(_){} }
         }
       });
       if(obj.setCoords){ try { obj.setCoords(); } catch(_){} }
       return did;
     };
-    let changed = 0;
     fabCanvas.getObjects().forEach(o => { changed += recolorOne(o); });
     if(changed){
       try { fabCanvas.renderAll(); } catch(_){}
@@ -3257,7 +3278,11 @@ function _platformApplyRecolorToParts(){
       try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
       try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
     }
-    console.log('[platformPreload] recolor applied:', { pairs: pairs.length, changed: changed });
+    console.log('[platformPreload] recolor applied:', {
+      order: orderCols.map(o => o.hex + '(' + o.name + ')'),
+      design: designCols.map(d => d.hex + '(' + d.name + ')'),
+      changed: changed
+    });
     return changed;
   } catch(e){ console.warn('[platformPreload] recolor fail:', e); return 0; }
 }
@@ -4560,7 +4585,7 @@ const PLATFORM_CONTEXT = {
   designSvgDriveId: '', // ★ F6 2026-05-14: SVG drive ID (旧データ fallback)
   cloudEmail: '',       // 取引先メール (マイデザイン同期)
   size: '',
-  recolorPairs: '',     // ★ 2026-06-24: 編集画面のインク色(PANTONE含む)→デザイン反映用 [{from,to}] hexペア(JSON文字列)
+  inkHexes: '',         // ★ 2026-06-24: 編集画面の現inkColors(PANTONE含む)を hex化したカンマ区切り → デザイン反映用
 };
 // GAS endpoint (お客様確認モード用)
 const PLATFORM_GAS_URL = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
@@ -4590,7 +4615,7 @@ function _parseFormContext(){
     PLATFORM_CONTEXT.designSvgDriveId  = sp.get('designSvgDriveId')  || '';
     PLATFORM_CONTEXT.cloudEmail     = sp.get('cloudEmail') || '';
     PLATFORM_CONTEXT.size           = sp.get('size')       || '';
-    PLATFORM_CONTEXT.recolorPairs   = sp.get('recolorPairs') || '';
+    PLATFORM_CONTEXT.inkHexes       = sp.get('inkHexes')   || '';
     // 色モード判定:
     //   silk       → INK_COLORS 50色のみ
     //   transfer-spot → 転写 白/黒（単色） ＝ INK_COLORS のみ
