@@ -9921,7 +9921,7 @@ window.openColorReplaceModal = function(fromHex){
   const _ex = document.getElementById('_inkReplaceModal');
   if(_ex){ _ex.remove(); }
   const fromNorm = (typeof normalizeToInk === 'function') ? normalizeToInk(fromHex) : fromHex;
-  const fromName = (typeof inkNameOf === 'function') ? inkNameOf(fromNorm) : fromHex;
+  const fromName = (typeof _pantoneNameForColor === 'function' && _pantoneNameForColor(fromNorm)) || ((typeof inkNameOf === 'function') ? inkNameOf(fromNorm) : fromHex);
   // モーダル overlay
   const ov = document.createElement('div');
   ov.id = '_inkReplaceModal';
@@ -10223,7 +10223,7 @@ function renderTextEditPanel(t){
       <button class="txt-ed-font-btn" onclick="openInkModal()">
         <span style="display:flex;align-items:center;gap:8px">
           <span style="width:20px;height:20px;background:${fillStr};border-radius:3px;border:1px solid #888;display:inline-block"></span>
-          <span>${escapeHtml(inkNameOf(fillStr))}</span>
+          <span>${escapeHtml(_pantoneNameForColor(normalizeToInk(fillStr)) || inkNameOf(fillStr))}</span>
         </span>
         <span class="arr">▼</span>
       </button>
@@ -10437,7 +10437,7 @@ function renderPartEditPanel(obj){
       <button class="txt-ed-font-btn" onclick="openInkModal()">
         <span style="display:flex;align-items:center;gap:8px">
           <span style="width:20px;height:20px;background:${fillStr};border-radius:3px;border:1px solid #888;display:inline-block"></span>
-          <span>${escapeHtml(inkNameOf(fillStr))}</span>
+          <span>${escapeHtml(_pantoneNameForColor(normalizeToInk(fillStr)) || inkNameOf(fillStr))}</span>
         </span>
         <span class="arr">▼</span>
       </button>
