@@ -3212,7 +3212,7 @@ async function _platformPreloadDesign(){
 //   platform から inkHexes (現inkColorsを _inkNameToHex で hex 化, カンマ区切り) を受領。
 //   originalInkColors は Step1(PNG再着色保存) で新色に上書き済=「現色→新色」の diff が消えるため、
 //   diff ではなく「デザインの実fill色 → inkHexes」へ直接アライン再着色する。
-//   アライン: ①INK名一致(inkNameOf)で対応付け ②残りは明度順でペア。 色未変更なら結果同色=no-op。
+//   アライン: ①INK名一致(inkNameOf)で対応付け ②残りは色が近い順(RGB距離)でペア。 色未変更なら結果同色=no-op。
 function _platformApplyRecolorToParts(){
   try {
     if(!PLATFORM_CONTEXT.inkHexes || !window.fabCanvas) return 0;
@@ -3253,10 +3253,17 @@ function _platformApplyRecolorToParts(){
       const oi = orderCols.findIndex((o, k) => !oUsed[k] && o.inkName === d.name);
       if(oi >= 0){ dUsed[di] = true; oUsed[oi] = true; pairMap[d.hex.toLowerCase()] = { hex: orderCols[oi].hex, pantone: orderCols[oi].pantone }; }
     });
-    const dLeft = designCols.map((d, i) => ({ d, i })).filter(x => !dUsed[x.i]).sort((a, b) => a.d.lum - b.d.lum);
-    const oLeft = orderCols.map((o, i) => ({ o, i })).filter(x => !oUsed[x.i]).sort((a, b) => a.o.lum - b.o.lum);
-    const _n = Math.min(dLeft.length, oLeft.length);   // ② 残りは明度順でペア
-    for(let k = 0; k < _n; k++){ pairMap[dLeft[k].d.hex.toLowerCase()] = { hex: oLeft[k].o.hex, pantone: oLeft[k].o.pantone }; }
+    // ② 残り: 各 design 色を「最も色が近い order 色」にマッチ (RGB距離)。
+    //    明度ランクだと order が design より多い時(=新色追加時)に 別系統の色へ誤マップし、
+    //    指定していないパーツまで変色する不具合になるため、 色の近さで対応付ける。
+    const _rgb = (c) => { const m = String(_toHex(c)).match(/^#?([0-9a-f]{6})$/i); return m ? [parseInt(m[1].substr(0,2),16),parseInt(m[1].substr(2,2),16),parseInt(m[1].substr(4,2),16)] : [0,0,0]; };
+    const _dist = (a, b) => { const x = _rgb(a), y = _rgb(b); return (x[0]-y[0])*(x[0]-y[0]) + (x[1]-y[1])*(x[1]-y[1]) + (x[2]-y[2])*(x[2]-y[2]); };
+    designCols.forEach((d, di) => {
+      if(dUsed[di]) return;
+      let best = -1, bestD = Infinity;
+      orderCols.forEach((o, k) => { if(oUsed[k]) return; const dd = _dist(d.hex, o.hex); if(dd < bestD){ bestD = dd; best = k; } });
+      if(best >= 0){ dUsed[di] = true; oUsed[best] = true; pairMap[d.hex.toLowerCase()] = { hex: orderCols[best].hex, pantone: orderCols[best].pantone }; }
+    });
     // 4) 適用 (fill/stroke) + 調色(PANTONE)識別タグ
     let changed = 0;
     const recolorOne = (obj) => {
@@ -9935,6 +9942,40 @@ window.openColorReplaceModal = function(fromHex){
   desc.style.cssText = 'padding:10px 18px 4px;font-size:11px;color:#6b7280;line-height:1.5;';
   desc.innerHTML = '同じ色を使うパーツが全部 新色に変わります';
   box.appendChild(desc);
+  // ★ 2026-06-24: 調色(PANTONE)指定での一括置換
+  const ptSec = document.createElement('div');
+  ptSec.style.cssText = 'margin:6px 18px 2px;padding:10px;border:2px dashed #c79a3a;border-radius:8px;background:#fffbf0;';
+  ptSec.innerHTML = '<div style="font-size:11px;font-weight:700;color:#8a6a1a;margin-bottom:6px;">🎨 調色インク（PANTONE指定）で置換</div>';
+  const ptRow = document.createElement('div');
+  ptRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  const ptInput = document.createElement('input');
+  ptInput.type = 'text'; ptInput.placeholder = '例: 125 C / 185 / reflex blue'; ptInput.autocomplete = 'off';
+  ptInput.style.cssText = 'flex:1;min-width:0;height:36px;border:1px solid #ccc;border-radius:4px;padding:0 8px;font-size:13px;';
+  const ptSw = document.createElement('div');
+  ptSw.style.cssText = 'width:36px;height:36px;flex-shrink:0;border-radius:4px;border:1px solid #ccc;background:repeating-conic-gradient(#e8e8e8 0% 25%,#fff 0% 50%) 50%/12px 12px;';
+  const ptBtn = document.createElement('button');
+  ptBtn.type = 'button'; ptBtn.textContent = '置換';
+  ptBtn.style.cssText = 'height:36px;padding:0 14px;background:#c79a3a;color:#fff;border:none;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;';
+  const ptHint = document.createElement('div');
+  ptHint.style.cssText = 'font-size:10px;color:#888;margin-top:5px;';
+  ptHint.textContent = 'PANTONE番号を入力（調色代 +¥2,000/色）';
+  const _ptResolve = () => (typeof _pantoneHex === 'function') ? _pantoneHex(ptInput.value) : '';
+  ptInput.addEventListener('input', () => {
+    const hx = _ptResolve();
+    if(hx){ ptSw.style.background = hx; ptHint.textContent = _pantoneDisplayName(ptInput.value) + ' → ' + hx + '（調色代 +¥2,000/色）'; ptHint.style.color = '#8a6a1a'; }
+    else { ptSw.style.background = 'repeating-conic-gradient(#e8e8e8 0% 25%,#fff 0% 50%) 50%/12px 12px'; ptHint.textContent = (ptInput.value.trim() ? '該当するPANTONE番号が見つかりません' : 'PANTONE番号を入力（調色代 +¥2,000/色）'); ptHint.style.color = ptInput.value.trim() ? '#c0392b' : '#888'; }
+  });
+  const _ptApply = () => {
+    const hx = _ptResolve();
+    if(!hx){ alert('該当するPANTONE番号が見つかりませんでした。\n番号を確認してください（例: 125 / 185 C / reflex blue）'); return; }
+    try { window.replaceColorGlobally(fromNorm, hx, _pantoneDisplayName(ptInput.value)); } catch(err){ console.warn('replaceColor pantone err', err); }
+    ov.remove();
+  };
+  ptBtn.addEventListener('click', _ptApply);
+  ptInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); _ptApply(); } });
+  ptRow.appendChild(ptInput); ptRow.appendChild(ptSw); ptRow.appendChild(ptBtn);
+  ptSec.appendChild(ptRow); ptSec.appendChild(ptHint);
+  box.appendChild(ptSec);
   // スウォッチグリッド (グループ別)
   const grid = document.createElement('div');
   grid.style.cssText = 'padding:10px 18px 18px;overflow-y:auto;';
@@ -9986,7 +10027,7 @@ window.openColorReplaceModal = function(fromHex){
 };
 
 // ★ 2026-05-15: 一括色置換 — fromHex と同じ色のパーツ全部を toHex に変更
-window.replaceColorGlobally = function(fromHex, toHex){
+window.replaceColorGlobally = function(fromHex, toHex, pantoneName){
   if(!fromHex || !toHex || !window.fabCanvas) return;
   const fromNorm = (typeof normalizeToInk === 'function') ? normalizeToInk(fromHex) : fromHex;
   function _matches(fill){
@@ -10002,10 +10043,10 @@ window.replaceColorGlobally = function(fromHex, toHex){
       obj.getObjects().forEach(_walk);
       // アーチテキストグループは _archFill も更新
       if(typeof _isArchTextGroup === 'function' && _isArchTextGroup(obj) && _matches(obj._archFill)){
-        try { obj._archFill = toHex; } catch(_){}
+        try { obj._archFill = toHex; if(typeof _setPantoneTag === 'function') _setPantoneTag(obj, pantoneName); } catch(_){}
       }
     } else if(_matches(obj.fill)){
-      try { obj.set('fill', toHex); } catch(_){}
+      try { obj.set('fill', toHex); if(typeof _setPantoneTag === 'function') _setPantoneTag(obj, pantoneName); } catch(_){}
     }
   }
   fabCanvas.getObjects().forEach(_walk);
@@ -10295,12 +10336,28 @@ function getCommonFill(objs){
 }
 
 // 一括カラー変更ボタンのHTML生成
+// ★ 2026-06-24: 指定色(正規化hex)を持つ調色(PANTONE)パーツの名前を探す (色チップ/置換ラベル用)
+function _pantoneNameForColor(normColor){
+  if(!normColor || !window.fabCanvas) return '';
+  let found = '';
+  const walk = (obj) => {
+    if(found || !obj) return;
+    if(obj.getObjects && (obj.type === 'group' || obj.type === 'activeSelection')){ obj.getObjects().forEach(walk); return; }
+    if(obj._pantoneName && obj.fill && typeof obj.fill === 'string'){
+      const nf = (typeof normalizeToInk === 'function') ? normalizeToInk(obj.fill) : obj.fill;
+      if(String(nf).toLowerCase() === String(normColor).toLowerCase()) found = obj._pantoneName;
+    }
+  };
+  fabCanvas.getObjects().forEach(walk);
+  return found;
+}
 function renderBulkColorBtn(commonFill){
   if(commonFill){
+    const _ptName = _pantoneNameForColor(commonFill);   // ★ 2026-06-24: 調色なら PANTONE名表示
     return `<button class="txt-ed-font-btn" onclick="openInkModal()">
       <span style="display:flex;align-items:center;gap:8px">
         <span style="width:20px;height:20px;background:${commonFill};border-radius:3px;border:1px solid #888;display:inline-block"></span>
-        <span>${escapeHtml(inkNameOf(commonFill))}</span>
+        <span>${escapeHtml(_ptName || inkNameOf(commonFill))}</span>
       </span>
       <span class="arr">▼</span>
     </button>`;
