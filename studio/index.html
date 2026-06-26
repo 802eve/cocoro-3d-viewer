@@ -12189,6 +12189,7 @@ function applyInkColor(hex, pantoneName){
     _setPantoneTag(o, pantoneName);
     fabCanvas.renderAll();
     updEdSide();
+    try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}  // ★ 2026-06-24: 色変更をUndo履歴に記録
     return;
   }
   if(o.type === 'activeSelection' || o.type === 'group'){
@@ -12207,6 +12208,7 @@ function applyInkColor(hex, pantoneName){
   }
   fabCanvas.renderAll();
   updEdSide();
+  try { if(typeof pushHistory === 'function') pushHistory(); } catch(_){}  // ★ 2026-06-24: 色変更をUndo履歴に記録
 }
 function applyFillRecursive(obj, hex, pantoneName){
   if(obj.type === 'group' && obj.getObjects){
