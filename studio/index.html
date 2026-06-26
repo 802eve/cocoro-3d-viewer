@@ -10186,20 +10186,26 @@ function inkNameOf(color){
 window._extractCanvasInkColors = function(){
   try {
     if(!window.fabCanvas) return [];
-    const seen = new Set();
-    const out = [];
+    // ★ 2026-06-24: 「使用中のカラー」表示(renderUsedColorsInline)と一致させるため、 名前ではなく
+    //   色(normalizeToInk)で重複排除する。 同じ#b58500でも 125C/185C の別名が混在して 色数が
+    //   過剰になる(見た目2色なのに3色送信)のを防ぐ。 調色(PANTONE)名は通常名より優先採用。
+    const order = [];           // 出現順の normalized color
+    const nameByColor = {};      // normColor -> emit name
     function walk(obj){
       if(!obj) return;
-      if(obj.type === 'group' && obj.getObjects){
-        obj.getObjects().forEach(walk);
-      } else if(obj.fill && typeof obj.fill === 'string'){
-        // ★ 2026-06-24: 調色(PANTONE)識別があれば「PANTONE N C」をemit (→社内編集画面で調色¥2000判定)
-        const nm = obj._pantoneName ? obj._pantoneName : ((typeof inkNameOf === 'function') ? inkNameOf(obj.fill) : obj.fill);
-        if(nm && !seen.has(nm)){ seen.add(nm); out.push(nm); }
+      if(obj.type === 'group' && obj.getObjects){ obj.getObjects().forEach(walk); return; }
+      if(obj.fill && typeof obj.fill === 'string'){
+        const norm = (typeof normalizeToInk === 'function') ? normalizeToInk(obj.fill) : String(obj.fill).toLowerCase();
+        if(!(norm in nameByColor)){
+          order.push(norm);
+          nameByColor[norm] = obj._pantoneName || ((typeof inkNameOf === 'function') ? inkNameOf(obj.fill) : obj.fill);
+        } else if(obj._pantoneName && !/^PANTONE\s/i.test(String(nameByColor[norm]))){
+          nameByColor[norm] = obj._pantoneName;  // 通常名 → 調色名 へ昇格
+        }
       }
     }
     fabCanvas.getObjects().forEach(walk);
-    return out;
+    return order.map(function(c){ return nameByColor[c]; });
   } catch(_){ return []; }
 };
 
