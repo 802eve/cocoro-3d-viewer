@@ -6325,9 +6325,12 @@ function renderColorVariantPrintGrid(grid, line){
             ? `<div style="width:100%;height:100%;background:${ink.hex};border:1px solid rgba(0,0,0,.15);"></div>`
             : `<div class="ink-slot-empty">+</div>`;
           slots.push(`
-            <div class="ink-slot ${filled?'is-filled':''}" data-act="ink-override" data-area="${loc.area}" data-slot="${j}" title="${filled?ink.name:'インク色を選ぶ'}">
-              <div class="ink-slot-num">${j+1}</div>
-              ${swatch}
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <div class="ink-slot ${filled?'is-filled':''}" data-act="ink-override" data-area="${loc.area}" data-slot="${j}" title="${filled?ink.name:'インク色を選ぶ'}">
+                <div class="ink-slot-num">${j+1}</div>
+                ${swatch}
+              </div>
+              <div style="font-size:9px;color:var(--fg-dim);text-align:center;line-height:1.2;max-width:58px;word-break:break-word;min-height:11px;">${filled?escapeHtmlSimple(ink.name):''}</div>
             </div>
           `);
         }
@@ -6353,9 +6356,12 @@ function renderColorVariantPrintGrid(grid, line){
               ? `<div style="width:100%;height:100%;background:${ink.hex};border:1px solid rgba(0,0,0,.15);"></div>`
               : `<div class="ink-slot-empty">+</div>`;
             slots.push(`
-              <div class="ink-slot ${filled?'is-filled':''}" data-act="ink-override" data-area="${loc.area}" data-slot="${j}" title="${filled?ink.name:'色を選ぶ'}">
-                <div class="ink-slot-num">${j+1}</div>
-                ${swatch}
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                <div class="ink-slot ${filled?'is-filled':''}" data-act="ink-override" data-area="${loc.area}" data-slot="${j}" title="${filled?ink.name:'色を選ぶ'}">
+                  <div class="ink-slot-num">${j+1}</div>
+                  ${swatch}
+                </div>
+                <div style="font-size:9px;color:var(--fg-dim);text-align:center;line-height:1.2;max-width:58px;word-break:break-word;min-height:11px;">${filled?escapeHtmlSimple(ink.name):''}</div>
               </div>
             `);
           }
@@ -6499,9 +6505,12 @@ function renderPrintDetailHtml(loc, d){
         ? `<div style="width:100%;height:100%;background:${ink.hex};border:1px solid rgba(0,0,0,.15);"></div>`
         : `<div class="ink-slot-empty">+</div>`;
       slots.push(`
-        <div class="ink-slot ${filled?'is-filled':''}" data-act="ink" data-area="${loc.area}" data-slot="${i}" title="${filled?ink.name:'インク色を選ぶ'}">
-          <div class="ink-slot-num">${i+1}</div>
-          ${swatch}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <div class="ink-slot ${filled?'is-filled':''}" data-act="ink" data-area="${loc.area}" data-slot="${i}" title="${filled?ink.name:'インク色を選ぶ'}">
+            <div class="ink-slot-num">${i+1}</div>
+            ${swatch}
+          </div>
+          <div style="font-size:9px;color:var(--fg-dim);text-align:center;line-height:1.2;max-width:58px;word-break:break-word;min-height:11px;">${filled?escapeHtmlSimple(ink.name):''}</div>
         </div>
       `);
     }
@@ -7316,10 +7325,10 @@ function _formPantonePreview(v){
   const hex = _pantoneHex(v);
   if(hex){
     if(sw) sw.style.background = hex;
-    if(hint){ hint.textContent = _pantoneDisplayName(v) + ' → ' + hex + '（調色代 +¥2,000/色）'; hint.style.color = '#8a6a1a'; }
+    if(hint){ hint.textContent = _pantoneDisplayName(v) + ' → ' + hex + '（調色代 +¥2,000/色）'; hint.style.color = '#cbb6ff'; }
   } else {
-    if(sw) sw.style.background = 'repeating-conic-gradient(#eee 0% 25%,#fff 0% 50%) 50%/10px 10px';
-    if(hint){ hint.textContent = (String(v||'').trim() ? '該当するPANTONE番号が見つかりません' : '番号を入力して適用すると、このスロットが調色インクになります（色は表示用の目安）'); hint.style.color = String(v||'').trim() ? '#c0392b' : '#999'; }
+    if(sw) sw.style.background = 'repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/10px 10px';
+    if(hint){ hint.textContent = (String(v||'').trim() ? '該当するPANTONE番号が見つかりません' : '番号を入力して適用すると、このスロットが調色インクになります（色は表示用の目安）'); hint.style.color = String(v||'').trim() ? '#ff8a8a' : '#bbb'; }
   }
 }
 function _formApplyToning(){
@@ -9838,14 +9847,14 @@ window.addEventListener('DOMContentLoaded', init);
       <div class="ink-picker-ttl">インク色を選択</div>
       <button class="ink-picker-close" id="inkPickerClose" type="button" aria-label="閉じる">✕</button>
     </div>
-    <div id="inkPickerToning" style="padding:8px 12px;border-bottom:1px solid #eee;background:#fffbf0;">
-      <div style="font-size:11px;font-weight:700;color:#8a6a1a;margin-bottom:5px;">🎨 調色インク（PANTONE番号）＋¥2,000/色</div>
+    <div id="inkPickerToning" style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.12);background:rgba(124,58,237,0.16);">
+      <div style="font-size:11px;font-weight:700;color:#cbb6ff;margin-bottom:5px;">🎨 調色インク（PANTONE番号）＋¥2,000/色</div>
       <div style="display:flex;align-items:center;gap:6px;">
-        <input type="text" id="inkToningInput" placeholder="例: 185 / Reflex Blue" autocomplete="off" style="flex:1;min-width:0;height:34px;border:1px solid #c4b5fd;border-radius:5px;padding:0 8px;font-size:13px;" oninput="_formPantonePreview(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();_formApplyToning();}">
-        <div id="inkToningSw" style="width:34px;height:34px;flex:none;border-radius:5px;border:1px solid #ccc;background:repeating-conic-gradient(#eee 0% 25%,#fff 0% 50%) 50%/10px 10px;"></div>
+        <input type="text" id="inkToningInput" placeholder="例: 185 / Reflex Blue" autocomplete="off" style="flex:1;min-width:0;height:34px;border:1px solid #8b6fd6;border-radius:5px;padding:0 8px;font-size:13px;background:#ffffff;color:#1a1a1a;" oninput="_formPantonePreview(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();_formApplyToning();}">
+        <div id="inkToningSw" style="width:34px;height:34px;flex:none;border-radius:5px;border:1px solid rgba(255,255,255,0.3);background:repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/10px 10px;"></div>
         <button type="button" style="height:34px;padding:0 14px;background:#7c3aed;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;" onclick="_formApplyToning()">適用</button>
       </div>
-      <div id="inkToningHint" style="font-size:9px;color:#999;margin-top:4px;">番号を入力して適用すると、このスロットが調色インクになります（色は表示用の目安）</div>
+      <div id="inkToningHint" style="font-size:9px;color:#bbb;margin-top:4px;">番号を入力して適用すると、このスロットが調色インクになります（色は表示用の目安）</div>
     </div>
     <div class="ink-picker-grid" id="inkPickerGrid"><!-- populated --></div>
   </div>
