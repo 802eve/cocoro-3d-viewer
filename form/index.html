@@ -9725,6 +9725,18 @@ function _applyPricingConfig(cfg){
         .sort(function(a,b){ return b.minQty - a.minQty; });
       if(tiers.length) PRICING.bodyDiscount = tiers;
     }
+    // ★ 2026-07-01 D: 価格管理ページ拡張 — 版代/素材アップチャージ/データ代/特殊インク も反映
+    ['plateCost','upcharge','dataFee','specialInkUpcharge'].forEach(function(k){
+      if(cfg[k] && typeof cfg[k] === 'object'){
+        PRICING[k] = PRICING[k] || {};
+        Object.keys(cfg[k]).forEach(function(kk){
+          const v = Number(cfg[k][kk]);
+          if(isFinite(v) && v >= 0) PRICING[k][kk] = v;
+        });
+      }
+    });
+    if(isFinite(Number(cfg.smallOrderFee)) && Number(cfg.smallOrderFee) >= 0) PRICING.smallOrderFee = Number(cfg.smallOrderFee);
+    if(isFinite(Number(cfg.toningInkCost)) && Number(cfg.toningInkCost) >= 0) PRICING.toningInkCost = Number(cfg.toningInkCost);
     window._pricingConfigApplied = true;
     try { if(typeof renderDeadline === 'function') renderDeadline(); } catch(_){}
     try { if(typeof refreshChrome === 'function') refreshChrome(); } catch(_){}
