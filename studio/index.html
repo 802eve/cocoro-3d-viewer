@@ -15382,6 +15382,16 @@ function _3d_inlineRefresh(){
     } catch(_){}
     sec.innerHTML = '<div class="m-edit-label">' + label + '<span style="font-size:10px;color:var(--t3);font-weight:400;margin-left:6px">' + multiLabel + '</span></div>';
     const cur = (typeof sel[prop] === 'string') ? sel[prop].toLowerCase() : '';
+    // ★ 2026-06-24: 調色(PANTONE)識別タグを sel(複数選択/グループ含む)に付与/解除 (fill色のみ)
+    const _m_tagPantoneOnSel = (name) => {
+      if(prop !== 'fill') return;
+      const walk = (o) => {
+        if(!o) return;
+        if((o.type === 'activeSelection' || o.type === 'group') && o.getObjects){ o.getObjects().forEach(walk); return; }
+        if(typeof _setPantoneTag === 'function') _setPantoneTag(o, name);
+      };
+      walk(sel);
+    };
     // ★ N3.11 2026-05-07: PCバージョンの INK_COLORS 50色をグループ別に表示
     const groups = (typeof INK_GROUPS !== 'undefined') ? INK_GROUPS : [];
     const inks = (typeof INK_COLORS !== 'undefined') ? INK_COLORS : [];
@@ -15403,6 +15413,7 @@ function _3d_inlineRefresh(){
         sw.addEventListener('click', () => {
           // ★ N3.12: 複数選択 / group も子に展開
           _m_applyPropToSel(sel, prop, c.hex);
+          _m_tagPantoneOnSel(null);  // ★ 2026-06-24: 通常色は調色識別を解除
           fabCanvas.requestRenderAll();
           if(typeof pushHistory === 'function') { try { pushHistory(); } catch(_){} }
           m_renderActiveTabContent();
@@ -15429,6 +15440,7 @@ function _3d_inlineRefresh(){
     cp.addEventListener('input', () => {
       // ★ N3.12: 複数選択 / group も子に展開
       _m_applyPropToSel(sel, prop, cp.value);
+      _m_tagPantoneOnSel(null);  // ★ 2026-06-24: 通常色は調色識別を解除
       fabCanvas.requestRenderAll();
     });
     cp.addEventListener('change', () => {
@@ -15441,6 +15453,45 @@ function _3d_inlineRefresh(){
     hexLbl.textContent = (typeof sel[prop] === 'string') ? sel[prop] : '';
     customRow.appendChild(hexLbl);
     sec.appendChild(customRow);
+    // ★ 2026-06-24: 調色(PANTONE)指定 (モバイル・fill色のみ)
+    if(prop === 'fill'){
+      const ptLbl = document.createElement('div');
+      ptLbl.className = 'm-ink-grouplabel';
+      ptLbl.textContent = '🎨 調色インク（PANTONE）';
+      sec.appendChild(ptLbl);
+      const ptRow = document.createElement('div');
+      ptRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      const ptInput = document.createElement('input');
+      ptInput.type = 'text'; ptInput.placeholder = '例: 185 / Reflex Blue'; ptInput.autocomplete = 'off';
+      ptInput.style.cssText = 'flex:1;min-width:0;height:38px;border:1px solid #c4b5fd;border-radius:6px;padding:0 10px;font-size:14px;background:#fff;color:#1a1a1a;';
+      const ptSw = document.createElement('div');
+      ptSw.style.cssText = 'width:40px;height:40px;flex-shrink:0;border-radius:50%;border:2px solid var(--t3);background:repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/12px 12px;';
+      const ptBtn = document.createElement('button');
+      ptBtn.type = 'button'; ptBtn.textContent = '適用';
+      ptBtn.style.cssText = 'height:38px;padding:0 16px;background:#7c3aed;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;';
+      const _ptResolve = () => (typeof _pantoneHex === 'function') ? _pantoneHex(ptInput.value) : '';
+      ptInput.addEventListener('input', () => {
+        const hx = _ptResolve();
+        ptSw.style.background = hx || 'repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/12px 12px';
+      });
+      const _ptApply = () => {
+        const hx = _ptResolve();
+        if(!hx){ alert('該当するPANTONE番号が見つかりませんでした（例: 185 / Reflex Blue）'); return; }
+        _m_applyPropToSel(sel, prop, hx);
+        _m_tagPantoneOnSel((typeof _pantoneDisplayName === 'function') ? _pantoneDisplayName(ptInput.value) : ('PANTONE ' + ptInput.value.trim() + ' C'));
+        fabCanvas.requestRenderAll();
+        if(typeof pushHistory === 'function') { try { pushHistory(); } catch(_){} }
+        m_renderActiveTabContent();
+      };
+      ptBtn.addEventListener('click', _ptApply);
+      ptInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); _ptApply(); } });
+      ptRow.appendChild(ptInput); ptRow.appendChild(ptSw); ptRow.appendChild(ptBtn);
+      sec.appendChild(ptRow);
+      const ptHint = document.createElement('div');
+      ptHint.style.cssText = 'font-size:10px;color:var(--t3);margin-top:4px;';
+      ptHint.textContent = 'PANTONE番号で調色指定（調色代 +¥2,000/色・色は表示用の目安）';
+      sec.appendChild(ptHint);
+    }
     host.appendChild(sec);
   }
 
