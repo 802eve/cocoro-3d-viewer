@@ -2227,9 +2227,16 @@ async function _switchToColor(newIdx){
       // ★ 2026-05-27 P-fix: フォールバック順 修正
       //   旧: `p.originalInkHexes || p.targetInkHexes` だが 配列 [] は truthy のため originalInkHexes が ある限り 常にそれが返り、 親色 (targetInkHexes) に 戻れない バグ
       //   新: override > 親色 (targetInkHexes) > 元色 (originalInkHexes) の 優先順
+      // ★ 2026-07-13 FIX: p.targetInkHexes は「このcfgを開いた時のボディ色」専用に解決済みの値のため、
+      //   色オーバーライド無しの色に切替えた時にそのまま使うと切替元の色のオーバーライドが誤って残る
+      //   (例: 白=黒インク上書き→黒/青/オレンジ/赤スウォッチに切替えても黒インクのまま)。
+      //   printDefaultInkHexes (オーバーライド適用前の現在インク色) があれば最優先でそちらを使う。
+      //   旧cfg(このフィールド無し)は従来通り targetInkHexes にフォールバック。
       let targetHexes;
       if(Array.isArray(ovrHexes[i]) && ovrHexes[i].length){
         targetHexes = ovrHexes[i];
+      } else if(Array.isArray(p.printDefaultInkHexes) && p.printDefaultInkHexes.length){
+        targetHexes = p.printDefaultInkHexes;
       } else if(Array.isArray(p.targetInkHexes) && p.targetInkHexes.length){
         targetHexes = p.targetInkHexes;
       } else {
