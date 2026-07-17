@@ -8434,30 +8434,143 @@ function edAddImg(inp){
   if(!inp.files.length) return;
   const files = Array.from(inp.files);
   let remaining = files.length;
+  const failed = [];   // 保存できなかったファイル（理由つき）
+  const notes = [];    // 変換して取り込んだお知らせ
+  const done = () => {
+    remaining--;
+    if(remaining !== 0) return;
+    // 全ファイル処理完了後、サイドバーのライブラリを一括更新＋パネルを開く
+    if(_sbExpanded !== 'upload' && _isInEditor()){
+      toggleSbPanel('upload');
+    } else if(_sbExpanded === 'upload'){
+      renderSbUpload();
+    }
+    if(notes.length) _edUploadNotice(notes.join('\n'), false);
+    if(failed.length) _edUploadNotice('⚠ 保存できなかった画像があります\n' + failed.join('\n'), true);
+  };
   files.forEach((file, idx) => {
+    const fname = file.name || '画像';
     const r = new FileReader();
     r.onload = e => {
-      const dataUrl = e.target.result;
-      _saveUploadedImage({
-        id: 'up_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2,6),
-        name: file.name || '画像',
-        dataUrl: dataUrl,
-        size: file.size || 0,
-        created: Date.now()
-      });
-      remaining--;
-      if(remaining === 0){
-        // 全ファイル保存完了後、サイドバーのライブラリを一括更新＋パネルを開く
-        if(_sbExpanded !== 'upload' && _isInEditor()){
-          toggleSbPanel('upload');
-        } else if(_sbExpanded === 'upload'){
-          renderSbUpload();
+      // ★ 2026-07-17: 大きい画像は自動縮小・巨大SVGはPNG変換してから保存
+      //   （localStorage 上限 ≈5MB のため。従来は超過時に無言で保存失敗し「アップロードされない」ように見えていた）
+      _edPrepareUploadDataUrl(e.target.result, (prepared, note) => {
+        if(!prepared){
+          failed.push('・' + fname + (note ? '（' + note + '）' : ''));
+          done(); return;
         }
-      }
+        if(note) notes.push('・' + fname + '：' + note);
+        const ok = _saveUploadedImage({
+          id: 'up_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2,6),
+          name: fname,
+          dataUrl: prepared,
+          size: file.size || 0,
+          created: Date.now()
+        });
+        if(!ok) failed.push('・' + fname + '（保存容量がいっぱいです。ライブラリの古い画像を × で削除してからお試しください）');
+        done();
+      });
     };
+    r.onerror = () => { failed.push('・' + fname + '（読み込み失敗）'); done(); };
     r.readAsDataURL(file);
   });
   inp.value = '';
+}
+
+// ★ 2026-07-17: アップロード結果の通知トースト（alert はモバイルで操作を止めるため不使用）
+function _edUploadNotice(msg, isErr){
+  try {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);max-width:min(560px,86vw);background:' + (isErr ? 'linear-gradient(135deg,#7a1f1f,#4a1212)' : 'linear-gradient(135deg,#1f4a7a,#122c4a)') + ';color:#fff;padding:12px 18px;border-radius:10px;font-size:12px;line-height:1.7;white-space:pre-wrap;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:99999;pointer-events:none;';
+    d.textContent = msg;
+    document.body.appendChild(d);
+    setTimeout(() => { try { d.remove(); } catch(_){} }, isErr ? 9000 : 6000);
+  } catch(e){ try { alert(msg); } catch(_){} }
+}
+
+// ★ 2026-07-17: アップロード画像の保存前処理（localStorage 5MB 対策）
+//   ・dataURL が _UP_TARGET_CHARS 以下 → そのまま保存（小さいSVGはベクターのまま＝パーツ分解機能を維持）
+//   ・大きいラスター画像 → canvas で段階縮小（透過あり=PNG / 無し=JPEG 0.92）
+//   ・巨大SVG（Illustrator書き出しのラスター埋め込み等） → PNG にラスタライズして縮小
+//   cb(dataUrl, note) — dataUrl=null は保存不能（note に理由）
+const _UP_TARGET_CHARS = 900000;    // 1画像の目標サイズ（dataURL文字数 ≒ 675KB相当）
+const _UP_HARD_MAX_CHARS = 2400000; // 縮小してもこれを超えるなら保存を諦める
+function _edPrepareUploadDataUrl(dataUrl, cb){
+  try {
+    if(!dataUrl){ cb(null, '読み込み失敗'); return; }
+    if(dataUrl.length <= _UP_TARGET_CHARS){ cb(dataUrl, ''); return; }
+    const isSvg = dataUrl.startsWith('data:image/svg+xml');
+    // width/height 属性が無いSVGは canvas に描けないことがある → viewBox から補完
+    const srcUrl = isSvg ? (_edEnsureSvgSize(dataUrl) || dataUrl) : dataUrl;
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth || img.width || 2048;
+        const h = img.naturalHeight || img.height || 2048;
+        // 透過の有無を縮小サンプルで判定（ロゴ=透過PNG / 写真=JPEG）
+        let hasAlpha = true;
+        try {
+          const ps = 64;
+          const probe = document.createElement('canvas');
+          probe.width = ps; probe.height = ps;
+          const pctx = probe.getContext('2d');
+          pctx.drawImage(img, 0, 0, ps, ps);
+          const px = pctx.getImageData(0, 0, ps, ps).data;
+          hasAlpha = false;
+          for(let i = 3; i < px.length; i += 16){ if(px[i] < 250){ hasAlpha = true; break; } }
+        } catch(_){ hasAlpha = true; }
+        const fmt = hasAlpha ? 'image/png' : 'image/jpeg';
+        let best = null;
+        for(const maxDim of [2048, 1500, 1024, 768]){
+          const sc = Math.min(1, maxDim / Math.max(w, h));
+          const cw2 = Math.max(1, Math.round(w * sc));
+          const ch2 = Math.max(1, Math.round(h * sc));
+          const cv = document.createElement('canvas');
+          cv.width = cw2; cv.height = ch2;
+          cv.getContext('2d').drawImage(img, 0, 0, cw2, ch2);
+          const out = (fmt === 'image/jpeg') ? cv.toDataURL(fmt, 0.92) : cv.toDataURL(fmt);
+          if(best === null || out.length < best.length) best = out;
+          if(out.length <= _UP_TARGET_CHARS){ best = out; break; }
+        }
+        if(!best || best.length > _UP_HARD_MAX_CHARS){
+          cb(null, '画像サイズが大きすぎます。小さめのPNG/JPGでお試しください');
+          return;
+        }
+        cb(best, isSvg ? 'サイズが大きいSVGのためPNG画像に変換して取り込みました' : '');
+      } catch(err){
+        console.warn('upload prepare failed:', err);
+        cb(null, '変換に失敗しました');
+      }
+    };
+    img.onerror = () => cb(null, '画像として読み込めませんでした');
+    img.src = srcUrl;
+  } catch(e){
+    console.warn('upload prepare failed:', e);
+    cb(null, '変換に失敗しました');
+  }
+}
+// SVG dataURL の root <svg> に width/height が無ければ viewBox から補完した dataURL を返す（不要/不可なら null）
+function _edEnsureSvgSize(dataUrl){
+  try {
+    const comma = dataUrl.indexOf(',');
+    if(comma < 0) return null;
+    const head = dataUrl.slice(0, comma);
+    const payload = dataUrl.slice(comma + 1);
+    const isB64 = head.indexOf('base64') !== -1;
+    const text = isB64 ? atob(payload) : decodeURIComponent(payload);
+    const m = text.match(/<svg\b[^>]*>/i);
+    if(!m) return null;
+    const tag = m[0];
+    if(/\swidth\s*=/i.test(tag) && /\sheight\s*=/i.test(tag)) return null; // 補完不要
+    const vb = tag.match(/viewBox\s*=\s*["']\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)/i);
+    if(!vb) return null;
+    const w = Math.max(1, Math.round(parseFloat(vb[1])));
+    const h = Math.max(1, Math.round(parseFloat(vb[2])));
+    const newText = text.replace(tag, tag.replace(/<svg\b/i, '<svg width="' + w + '" height="' + h + '"'));
+    // base64由来の byte-string への注入はASCIIのみ → btoa でそのまま戻せる
+    return isB64 ? ('data:image/svg+xml;base64,' + btoa(newText))
+                 : ('data:image/svg+xml,' + encodeURIComponent(newText));
+  } catch(e){ return null; }
 }
 
 // ── アップロード画像ライブラリ（localStorage保存） ──
@@ -8468,20 +8581,26 @@ function _getUploadedImages(){
   catch(e){ return []; }
 }
 function _saveUploadedImage(entry){
+  // ★ 2026-07-17: 成否を返すように変更（true=保存済/false=保存不能）。呼び出し元(edAddImg)が失敗を通知する
   try {
     const list = _getUploadedImages();
     list.unshift(entry);
     // 上限超過で古いものを削除
     if(list.length > UPLOAD_MAX) list.length = UPLOAD_MAX;
     localStorage.setItem(UPLOAD_LIB_KEY, JSON.stringify(list));
+    return true;
   } catch(e){
-    // 容量超過時は古いものを削除してリトライ
-    try {
-      const list = _getUploadedImages();
+    // 容量超過時は古いものを減らしながらリトライ（空になっても入らなければ false）
+    let list = _getUploadedImages();
+    while(true){
       list.length = Math.max(0, list.length - 5);
-      list.unshift(entry);
-      localStorage.setItem(UPLOAD_LIB_KEY, JSON.stringify(list));
-    } catch(err){ console.warn('アップロード保存失敗:', err); }
+      try {
+        localStorage.setItem(UPLOAD_LIB_KEY, JSON.stringify([entry].concat(list)));
+        return true;
+      } catch(err){
+        if(list.length === 0){ console.warn('アップロード保存失敗:', err); return false; }
+      }
+    }
   }
 }
 function _deleteUploadedImage(id){
@@ -10118,6 +10237,22 @@ function _pantoneHex(input){
 function _pantoneDisplayName(input){
   var s = String(input || '').trim().replace(/^pantone\s+/i, '').replace(/\s*c$/i, '').trim();
   return s ? ('PANTONE ' + s + ' C') : '';
+}
+// ★ 2026-06-24: 任意hexに最も近いPANTONE番号キーを返す (カラーピッカー→調色認定用)
+function _nearestPantone(hex){
+  var m = window._PANTONE_COATED || {};
+  var t = String(hex||'').match(/^#?([0-9a-f]{6})$/i);
+  if(!t) return '';
+  var tr = parseInt(t[1].substr(0,2),16), tg = parseInt(t[1].substr(2,2),16), tb = parseInt(t[1].substr(4,2),16);
+  var best = '', bestD = Infinity;
+  for(var k in m){
+    var p = String(m[k]||'').match(/^#?([0-9a-f]{6})$/i);
+    if(!p) continue;
+    var pr = parseInt(p[1].substr(0,2),16), pg = parseInt(p[1].substr(2,2),16), pb = parseInt(p[1].substr(4,2),16);
+    var d = (tr-pr)*(tr-pr) + (tg-pg)*(tg-pg) + (tb-pb)*(tb-pb);
+    if(d < bestD){ bestD = d; best = k; }
+  }
+  return best;
 }
 // オブジェクトに調色(PANTONE)識別を付与/解除 (fill hex だけだと PANTONE 性が消えるため)
 function _setPantoneTag(obj, name){
@@ -15404,11 +15539,15 @@ function _3d_inlineRefresh(){
       sec.appendChild(lbl);
       const grid = document.createElement('div');
       grid.className = 'm-ink-grid';
+      grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(52px, 1fr))';  // ★ 2026-06-24: 名前付きなので少し広め
       list.forEach(c => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;';
         const sw = document.createElement('div');
         const isWhite = /^#f{2,}/i.test(c.hex) || /^#fff(fff)?$/i.test(c.hex);
         sw.className = 'm-ink-sw' + (cur === c.hex.toLowerCase() ? ' act' : '') + (isWhite ? ' white-mark' : '');
         sw.style.background = c.hex;
+        sw.style.width = '100%';
         sw.title = c.name;
         sw.addEventListener('click', () => {
           // ★ N3.12: 複数選択 / group も子に展開
@@ -15418,7 +15557,12 @@ function _3d_inlineRefresh(){
           if(typeof pushHistory === 'function') { try { pushHistory(); } catch(_){} }
           m_renderActiveTabContent();
         });
-        grid.appendChild(sw);
+        wrap.appendChild(sw);
+        const nm = document.createElement('div');
+        nm.style.cssText = 'font-size:8px;color:var(--t3);text-align:center;line-height:1.1;width:100%;word-break:break-word;';
+        nm.textContent = c.name;
+        wrap.appendChild(nm);
+        grid.appendChild(wrap);
       });
       sec.appendChild(grid);
     });
@@ -15453,28 +15597,38 @@ function _3d_inlineRefresh(){
     hexLbl.textContent = (typeof sel[prop] === 'string') ? sel[prop] : '';
     customRow.appendChild(hexLbl);
     sec.appendChild(customRow);
-    // ★ 2026-06-24: 調色(PANTONE)指定 (モバイル・fill色のみ)
+    // ★ 2026-06-24: 調色(PANTONE)指定 (モバイル・fill色のみ) — ダーク枠 + カラーピッカー + 近いINK/PANTONE認定
     if(prop === 'fill'){
+      const ptBox = document.createElement('div');
+      ptBox.style.cssText = 'margin-top:8px;padding:10px;border:1px solid rgba(124,58,237,0.5);border-radius:8px;background:rgba(124,58,237,0.14);';
       const ptLbl = document.createElement('div');
-      ptLbl.className = 'm-ink-grouplabel';
-      ptLbl.textContent = '🎨 調色インク（PANTONE）';
-      sec.appendChild(ptLbl);
+      ptLbl.style.cssText = 'font-size:11px;font-weight:700;color:#cbb6ff;margin-bottom:6px;';
+      ptLbl.textContent = '🎨 調色インク（PANTONE番号 / カラーピッカー）';
+      ptBox.appendChild(ptLbl);
       const ptRow = document.createElement('div');
       ptRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
       const ptInput = document.createElement('input');
       ptInput.type = 'text'; ptInput.placeholder = '例: 185 / Reflex Blue'; ptInput.autocomplete = 'off';
-      ptInput.style.cssText = 'flex:1;min-width:0;height:38px;border:1px solid #c4b5fd;border-radius:6px;padding:0 10px;font-size:14px;background:#fff;color:#1a1a1a;';
-      const ptSw = document.createElement('div');
-      ptSw.style.cssText = 'width:40px;height:40px;flex-shrink:0;border-radius:50%;border:2px solid var(--t3);background:repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/12px 12px;';
+      ptInput.style.cssText = 'flex:1;min-width:0;height:38px;border:1px solid #8b6fd6;border-radius:6px;padding:0 10px;font-size:14px;background:#fff;color:#1a1a1a;';
+      // ★ B: スウォッチ=カラーピッカー (タップでOSの色選択)
+      const ptSwWrap = document.createElement('label');
+      ptSwWrap.style.cssText = 'position:relative;width:40px;height:40px;flex-shrink:0;border-radius:50%;border:2px solid var(--t3);overflow:hidden;cursor:pointer;display:inline-block;background:repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/12px 12px;';
+      const ptPick = document.createElement('input');
+      ptPick.type = 'color'; ptPick.value = '#e4002b';
+      ptPick.style.cssText = 'position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);opacity:0;cursor:pointer;';
+      ptSwWrap.appendChild(ptPick);
       const ptBtn = document.createElement('button');
       ptBtn.type = 'button'; ptBtn.textContent = '適用';
       ptBtn.style.cssText = 'height:38px;padding:0 16px;background:#7c3aed;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;';
+      const ptHint = document.createElement('div');
+      ptHint.style.cssText = 'font-size:10px;color:var(--t3);margin-top:5px;';
+      ptHint.textContent = 'PANTONE番号→適用、 または右の丸をタップして色を選ぶ（近い既存色/調色に自動認定・調色代 +¥2,000/色）';
       const _ptResolve = () => (typeof _pantoneHex === 'function') ? _pantoneHex(ptInput.value) : '';
       ptInput.addEventListener('input', () => {
         const hx = _ptResolve();
-        ptSw.style.background = hx || 'repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/12px 12px';
+        ptSwWrap.style.background = hx || 'repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/12px 12px';
       });
-      const _ptApply = () => {
+      const _applyNum = () => {
         const hx = _ptResolve();
         if(!hx){ alert('該当するPANTONE番号が見つかりませんでした（例: 185 / Reflex Blue）'); return; }
         _m_applyPropToSel(sel, prop, hx);
@@ -15483,14 +15637,34 @@ function _3d_inlineRefresh(){
         if(typeof pushHistory === 'function') { try { pushHistory(); } catch(_){} }
         m_renderActiveTabContent();
       };
-      ptBtn.addEventListener('click', _ptApply);
-      ptInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); _ptApply(); } });
-      ptRow.appendChild(ptInput); ptRow.appendChild(ptSw); ptRow.appendChild(ptBtn);
-      sec.appendChild(ptRow);
-      const ptHint = document.createElement('div');
-      ptHint.style.cssText = 'font-size:10px;color:var(--t3);margin-top:4px;';
-      ptHint.textContent = 'PANTONE番号で調色指定（調色代 +¥2,000/色・色は表示用の目安）';
-      sec.appendChild(ptHint);
+      ptBtn.addEventListener('click', _applyNum);
+      ptInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); _applyNum(); } });
+      // ★ C: ピッカーで選んだ色 → 近い既存INK色 / 無ければ近いPANTONE認定
+      ptPick.addEventListener('change', () => {
+        const hex = ptPick.value;
+        ptSwWrap.style.background = hex;
+        const norm = (typeof normalizeToInk === 'function') ? normalizeToInk(hex) : String(hex).toLowerCase();
+        const inkMatch = (typeof INK_COLORS !== 'undefined') ? INK_COLORS.find(c => c.hex.toLowerCase() === String(norm).toLowerCase()) : null;
+        if(inkMatch){
+          _m_applyPropToSel(sel, prop, inkMatch.hex);
+          _m_tagPantoneOnSel(null);
+        } else {
+          const pk = (typeof _nearestPantone === 'function') ? _nearestPantone(hex) : '';
+          if(pk){
+            _m_applyPropToSel(sel, prop, (_pantoneHex(pk) || hex));
+            _m_tagPantoneOnSel((typeof _pantoneDisplayName === 'function') ? _pantoneDisplayName(pk) : ('PANTONE ' + pk + ' C'));
+          } else {
+            _m_applyPropToSel(sel, prop, hex);
+            _m_tagPantoneOnSel(null);
+          }
+        }
+        fabCanvas.requestRenderAll();
+        if(typeof pushHistory === 'function') { try { pushHistory(); } catch(_){} }
+        m_renderActiveTabContent();
+      });
+      ptRow.appendChild(ptInput); ptRow.appendChild(ptSwWrap); ptRow.appendChild(ptBtn);
+      ptBox.appendChild(ptRow); ptBox.appendChild(ptHint);
+      sec.appendChild(ptBox);
     }
     host.appendChild(sec);
   }
