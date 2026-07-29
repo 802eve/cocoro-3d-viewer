@@ -5932,9 +5932,9 @@ function renderSizeGrid(){
   const line = cur();
   if(!line.product){ grid.innerHTML = '<div class="muted center">先に商品を選んでください</div>'; return; }
   let sizes = line.product.sizes || ['S','M','L','XL'];
-  // TOMSグループ(Printstar/glimmer)でXSがある品番は160cmとSSを非表示
-  // (XSと160cmは同じサイズ帯の重複表記のため)
-  const isToms = ['Printstar','glimmer'].includes(line.product.maker);
+  // ★ 2026-07-24: 硬いルール — TOMS(UnitedAthle以外のメーカー)でXSがある品番は160cm/SSを非表示。
+  //   (XSと160cmは同じサイズ帯の重複表記のため)。旧: ['Printstar','glimmer']固定 → maker!=='UnitedAthle'で将来ブランド追加にも耐える。
+  const isToms = line.product.maker !== 'UnitedAthle';
   if(isToms && sizes.includes('XS')){
     sizes = sizes.filter(s => s !== '160cm' && s !== 'SS');
   }
