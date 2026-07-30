@@ -5927,6 +5927,16 @@ function grandQty(){
   return state.lines.reduce((acc, l) => acc + totalQty(l), 0);
 }
 
+// ★ 2026-07-30: サイズ表示順の固いルール（全表示・入力箇所で共通）
+//   WM/WLはキッズ150の直後(XSの前)、G-S/G-M/G-L(CABキッズ)は160の直後(Sの前)。
+const _FORM_SIZE_ORDER = ['70cm','80cm','90cm','100cm','110cm','120cm','130cm','140cm','150cm','WM','WL','160cm','G-S','G-M','G-L','G-XL','XS','SS','WS','S','M','L','XL','LL','XXL','2XL','XXXL','3XL','3L','4XL','4L','XXXXL','5XL','5L','6XL','6L','7L'];
+function _formSortSizes(arr){
+  return (arr || []).slice().sort((a, b) => {
+    let ia = _FORM_SIZE_ORDER.indexOf(a); if(ia < 0) ia = 999;
+    let ib = _FORM_SIZE_ORDER.indexOf(b); if(ib < 0) ib = 999;
+    return ia - ib;
+  });
+}
 function renderSizeGrid(){
   const grid = document.getElementById('sizeGrid');
   const line = cur();
@@ -5938,6 +5948,8 @@ function renderSizeGrid(){
   if(isToms && sizes.includes('XS')){
     sizes = sizes.filter(s => s !== '160cm' && s !== 'SS');
   }
+  // ★ 2026-07-30: 表示順の固いルール（WM/WL→キッズ150の直後/XS前、G-S/G-M/G-L→160の直後/S前）
+  sizes = _formSortSizes(sizes);
   grid.innerHTML = sizes.map(sz => {
     const qty = line.qtyBySize[sz] || 0;
     const has = qty > 0;
@@ -6686,7 +6698,8 @@ function renderPrintDetailHtml(loc, d){
       const sizesD = (PRICING.methodSizes[d.method] || {});
       const _allSizes = (line.product && line.product.sizes) || [];
       // ★ 2026-06-17: 枚数を入力したボディサイズだけ表示(未入力は出さない)
-      const bodySizes = _allSizes.filter(s => (Number((line.qtyBySize || {})[s]) || 0) > 0);
+      //   ★ 2026-07-30: 表示順の固いルールで並べ替え(WM/WL→150直後、G-x→160直後)
+      const bodySizes = _formSortSizes(_allSizes.filter(s => (Number((line.qtyBySize || {})[s]) || 0) > 0));
       const variants = (Array.isArray(d.dualVariants) && d.dualVariants.length) ? d.dualVariants : _defaultDualVariants(line, d);
       const assignOf = {};
       variants.forEach((v, vi) => (v.bands || []).forEach(s => { if(assignOf[s] == null) assignOf[s] = vi; }));
