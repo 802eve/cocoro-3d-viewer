@@ -2328,7 +2328,8 @@ body.cocoro-customer-confirm .m-main {
           <div class="ev-cv-label">キャンバス範囲</div>
           <canvas id="fabCanvas" width="900" height="700"></canvas>
         </div>
-        <input type="file" id="edFile" accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg" multiple style="display:none" onchange="edAddImg(this)">
+        <!-- ★ 2026-08-01(2): accept を付けない（スマホでSVGを選べるようにするため）。対応形式チェックは edAddImg 側で行う -->
+        <input type="file" id="edFile" multiple style="display:none" onchange="edAddImg(this)">
         <div class="ev-top">
           <button class="hd-btn out" onclick="edReset()">リセット</button>
           <button class="hd-btn pri" onclick="edSave()">💾 デザインを保存</button>
@@ -3742,8 +3743,36 @@ function _customerOpen3dFromPng(opts){
       const bodyColor = firstColor.colorHex || firstColor.hex || '#ffffff';
       // 全カラー情報 (色違いがあれば) — ★ 2026-05-29 CC-fix: inkOverrideHexes も注入
       const colors = Array.isArray(item.colors) ? item.colors : [];
+      // ★ 2026-08-01: 社内の編集画面で追加したボディ色は colorHex が空のまま保存されることがあり、
+      //   従来は hex 無しを丸ごと捨てていたため「同じホワイトで色替えだけ違う2ライン」のオーダーで
+      //   色切替UIが出なかった。→ 同名の色が持つ hex（無ければ先頭色の hex）で補完する。
+      const _nameHex = {};
+      colors.forEach(c => {
+        const nm = ((c && (c.colorName || c.name)) || '').trim();
+        const hx = c && (c.colorHex || c.hex);
+        if(nm && hx && !_nameHex[nm]) _nameHex[nm] = hx;
+      });
+      const _firstNm = ((firstColor.colorName || firstColor.name) || '').trim();
+      const _resolveHex = (c) => {
+        const nm = ((c && (c.colorName || c.name)) || '').trim();
+        return (c && (c.colorHex || c.hex)) || _nameHex[nm] || ((nm && nm === _firstNm) ? bodyColor : '') || '';
+      };
+      // 同名の色が複数ある時は「ホワイト①」「ホワイト②」で区別（社内表記に合わせる）
+      const _DUP_MARKS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+      const _nameCount = {};
+      colors.forEach(c => { const nm = ((c && (c.colorName || c.name)) || '').trim(); if(nm) _nameCount[nm] = (_nameCount[nm] || 0) + 1; });
+      const _seenName = {};
       const allColors = (colors.length >= 2)
-        ? colors.filter(c => c && (c.colorHex || c.hex)).map(c => {
+        ? colors.map(c => ({ _c: c, _hex: _resolveHex(c) })).filter(x => x._c && x._hex).map(x => {
+            const c = x._c;
+            // 表示名（同名が複数ある時だけ枝番を付ける）
+            const _nm = ((c.colorName || c.name) || '').trim();
+            let _disp = _nm;
+            if(_nm && _nameCount[_nm] > 1){
+              _seenName[_nm] = (_seenName[_nm] || 0);
+              _disp = _nm + (_DUP_MARKS[_seenName[_nm]] || ('(' + (_seenName[_nm] + 1) + ')'));
+              _seenName[_nm]++;
+            }
             let ovrHexes = null;
             if(c.inkOverrides && typeof c.inkOverrides === 'object'){
               ovrHexes = {};
@@ -3754,9 +3783,11 @@ function _customerOpen3dFromPng(opts){
               if(!Object.keys(ovrHexes).length) ovrHexes = null;
             }
             return {
-              colorName: c.colorName || c.name || '',
-              colorHex:  c.colorHex  || c.hex  || '#ffffff',
-              hex:       c.colorHex  || c.hex  || '#ffffff',
+              colorName: _disp,
+              // ★ 2026-08-01: viewer のスウォッチは c.name を見るので必ず入れる（従来は未設定で名前が出なかった）
+              name:      _disp,
+              colorHex:  x._hex,
+              hex:       x._hex,
               inkOverrideHexes: ovrHexes,
             };
           })
@@ -8469,6 +8500,11 @@ function edAddImg(inp){
   };
   files.forEach((file, idx) => {
     const fname = file.name || '画像';
+    // ★ 2026-08-01(2): input の accept を外した（スマホSVG対策）ので、ここで対応形式を判定する
+    if(!/\.(png|jpe?g|svg|webp|gif)$/i.test(fname) && !/^image\//i.test(file.type || '')){
+      failed.push('・' + fname + '（PNG / JPG / SVG のみ対応）');
+      done(); return;
+    }
     const r = new FileReader();
     r.onload = e => {
       // ★ 2026-07-17: 大きい画像は自動縮小・巨大SVGはPNG変換してから保存
@@ -14584,16 +14620,25 @@ function _3d_inlineRefresh(){
     if(!window.fabCanvas){ try{ toast('キャンバス起動中'); }catch(_){} return; }
     const inp = document.createElement('input');
     inp.type = 'file';
-    // ★ 2026-08-01: スマホで SVG を選べるようにする。
-    //   'image/*' が入っていると Android Chrome は「フォト」ピッカーを開き、
-    //   ダウンロード等に置いた SVG は画像として索引されないため一覧に出てこない。
-    //   ワイルドカードを使わず MIME を列挙するとファイル(ドキュメント)ブラウザが開き SVG も選べる。
-    inp.accept = 'image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg';
+    // ★ 2026-08-01(2): スマホで SVG を選べるようにする。
+    //   accept に画像系 MIME を並べると Android は「画像/フォト」アプリだけを候補に出し、
+    //   SVG は画像として索引されないため一覧に出てこない（MIME を列挙しても同じだった）。
+    //   → accept を付けない＝ファイル(ドキュメント)ブラウザが開き SVG も選べる。
+    //     対応外ファイルは下の change ハンドラで弾いて案内する。
+    inp.removeAttribute('accept');
     inp.style.display = 'none';
     document.body.appendChild(inp);
     inp.addEventListener('change', () => {
       const file = inp.files && inp.files[0];
       if(!file){ inp.remove(); return; }
+      // ★ 2026-08-01(2): accept を外した代わりに、ここで対応形式をチェックする
+      const _okExt  = /\.(png|jpe?g|svg|webp|gif)$/i.test(file.name || '');
+      const _okType = /^image\//i.test(file.type || '');
+      if(!_okExt && !_okType){
+        const _msg = 'この形式には対応していません（PNG / JPG / SVG をお選びください）';
+        try { toast(_msg); } catch(_){ alert(_msg); }
+        inp.remove(); return;
+      }
       const r = new FileReader();
       r.onload = e => {
         const dataUrl = e.target.result;
