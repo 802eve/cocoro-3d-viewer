@@ -2328,7 +2328,7 @@ body.cocoro-customer-confirm .m-main {
           <div class="ev-cv-label">キャンバス範囲</div>
           <canvas id="fabCanvas" width="900" height="700"></canvas>
         </div>
-        <input type="file" id="edFile" accept=".png,.jpg,.jpeg,.svg" multiple style="display:none" onchange="edAddImg(this)">
+        <input type="file" id="edFile" accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg" multiple style="display:none" onchange="edAddImg(this)">
         <div class="ev-top">
           <button class="hd-btn out" onclick="edReset()">リセット</button>
           <button class="hd-btn pri" onclick="edSave()">💾 デザインを保存</button>
@@ -3466,6 +3466,18 @@ async function _initCustomerReviewMode(){
             });
           };
           _renderPrintPicker();
+          // ★ 2026-08-01: 修正モードでは プリント箇所ピッカーを隠す。
+          //   修正は「プリント箇所を選んでから編集画面に入る」導線なので不要な上、
+          //   スマホではキャンバス左上に重なって編集の邪魔になるため。
+          window._crSyncPrintPicker = function(){
+            try {
+              const el = document.getElementById('_custPrintPicker');
+              if(!el) return;
+              const hide = (_customerReviewState === 'editing' || _customerReviewState === 'revising');
+              el.style.display = hide ? 'none' : 'flex';
+            } catch(_){}
+          };
+          window._crSyncPrintPicker();
         }
       }
     } catch(pickerErr){ console.warn('print picker fail:', pickerErr); }
@@ -3662,7 +3674,11 @@ function _installCustomerReviewBtns(){
 // ★ G1 2026-05-14: 確認/修正レビュー用 3D起動ヘルパー
 //   PNG 表示モード (確認 + revising) でも 3D が見れるように
 //   現在のキャンバス全体を PNG 化して 3D へ (FORM_CONTEXT は v11.3 で 全項目セット済)
-function _customerOpen3dFromPng(){
+// ★ 2026-08-01: opts で 編集中プリントの画像だけ 現在のキャンバスPNG に差し替えられるようにした
+//   （修正モードの 3D 確認からも この全プリント＋全ボディ色の cfg を使うため）
+function _customerOpen3dFromPng(opts){
+  const _liveTarget = (opts && opts.livePrint) || null;
+  const _liveUrl    = (opts && opts.liveDataUrl) || null;
   try {
     // ★ 2026-05-28 V-fix: 顧客確認モードは GAS から 全プリント情報を 取得済 → 全部を 3D に表示
     //   旧: fabCanvas (現在表示中の 1 プリントのみ) から PNG 抽出 → 背面など 他プリント 消える
@@ -3681,7 +3697,7 @@ function _customerOpen3dFromPng(){
       };
       // 全プリント (designUrl あるもののみ) を cfg.prints[] に
       const cfgPrints = prints
-        .filter(p => p && p.designUrl)
+        .filter(p => p && (p.designUrl || (p === _liveTarget && _liveUrl)))
         .map(p => {
           // location 名 → area key (前面 / 背中 / 左胸 等)
           const _areaMap = {
@@ -3697,7 +3713,8 @@ function _customerOpen3dFromPng(){
             area: area,
             method: p.method || 'シルクスクリーン',
             size: p.size || '34cm角内',
-            imageDataUrl: p.designUrl,
+            // ★ 2026-08-01: 修正モードから開いた時は、編集中のプリントだけ 今のキャンバス内容を使う
+            imageDataUrl: (p === _liveTarget && _liveUrl) ? _liveUrl : p.designUrl,
             // ★ 2026-05-29 BB-fix: 顧客フォームで 設定したプリント位置を 顧客確認 3D にも 反映
             offsetX: (typeof p.offsetX === 'number') ? p.offsetX : 0,
             offsetY: (typeof p.offsetY === 'number') ? p.offsetY : 0,
@@ -3867,6 +3884,8 @@ async function _customerConfirm(){
 async function _customerStartEdit(){
   // 状態を 編集モードに
   _customerReviewState = 'editing';
+  // ★ 2026-08-01: 修正モードに入ったら プリント箇所ピッカーを隠す (編集の邪魔になるため)
+  try { if(typeof window._crSyncPrintPicker === 'function') window._crSyncPrintPicker(); } catch(_){}
   // ★ 2026-05-17 v2: 初期色数の記録は JSON ロード完了後に行う (下方の try ブロック末で実施)
   window._customerInitialColorCount = -1; // 未確定マーカー
   // ★ F1 2026-05-14: 修正モード準備 待ち時間 演出
@@ -12841,6 +12860,19 @@ function _3d_openFromEditor(){
     }));
   } catch(e){ alert('PNG書き出しに失敗しました'); return; }
   if(!url){ alert('PNG書き出しに失敗しました'); return; }
+  // ★ 2026-08-01: お客様の修正モードでは、社内オーダーの 3D と同じく
+  //   「全プリント箇所 ＋ 全ボディ色（色切替スウォッチ）」の cfg で開く。
+  //   編集中のプリントだけ 今のキャンバス内容(url)に差し替える。
+  //   旧: このキャンバス1枚だけの cfg だったため、2色展開のオーダーでも 1色しか見られなかった。
+  try {
+    if(typeof PLATFORM_CONTEXT !== 'undefined' && PLATFORM_CONTEXT && PLATFORM_CONTEXT.customerReview
+       && window._customerReviewData && window._customerReviewData.item
+       && window._customerReviewTargetPrint
+       && typeof _customerOpen3dFromPng === 'function'){
+      _customerOpen3dFromPng({ livePrint: window._customerReviewTargetPrint, liveDataUrl: url });
+      return;
+    }
+  } catch(_){}
   const method = _3d_getPrintMethodForViewer();
   const area = _3d_getAreaKey();
   const cfg = {
@@ -14552,7 +14584,11 @@ function _3d_inlineRefresh(){
     if(!window.fabCanvas){ try{ toast('キャンバス起動中'); }catch(_){} return; }
     const inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = 'image/*,.svg';
+    // ★ 2026-08-01: スマホで SVG を選べるようにする。
+    //   'image/*' が入っていると Android Chrome は「フォト」ピッカーを開き、
+    //   ダウンロード等に置いた SVG は画像として索引されないため一覧に出てこない。
+    //   ワイルドカードを使わず MIME を列挙するとファイル(ドキュメント)ブラウザが開き SVG も選べる。
+    inp.accept = 'image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg';
     inp.style.display = 'none';
     document.body.appendChild(inp);
     inp.addEventListener('change', () => {
