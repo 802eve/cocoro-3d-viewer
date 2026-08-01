@@ -2175,7 +2175,9 @@ function _renderColorSwitcher(){
         const sz = isMobile ? 24 : 28;
         return '<button type="button" data-cidx="' + i + '" title="' + (c.name||'') + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:2px;background:' + (sel?'rgba(255,255,255,.15)':'transparent') + ';border:' + (sel?'2px solid #fff':'2px solid transparent') + ';border-radius:8px;cursor:pointer;transition:.15s;">'
           + '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + c.hex + ';border:1px solid ' + (isLight(c.hex)?'#999':'rgba(255,255,255,.3)') + ';"></div>'
-          + (isMobile ? '' : '<div style="font-size:9px;color:#eee;white-space:nowrap;max-width:54px;overflow:hidden;text-overflow:ellipsis;">' + (c.name||'') + '</div>')
+          // ★ 2026-08-01: モバイルでも色名を出す。同じボディ色で色替えだけ違うライン(ホワイト①/②)は
+          //   丸が同じ色になり、ラベルが無いと見分けられないため。
+          + '<div style="font-size:' + (isMobile ? 8 : 9) + 'px;color:#eee;white-space:nowrap;max-width:' + (isMobile ? 44 : 54) + 'px;overflow:hidden;text-overflow:ellipsis;text-align:center;">' + (c.name||'') + '</div>'
           + '</button>';
       }).join('')
     + '</div>';
