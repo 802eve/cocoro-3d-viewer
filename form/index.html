@@ -7884,30 +7884,9 @@ function calcEstimate(){
         // ★ 色替えライン (reuse) の場合: 版代は加算しない (親で計上済み)
         //   色替え代は「実際に親と異なる色のスロット数」 × ¥1,000 のみ計上
         if(isColorVariant){
-          const ov = (l.inkOverrides || {})[loc.area];
-          if(ov && Array.isArray(ov.inkSlots)){
-            // 親の inkSlots と override を比較し、異なるスロット数だけカウント
-            const parentIdx = parseInt(l.printSource.slice(6), 10);
-            const parentLine = state.lines[parentIdx];
-            const parentSlots = (parentLine && parentLine.printDesigns && parentLine.printDesigns[loc.area] && parentLine.printDesigns[loc.area].inkSlots) || [];
-            const childSlots = ov.inkSlots;
-            let changedCount = 0;
-            const maxLen = Math.max(parentSlots.length, childSlots.length);
-            for(let j = 0; j < maxLen; j++){
-              if((parentSlots[j] || '') !== (childSlots[j] || '')) changedCount++;
-            }
-            // ★ 2026-06-17: 別サイズ(N区分)は版が区分ごとにある → 区分ごとに色替えが発生する
-            // ★ 2026-08-06: ただし「そのボディ色に実際に枚数がある区分」だけ数える(社内プラットフォームと同モデル)。
-            //   旧: 区分数をそのまま掛けていたため、大人版だけの色まで子供版ぶんを取っていた
-            //   (例: 大人版9色=8回 + 子供版7色=6回 → 正 14回 / 旧 8×2=16回)。
-            const _pd = (parentLine && parentLine.printDesigns) ? parentLine.printDesigns[loc.area] : null;
-            const _vlist = (_pd && _dualActive(_pd)) ? _pd.dualVariants.filter(v => v && v.size) : null;
-            let _vc = 1;
-            if(_vlist && _vlist.length){
-              _vc = _variantQtys(l, _vlist).filter(q => q > 0).length || 1;
-            }
-            colorChangeCost += 1000 * changedCount * _vc;
-          }
+          // ★ 2026-08-06: 色替え代はここでは加算しない。
+          //   版(区分 × インクスロット)ごとに「使う異なるインク色の数 − 1」で数えるため、
+          //   ライン単位では判断できず、ループの後で親ラインごとにまとめて計上する(下記 _ccPass 参照)。
         } else {
           // 通常ライン: 版代 (★ v12 互換: 版代 × 色数)
           //   plate=new → 該当サイズの版代 × 色数
@@ -8006,6 +7985,56 @@ function calcEstimate(){
     if(lineDataState && PRICING.dataFee[lineDataState] !== undefined){
       dataFee += PRICING.dataFee[lineDataState];
     }
+  });
+
+  // ★ 2026-08-06 _ccPass: 色替え代 = 版(区分 × インクスロット)ごとに「その版で使う異なるインク色の数 − 1」× ¥1,000。
+  //   最初にセットする1色は色替えではない(9色使うなら8回)。同じ色を複数ボディに使うなら版は替えないので1回だけ。
+  //   2色刷りは版が2枚あるのでスロットごとに独立して数える。別版(N区分)は区分ごとに数えて合算。
+  //   親ライン(版の持ち主)と、そこから色替えした子ライン(printSource='reuse:親index')をまとめて評価する。
+  state.lines.forEach((parent, pIdx) => {
+    if(!parent || !parent.product) return;
+    if(parent.printSource && parent.printSource.startsWith('reuse:')) return;   // 子は親側でまとめて処理
+    const pEff = effectivePrints(parent);
+    (pEff.prints || []).forEach(name => {
+      const loc = PRINT_LOCATIONS.find(p => p.name === name);
+      if(!loc) return;
+      const d = (pEff.printDesigns || {})[loc.area];
+      if(!d || d.method !== 'シルクスクリーン') return;
+      const baseSlots = Array.isArray(d.inkSlots) ? d.inkSlots : [];
+      const group = [parent].concat(state.lines.filter(x => x && x.product && x.printSource === ('reuse:' + pIdx)));
+      const lineQtyOf = (x) => Object.values(x.qtyBySize || {}).reduce((s, n) => s + (Number(n) || 0), 0);
+      const inkOf = (x, s) => {
+        const ov = (x.inkOverrides || {})[loc.area];
+        const own = (ov && Array.isArray(ov.inkSlots) && ov.inkSlots[s] != null) ? String(ov.inkSlots[s]).trim() : '';
+        return own || String(baseSlots[s] || '').trim();   // 指定が無いボディは親の色のまま刷る
+      };
+      let slotCount = baseSlots.length;
+      group.forEach(x => {
+        const ov = (x.inkOverrides || {})[loc.area];
+        const n = (ov && Array.isArray(ov.inkSlots)) ? ov.inkSlots.length : 0;
+        if(n > slotCount) slotCount = n;
+      });
+      if(slotCount < 1) return;
+      const vlist = _dualActive(d) ? d.dualVariants.filter(v => v && v.size) : null;
+      const countFor = (vi) => {
+        const lns = group.filter(x => lineQtyOf(x) > 0 && (vi == null || (_variantQtys(x, vlist)[vi] || 0) > 0));
+        if(!lns.length) return 0;
+        let n = 0;
+        for(let s = 0; s < slotCount; s++){
+          const set = new Set();
+          lns.forEach(x => { const ink = inkOf(x, s); if(ink) set.add(ink); });
+          if(set.size > 1) n += (set.size - 1);
+        }
+        return n;
+      };
+      if(!vlist || !vlist.length){ colorChangeCost += 1000 * countFor(null); return; }
+      let sum = 0, any = false;
+      vlist.forEach((v, vi) => {
+        if(group.some(x => lineQtyOf(x) > 0 && (_variantQtys(x, vlist)[vi] || 0) > 0)) any = true;
+        sum += countFor(vi);
+      });
+      colorChangeCost += 1000 * (any ? sum : countFor(null));
+    });
   });
 
   // 小口手数料 (合計 1-5枚)
