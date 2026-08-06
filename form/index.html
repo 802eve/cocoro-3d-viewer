@@ -7896,10 +7896,16 @@ function calcEstimate(){
             for(let j = 0; j < maxLen; j++){
               if((parentSlots[j] || '') !== (childSlots[j] || '')) changedCount++;
             }
-            // ★ 2026-06-17: 別サイズ(N区分)は版が区分ごとにある → 色替え代も「色数 × 区分数」分カウント
-            //   例: 小版2色+大版2色で両方色替え = 4版分の色替え代。
+            // ★ 2026-06-17: 別サイズ(N区分)は版が区分ごとにある → 区分ごとに色替えが発生する
+            // ★ 2026-08-06: ただし「そのボディ色に実際に枚数がある区分」だけ数える(社内プラットフォームと同モデル)。
+            //   旧: 区分数をそのまま掛けていたため、大人版だけの色まで子供版ぶんを取っていた
+            //   (例: 大人版9色=8回 + 子供版7色=6回 → 正 14回 / 旧 8×2=16回)。
             const _pd = (parentLine && parentLine.printDesigns) ? parentLine.printDesigns[loc.area] : null;
-            const _vc = (_pd && _dualActive(_pd)) ? _pd.dualVariants.filter(v => v && v.size).length : 1;
+            const _vlist = (_pd && _dualActive(_pd)) ? _pd.dualVariants.filter(v => v && v.size) : null;
+            let _vc = 1;
+            if(_vlist && _vlist.length){
+              _vc = _variantQtys(l, _vlist).filter(q => q > 0).length || 1;
+            }
             colorChangeCost += 1000 * changedCount * _vc;
           }
         } else {
