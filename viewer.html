@@ -424,15 +424,15 @@ const MODELS = {
     fallbackGlb: './T-Shirts/t-shirt-low-poly_V1/source/T-shirt_Web_v1.glb',
     diffusePath: './T-Shirts/t-shirt-low-poly_V1/textures/Tshirt_Diffuse_v1.png',
     printAreas: {
-      front_center: { label: '前面（胸中央）', x: 553.4256,  y: 914.854,   width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'center', max_cm: 34 },
-      back_center:  { label: '背中（中央）',   x: 1492.0207, y: 885.002,   width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'center', max_cm: 34 },
+      front_center: { label: '前面（胸中央）', x: 553.4256,  y: 914.854,   width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'center', max_cm: 34, sideTravel: 376 },
+      back_center:  { label: '背中（中央）',   x: 1492.0207, y: 885.002,   width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'center', max_cm: 34, sideTravel: 354 },
       left_chest:   { label: '左胸',           x: 696.2858,  y: 834.6115,  width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'center', max_cm: 15 },
       right_chest:  { label: '右胸',           x: 408.6318,  y: 834.6115,  width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'center', max_cm: 15 },
       left_sleeve:  { label: '左袖',           x: 1492.0207, y: 1820.6011, width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'bottom', max_cm: 15 },
       right_sleeve: { label: '右袖',           x: 545.888,   y: 1820.6011, width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'bottom', max_cm: 15 },
       back_upper:   { label: '襟下（背中）',   x: 1485.2629, y: 699.201,   width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'top',    max_cm: 15 },
-      front_hem:    { label: '前裾',           x: 553.4256,  y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰（alignY=bottom で枠下端=裾シーム付近）
-      back_hem:     { label: '後ろ裾',         x: 1492.0207, y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 y=2.3258バグ修正、front_hem と同位置
+      front_hem:    { label: '前裾',           x: 553.4256,  y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, sideTravel: 380 },  // 2026-04-22 原寸に復帰（alignY=bottom で枠下端=裾シーム付近）
+      back_hem:     { label: '後ろ裾',         x: 1492.0207, y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, sideTravel: 368 },  // 2026-04-22 y=2.3258バグ修正、front_hem と同位置
     },
   },
   long_sleeve: {
@@ -442,8 +442,8 @@ const MODELS = {
     fallbackGlb: './Long Sleeve T- Shirt/long-sleeve-t-shirt/source/Long-Sleeve-T-shirt_Web_v3.glb',
     diffusePath: './Long Sleeve T- Shirt/long-sleeve-t-shirt/textures/LongSleeveTshirt_Diffuse_v3.png',
     printAreas: {
-      front_center: { label: '前面（胸中央）', x: 1644.3839, y: 1365.4272, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34 },
-      back_center:  { label: '背中（中央）',   x: 383.6772,  y: 1375.3957, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34 },
+      front_center: { label: '前面（胸中央）', x: 1644.3839, y: 1365.4272, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34, sideTravel: 314 },
+      back_center:  { label: '背中（中央）',   x: 383.6772,  y: 1375.3957, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'center', max_cm: 34, sideTravel: 314 },
       left_chest:   { label: '左胸',           x: 1760.9421, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
       right_chest:  { label: '右胸',           x: 1526.2481, y: 1299.9582, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'center', max_cm: 15 },
       // 2026-04-24 夜: ロンT袖いっぱいのプリント位置を約2cm下げる（両袖）。
@@ -455,8 +455,8 @@ const MODELS = {
       left_sleeve_cuff:  { label: '左袖（袖先）', x: 1653, y: 783, width: 167, height: 167, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_sleeve_cuff: { label: '右袖（袖先）', x: 400,  y: 792, width: 167, height: 167, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:   { label: '襟下（背中）',   x: 383.6772,  y: 1211.6097, width: 167.5923, height: 167.5923, alignX: 'center', alignY: 'top',    max_cm: 15 },
-      front_hem:    { label: '前裾',           x: 1644.3839, y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
-      back_hem:     { label: '後ろ裾',         x: 383.6772,  y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34 },  // 2026-04-22 原寸に復帰
+      front_hem:    { label: '前裾',           x: 1644.3839, y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34, sideTravel: 308 },  // 2026-04-22 原寸に復帰
+      back_hem:     { label: '後ろ裾',         x: 383.6772,  y: 1630.2991, width: 379.8759, height: 379.8759, alignX: 'center', alignY: 'bottom', max_cm: 34, sideTravel: 314 },  // 2026-04-22 原寸に復帰
     },
   },
   // ★ K2 2026-05-01 パーカー (Dan Dedekind T33 Pullover) - ユーザーIllustrator実測値
@@ -465,8 +465,8 @@ const MODELS = {
     fallbackGlb: './Hoodie/hoodie_v3.glb',
     diffusePath: './Hoodie/T33 Hoodie_diffuse_1001.png',
     printAreas: {
-      front_center:      { label: '前面（胸中央）',       x: 726,  y: 1467, width: 312, height: 255, alignX: 'center', alignY: 'center', max_cm: 30 },
-      back_center:       { label: '背中（中央）',         x: 1697, y: 1499, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30 },
+      front_center:      { label: '前面（胸中央）',       x: 726,  y: 1467, width: 312, height: 255, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 206 },
+      back_center:       { label: '背中（中央）',         x: 1697, y: 1499, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 248 },
       left_chest:        { label: '左胸',                 x: 822,  y: 1442, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_chest:       { label: '右胸',                 x: 629,  y: 1442, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       left_sleeve:       { label: '左袖',                 x: 1224, y: 1381, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
@@ -477,7 +477,7 @@ const MODELS = {
       left_sleeve_cuff:  { label: '左袖（袖先）',         x: 1224, y: 1550, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_sleeve_cuff: { label: '右袖（袖先）',         x: 232,  y: 1582, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:        { label: '襟下（背中）',         x: 1693, y: 1367, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
-      back_hem:          { label: '後ろ裾',               x: 1697, y: 1630, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30 },
+      back_hem:          { label: '後ろ裾',               x: 1697, y: 1630, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 236 },
     },
   },
   // ★ K2 2026-05-01 ZIPパーカー (T30 Zip-Up) - ユーザーIllustrator実測値で更新
@@ -488,7 +488,7 @@ const MODELS = {
     diffusePath: './Hoodie/T30 Zip-Up Hoodie_diffuse_1001.png',
     printAreas: {
       // 前面胸中央: ZIP で割れているため非対応 (左胸/右胸を選択)
-      back_center:       { label: '背中（中央）',         x: 1694, y: 1499, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30 },
+      back_center:       { label: '背中（中央）',         x: 1694, y: 1499, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 252 },
       left_chest:        { label: '左胸',                 x: 819,  y: 1417, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_chest:       { label: '右胸',                 x: 626,  y: 1417, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       left_sleeve:       { label: '左袖',                 x: 1222, y: 1381, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
@@ -500,7 +500,7 @@ const MODELS = {
       left_sleeve_cuff:  { label: '左袖（袖先）',         x: 1222, y: 1550, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_sleeve_cuff: { label: '右袖（袖先）',         x: 233,  y: 1581, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:        { label: '襟下（背中）',         x: 1690, y: 1368, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
-      back_hem:          { label: '後ろ裾',               x: 1694, y: 1631, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30 },
+      back_hem:          { label: '後ろ裾',               x: 1694, y: 1631, width: 312, height: 312, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 238 },
     },
   },
   // ★ K2 2026-05-01 スウェット (T16 Reverse Weave) - ユーザーIllustrator実測値
@@ -510,8 +510,8 @@ const MODELS = {
     fallbackGlb: './Sweat/T16 Reverse Weave Sweatshirt.glb',
     diffusePath: './Sweat/T16 Reverse Weave Sweatshirt_diffuse_1001.png',
     printAreas: {
-      front_center:      { label: '前面（胸中央）',       x: 284,  y: 1663, width: 340, height: 380, alignX: 'center', alignY: 'center', max_cm: 30 },
-      back_center:       { label: '背中（中央）',         x: 1020, y: 1621, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30 },
+      front_center:      { label: '前面（胸中央）',       x: 284,  y: 1663, width: 340, height: 380, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 202 },
+      back_center:       { label: '背中（中央）',         x: 1020, y: 1621, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 220 },
       left_chest:        { label: '左胸',                 x: 384,  y: 1567, width: 168, height: 168, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_chest:       { label: '右胸',                 x: 186,  y: 1567, width: 168, height: 168, alignX: 'center', alignY: 'center', max_cm: 12 },
       left_sleeve:       { label: '左袖',                 x: 1758, y: 1638, width: 168, height: 168, alignX: 'center', alignY: 'center', max_cm: 12 },
@@ -522,8 +522,8 @@ const MODELS = {
       left_sleeve_cuff:  { label: '左袖（袖先）',         x: 1758, y: 1855, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_sleeve_cuff: { label: '右袖（袖先）',         x: 1759, y: 1260, width: 138, height: 138, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:        { label: '襟下（背中）',         x: 1018, y: 1461, width: 168, height: 168, alignX: 'center', alignY: 'center', max_cm: 12 },
-      front_hem:         { label: '前裾',                 x: 284,  y: 1811, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30 },
-      back_hem:          { label: '後ろ裾',               x: 1020, y: 1811, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30 },
+      front_hem:         { label: '前裾',                 x: 284,  y: 1811, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 194 },
+      back_hem:          { label: '後ろ裾',               x: 1020, y: 1811, width: 352, height: 380, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 188 },
     },
   },
   // ★ 2026-04-30 ポロ (T24) - UV解析後
@@ -538,14 +538,14 @@ const MODELS = {
     diffusePath: './Polo/T24 Polo Shirt_diffuse_1001.png',
     printAreas: {
       // 前面（胸中央）は無し (襟ボタン干渉)
-      back_center: { label: '背中（中央）',   x: 1684, y: 1424, width: 461, height: 461, alignX: 'center', alignY: 'center', max_cm: 30 },
+      back_center: { label: '背中（中央）',   x: 1684, y: 1424, width: 461, height: 461, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 302 },
       left_chest:  { label: '左胸',           x: 527,  y: 1336, width: 203, height: 203, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_chest: { label: '右胸',           x: 242,  y: 1336, width: 203, height: 203, alignX: 'center', alignY: 'center', max_cm: 12 },
       left_sleeve: { label: '左袖',           x: 1044, y: 1468, width: 203, height: 203, alignX: 'center', alignY: 'center', max_cm: 12 },
       right_sleeve:{ label: '右袖',           x: 1044, y: 1814, width: 203, height: 203, alignX: 'center', alignY: 'center', max_cm: 12 },
       back_upper:  { label: '襟下（背中）',   x: 1678, y: 1230, width: 203, height: 203, alignX: 'center', alignY: 'center', max_cm: 12 },
-      front_hem:   { label: '前裾',           x: 385,  y: 1750, width: 461, height: 461, alignX: 'center', alignY: 'center', max_cm: 30 },
-      back_hem:    { label: '後ろ裾',         x: 1684, y: 1770, width: 461, height: 461, alignX: 'center', alignY: 'center', max_cm: 30 },
+      front_hem:   { label: '前裾',           x: 385,  y: 1750, width: 461, height: 461, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 336 },
+      back_hem:    { label: '後ろ裾',         x: 1684, y: 1770, width: 461, height: 461, alignX: 'center', alignY: 'center', max_cm: 30, sideTravel: 326 },
     },
   },
 };
@@ -1085,6 +1085,8 @@ function initTextureCompose() {
       y: a.y * sy - scaledH / 2,
       width: scaledW,
       height: scaledH,
+      // ★ 2026-08-22: 脇（サイドシーム）まで動かせる量も同じ倍率で拡大する
+      sideTravel: (typeof a.sideTravel === 'number') ? a.sideTravel * sx : 0,
     };
   }
 
@@ -1301,7 +1303,11 @@ function drawPrint(print, ctx) {
   const offX = (typeof print.offsetX === 'number') ? print.offsetX : 0;
   const offY = (typeof print.offsetY === 'number') ? print.offsetY : 0;
   if (offX || offY) {
-    const maxShiftX = (area.width  - dw) / 2 + (area.width  * 0.20);   // 多少 area からはみ出してもOK
+    // ★ 2026-08-22: 前裾/後ろ裾を「真横（脇の縫い目）」まで寄せられるようにする。
+    //   旧: area 幅の 20% しか動かせず（Tシャツで約7cm）、脇まで届かなかった。
+    //   sideTravel = エリア中心 → 脇の縫い目 までの距離（GLBのUVを実測して算出・2048基準px→sx倍済）。
+    //   これ以上外へ出すと UV の隙間に入って消えるので、ちょうど脇で止まるのが正しい。
+    const maxShiftX = Math.max((area.width  - dw) / 2 + (area.width  * 0.20), area.sideTravel || 0);
     const maxShiftY = (area.height - dh) / 2 + (area.height * 0.20);
     dx += Math.max(-maxShiftX, Math.min(maxShiftX, offX * area.width  * 0.5));
     dy += Math.max(-maxShiftY, Math.min(maxShiftY, offY * area.height * 0.5));
@@ -1988,6 +1994,7 @@ let _adjustArea = null;       // 調整対象 area key (null = 通常モード)
 let _adjustDragging = false;
 let _adjustStartXY = null;    // pointerdown 時の screen 座標
 let _adjustBaseOffset = null; // pointerdown 時点の offset
+const _ADJUST_LIMIT = 2.0;   // ★ 2026-08-22: 前裾/後ろ裾を脇（真横）まで寄せられるよう 1.5→2.0（実際の止まり位置は area.sideTravel が決める）
 const _ADJUST_SENSITIVITY = 280;  // 画面 280px ドラッグ で offset 1.0 (適度な操作感)
 
 let _adjustRotateMode = false;  // ② 回転モード切替: true = ドラッグで OrbitControls 回転
@@ -2038,6 +2045,17 @@ function _toggleAdjustRotateMode(){
   _adjustRotateMode = !_adjustRotateMode;
   controls.enabled = _adjustRotateMode;
   _updateAdjustOverlayText();
+}
+
+// ★ 2026-08-22: このエリアで実際に意味のある offset 上限。
+//   sideTravel（中心→脇の縫い目）を offset 単位に直した値。これを超えてドラッグしても
+//   描画は動かないので、ドラッグ自体をここで止めて「脇でピタッと止まる」操作感にする。
+function _adjustLimitFor(areaKey){
+  try {
+    const a = scaledAreas && scaledAreas[areaKey];
+    if(!a || !a.sideTravel || !a.width) return _ADJUST_LIMIT;
+    return Math.min(_ADJUST_LIMIT, Math.max(0.5, a.sideTravel / (a.width * 0.5)));
+  } catch(_){ return _ADJUST_LIMIT; }
 }
 function _adjustSwitchPrint(delta){
   const prints = (state.prints || []).slice();
@@ -2329,8 +2347,9 @@ function _bindAdjustDrag(){
     // Y: 画面下ドラッグ = +offsetY (テクスチャ下へ)
     const dx = e.clientX - _adjustStartXY.x;
     const dy = e.clientY - _adjustStartXY.y;
-    const ox = Math.max(-1.5, Math.min(1.5, _adjustBaseOffset.x + dx / _ADJUST_SENSITIVITY));
-    const oy = Math.max(-1.5, Math.min(1.5, _adjustBaseOffset.y + dy / _ADJUST_SENSITIVITY));
+    const _lim = _adjustLimitFor(_adjustArea);
+    const ox = Math.max(-_lim, Math.min(_lim, _adjustBaseOffset.x + dx / _ADJUST_SENSITIVITY));
+    const oy = Math.max(-_ADJUST_LIMIT, Math.min(_ADJUST_LIMIT, _adjustBaseOffset.y + dy / _ADJUST_SENSITIVITY));
     const p = state.prints.find(p => p.area === _adjustArea);
     if(p){ p.offsetX = ox; p.offsetY = oy; }
     applyState();
