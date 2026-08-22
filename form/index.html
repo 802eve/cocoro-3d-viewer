@@ -4489,6 +4489,9 @@ const PRINT_LOCATIONS = [
   { name:'襟下（背中）',   area:'back_upper',   icon:'▭', sub:'最大15cm' },
   { name:'前裾',           area:'front_hem',    icon:'▭', sub:'最大15cm' },
   { name:'後ろ裾',         area:'back_hem',     icon:'▭', sub:'最大15cm' },
+  // ★ 2026-08-22: 脇の縫い目をまたぐプリント。前身頃と後身頃に半分ずつ載る（3Dはつなげて表示される）
+  { name:'右脇下',         area:'right_side',   icon:'◨', sub:'前後にまたぐ' },
+  { name:'左脇下',         area:'left_side',    icon:'◧', sub:'前後にまたぐ' },
   { name:'その他',         area:'other',        icon:'⊕', sub:'要相談' },
 ];
 
@@ -4499,7 +4502,8 @@ const UNSUPPORTED_AREAS_BY_MODEL = {
   long_sleeve: [],                                 // 全部対応
   polo:        ['front_center'],                   // 前面はボタン干渉でNG
   hoodie:      ['front_hem'],                      // パーカー前裾無し
-  hoodie_zip:  ['front_center', 'front_hem'],     // ZIP割れで前面NG / 前裾無し
+  // ★ 2026-08-22: ジップパーカーは前身頃がファスナーで左右に割れており、脇で前後をつなげられない
+  hoodie_zip:  ['front_center', 'front_hem', 'right_side', 'left_side'],
   sweat:       [],                                 // 全部対応
 };
 function getUnsupportedAreas(line){
@@ -4883,7 +4887,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '90';
+const VIEWER_VERSION = '91';
 const ROTATION_SPEED_DEFAULT = 1.25;
 
 /* ★ 2026-06-05: 3D OFFモード判定 ──────────────────────────────────────
