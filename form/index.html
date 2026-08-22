@@ -4443,6 +4443,41 @@ function getShippingFee(){
   return boxes * SHIPPING_RATES.perBox;
 }
 
+
+// ★ 2026-08-22: 3Dの位置調整(offsetX)を「右脇へ○cm」のように日本語で出すための対応表。
+//   offSeam = 3Dで脇の縫い目に届く offsetX（viewer.html の printAreas.sideTravel ÷ エリア幅の半分）
+//   halfCm  = 身頃の中心 → 脇 までの実寸(cm)
+//   🚫 viewer.html の sideTravel を変えたら、この表と platform_ui.html の _EZ_OFFSET_CAL も一緒に直すこと。
+const _V13_SIDE_CAL = {
+  tshirt:      { halfCm:25.7, offSeam:{front_center:1.615, front_hem:1.632, back_center:1.521, back_hem:1.581} },
+  long_sleeve: { halfCm:25.8, offSeam:{front_center:1.653, front_hem:1.622, back_center:1.653, back_hem:1.653} },
+  hoodie:      { halfCm:25.0, offSeam:{front_center:1.321, back_center:1.590, back_hem:1.513} },
+  hoodie_zip:  { halfCm:25.0, offSeam:{back_center:1.615, back_hem:1.526} },
+  sweat:       { halfCm:27.0, offSeam:{front_center:1.188, front_hem:1.102, back_center:1.250, back_hem:1.068} },
+  polo:        { halfCm:23.6, offSeam:{front_hem:1.458, back_center:1.310, back_hem:1.414} },
+};
+// 位置調整を人が読める文にする（例: 右脇へ 26cm（脇いっぱい））。対応表に無い箇所は '' を返す。
+function _v13OffsetNote(modelKey, areaKey, offX, offY){
+  try {
+    const cal = _V13_SIDE_CAL[modelKey] || _V13_SIDE_CAL.tshirt;
+    const seam = cal.offSeam && cal.offSeam[areaKey];
+    if(!seam) return '';
+    const isBack = areaKey.indexOf('back') === 0;
+    const fx = Math.max(-seam, Math.min(seam, Number(offX) || 0));
+    const fy = Math.max(-0.45, Math.min(0.45, Number(offY) || 0));
+    const cmX = Math.abs(fx) / seam * cal.halfCm;
+    const cmY = Math.abs(fy) / seam * cal.halfCm;
+    const parts = [];
+    if(cmX >= 0.5){
+      // 前面は offsetX マイナス = 着用者の右脇、背面はプラス = 着用者の右脇（UVの展開向きが左右逆）
+      const dir = ((!isBack) === (fx < 0)) ? '右' : '左';
+      parts.push(dir + '脇へ ' + Math.round(cmX) + 'cm' + (Math.abs(fx) >= seam - 0.02 ? '（脇いっぱい）' : ''));
+    }
+    if(cmY >= 0.5) parts.push((fy < 0 ? '上へ ' : '下へ ') + Math.round(cmY) + 'cm');
+    return parts.join(' / ');
+  } catch(_){ return ''; }
+}
+
 // プリント箇所マスタ（v12 の _3D_AREA_MAP と整合）
 const PRINT_LOCATIONS = [
   { name:'前面（胸中央）', area:'front_center', icon:'⬜', sub:'最大34cm' },
@@ -4848,7 +4883,7 @@ const GAS_SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyq0g8hYFFJ
 //   doPost: { action:'saveFormJson', orderId, formJson } で構造化データを Phase5 platform に保存
 const PLATFORM_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby8Yz78JtNQlS615qq44QhQ0qEKjOL9An_qn6DelmN16Mm16VlTfF8kjfcl0nrJA788LQ/exec';
 // ★ 2026-04-26: viewer.html を更新したらこの番号を上げる → ブラウザキャッシュ無効化
-const VIEWER_VERSION = '83';
+const VIEWER_VERSION = '90';
 const ROTATION_SPEED_DEFAULT = 1.25;
 
 /* ★ 2026-06-05: 3D OFFモード判定 ──────────────────────────────────────
@@ -6709,8 +6744,17 @@ function renderPrintDetailHtml(loc, d){
 
   // 位置調整ボタン (デザインスタジオからデザインが入った時だけ表示)
   const hasStudioImage = !!d.studioImage;
+  // ★ 2026-08-22: 数値だけでは何をしたか分からないので「右脇へ 26cm」のように併記する
+  const _offNote = (function(){
+    try {
+      if(!(d.offsetX || d.offsetY)) return '';
+      const _l = (typeof cur === 'function') ? cur() : null;
+      const _m = (_l && typeof _resolveModel3d === 'function') ? _resolveModel3d(_l.category, _l.product) : 'tshirt';
+      return _v13OffsetNote(_m, loc.area, d.offsetX, d.offsetY);
+    } catch(_){ return ''; }
+  })();
   const offsetInfo = (d.offsetX || d.offsetY)
-    ? ` <span style="font-size:10px;color:var(--accent);">(調整済 X:${d.offsetX.toFixed(2)} / Y:${d.offsetY.toFixed(2)})</span>`
+    ? ` <span style="font-size:10px;color:var(--accent);">(調整済${_offNote ? ' ' + _offNote : ` X:${d.offsetX.toFixed(2)} / Y:${d.offsetY.toFixed(2)}`})</span>`
     : '';
   const adjustHtml = hasStudioImage ? `
     <div class="pc-row">
