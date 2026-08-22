@@ -433,8 +433,8 @@ const MODELS = {
       back_upper:   { label: '襟下（背中）',   x: 1485.2629, y: 699.201,   width: 205.4105, height: 205.4105, alignX: 'center', alignY: 'top',    max_cm: 15 },
       front_hem:    { label: '前裾',           x: 553.4256,  y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, sideTravel: 380, panel: 'front' },  // 2026-04-22 原寸に復帰（alignY=bottom で枠下端=裾シーム付近）
       back_hem:     { label: '後ろ裾',         x: 1492.0207, y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, sideTravel: 368, panel: 'back' },  // 2026-04-22 y=2.3258バグ修正、front_hem と同位置
-      right_side:   { label: '右脇下',         x: 168,       y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, panel: 'front' },
-      left_side:    { label: '左脇下',         x: 934,       y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, panel: 'front' },
+      right_side:   { label: '右脇下',         x: 167.4,     y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, panel: 'front' },
+      left_side:    { label: '左脇下',         x: 935.0,     y: 1222.3258, width: 465.5971, height: 465.5971, alignX: 'center', alignY: 'bottom', max_cm: 34, panel: 'front' },
     },
   },
   long_sleeve: {
@@ -567,19 +567,26 @@ const MODELS = {
 //   hi / lo = island の上端/下端からはみ出した分に足す u の平行移動量（v はズレない＝dv=0）
 //   ぜんぶ GLB を直接パースして「同じ3D頂点なのにUVが2つある＝縫い目」から実測した値。
 //   🚫 モデル(GLB)を差し替えたら測り直すこと。ズレると脇で絵が食い違う。
+// 脇の縫い目の「外側」へ何px塗り足すか（2048基準）。
+//   UVの島の端は実測で ±1〜2px の誤差があり、さらにテクスチャ補間（ミップマップ＋alphaTest 0.04）が
+//   端の透明を拾うため、島の境界ぴったりで切ると 縫い目に細い抜け線（ボディ色）が出る。
+//   隣は使われない隙間なので、境界より外へはみ出して塗ってしまうのが定石（seam bleeding 対策）。
+const SEAM_BLEED = 10;
+//   hi/lo に加えて hiV/loV（v方向のズレ）も持つ。Tシャツは前後の島が縦にも 1〜2px ずれている。
+//   数値は「島の端を二分探索でサブピクセル測定」した値。Tシャツは頂点ペアの厳密値(+172.42/+1696.43)と一致を確認済み。
 const BODY_SEAM = {
-  tshirt:      { front:{ island:[168,934],   wrap:[1108,1863], hi:  +174, lo: +1695 },
-                 back: { island:[1108,1863], wrap:[168,934],   hi: -1695, lo:  -174 } },
-  long_sleeve: { front:{ island:[1323,1958], wrap:[64,700],    hi: -1895, lo:  -624 },
-                 back: { island:[64,700],    wrap:[1323,1958], hi:  +624, lo: +1895 } },
-  hoodie:      { front:{ island:[481,967],   wrap:[1444,1936], hi:  +477, lo: +1455 },
-                 back: { island:[1444,1936], wrap:[481,967],   hi: -1455, lo:  -477 } },
+  tshirt:      { front:{ island:[167.4,935.0],   wrap:[1108.0,1863.5], hi:  +172.4, hiV: +0.8, lo: +1696.4, loV: -2.2 },
+                 back: { island:[1108.0,1863.5], wrap:[167.4,935.0],   hi: -1696.4, hiV: +2.2, lo:  -172.4, loV: -0.8 } },
+  long_sleeve: { front:{ island:[1322.9,1957.5], wrap:[68.7,697.3],    hi: -1888.9, lo:  -625.5 },
+                 back: { island:[68.7,697.3],    wrap:[1322.9,1957.5], hi:  +625.5, lo: +1888.9 } },
+  hoodie:      { front:{ island:[480.9,968.3],   wrap:[1442.9,1936.8], hi:  +474.7, lo: +1455.9 },
+                 back: { island:[1442.9,1936.8], wrap:[480.9,968.3],   hi: -1455.9, lo:  -474.7 } },
   // ジップパーカーは前身頃がファスナーで左右に割れており、右前身頃のUV島が別なので右脇はつなげない
-  hoodie_zip:  { back: { island:[1445,1935], wrap:[726,967],   hi:  null, lo:  -478 } },
-  sweat:       { front:{ island:[87,484],    wrap:[829,1209],  hi:  +345, lo: +1122 },
-                 back: { island:[829,1209],  wrap:[87,484],    hi: -1122, lo:  -345 } },
-  polo:        { front:{ island:[42,724],    wrap:[1348,2013], hi:  +624, lo: +1971 },
-                 back: { island:[1348,2013], wrap:[42,724],    hi: -1971, lo:  -624 } },
+  hoodie_zip:  { back: { island:[1441.2,1938.6], wrap:[725.9,968.2],   hi:  null,   lo:  -473.0 } },
+  sweat:       { front:{ island:[87.3,481.7],    wrap:[826.5,1212.3],  hi:  +344.8, lo: +1124.9 },
+                 back: { island:[826.5,1212.3],  wrap:[87.3,481.7],    hi: -1124.9, lo:  -344.8 } },
+  polo:        { front:{ island:[38.5,726.2],    wrap:[1347.2,2013.7], hi:  +618.6, lo: +1977.0 },
+                 back: { island:[1347.2,2013.7], wrap:[38.5,726.2],    hi: -1977.0, lo:  -618.6 } },
 };
 
 // URLパラメータ ?model=tshirt|long_sleeve （デフォルト=tshirt）
@@ -1121,6 +1128,9 @@ function initTextureCompose() {
         wrap:   [s0.wrap[0]*sx,   s0.wrap[1]*sx],
         hi: (typeof s0.hi === 'number') ? s0.hi*sx : null,
         lo: (typeof s0.lo === 'number') ? s0.lo*sx : null,
+        hiV: (typeof s0.hiV === 'number') ? s0.hiV*sy : 0,
+        loV: (typeof s0.loV === 'number') ? s0.loV*sy : 0,
+        pad: SEAM_BLEED * sx,
       };
     }
   }
@@ -1384,20 +1394,22 @@ function drawPrint(print, ctx) {
   //   これで 右脇下/左脇下 のプリントが、実物と同じように脇でつながって見える。
   const _seam = (scaledSeam && area.panel) ? scaledSeam[area.panel] : null;
   if(_seam){
-    const _clipDraw = (x, u0, u1) => {
+    const _pad = _seam.pad || 0;
+    const _clipDraw = (x, y, u0, u1) => {
       targetCtx.save();
       targetCtx.beginPath();
-      targetCtx.rect(u0, dy - 2, u1 - u0, dh + 4);
+      // 境界より _pad だけ外まで塗る（隣は使われない隙間なので安全）。これで縫い目の抜け線が消える。
+      targetCtx.rect(u0 - _pad, y - 2 - _pad, (u1 - u0) + _pad * 2, dh + 4 + _pad * 2);
       targetCtx.clip();
-      targetCtx.drawImage(srcImg, x, dy, dw, dh);
+      targetCtx.drawImage(srcImg, x, y, dw, dh);
       targetCtx.restore();
     };
-    _clipDraw(dx, _seam.island[0], _seam.island[1]);
+    _clipDraw(dx, dy, _seam.island[0], _seam.island[1]);
     if(dx + dw > _seam.island[1] && typeof _seam.hi === 'number'){
-      _clipDraw(dx + _seam.hi, _seam.wrap[0], _seam.wrap[1]);
+      _clipDraw(dx + _seam.hi, dy + (_seam.hiV || 0), _seam.wrap[0], _seam.wrap[1]);
     }
     if(dx < _seam.island[0] && typeof _seam.lo === 'number'){
-      _clipDraw(dx + _seam.lo, _seam.wrap[0], _seam.wrap[1]);
+      _clipDraw(dx + _seam.lo, dy + (_seam.loV || 0), _seam.wrap[0], _seam.wrap[1]);
     }
   } else {
     targetCtx.drawImage(srcImg, dx, dy, dw, dh);
@@ -2085,6 +2097,10 @@ function _enterAdjustMode(area){
   // 該当 print の現在 offset を初期値として記録
   const p = state.prints.find(p => p.area === area);
   _adjustBaseOffset = p ? { x: p.offsetX || 0, y: p.offsetY || 0 } : { x:0, y:0 };
+  // ★ 2026-08-22: 調整するプリントの正面へカメラを回す。
+  //   これが無いと 右脇下 を調整するのに正面向きのまま＝斜めから見て「後ろ寄りに見える」ので、
+  //   まっすぐ直っているものを更にズラしてしまう。__adjustSwitchPrint は元から回している。
+  try { _focusToArea(area); } catch(_){}
   _updateAdjustOverlayText();
 }
 function _updateAdjustOverlayText(){
