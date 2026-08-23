@@ -3708,6 +3708,8 @@ function _customerOpen3dFromPng(opts){
             '左袖いっぱい':'left_sleeve_full','右袖いっぱい':'right_sleeve_full',
             '左袖先':'left_sleeve_cuff','右袖先':'right_sleeve_cuff',
             '襟下（背中）':'back_upper','前裾':'front_hem','後ろ裾':'back_hem',
+            // ★ 2026-08-22: 脇の縫い目をまたぐプリント
+            '右脇下':'right_side','左脇下':'left_side','右脇':'right_side','左脇':'left_side',
           };
           const area = _areaMap[p.location] || p.location || 'front_center';
           return {
@@ -12758,6 +12760,8 @@ const _3D_AREA_MAP_LOC = {
   '左胸':'left_chest', '右胸':'right_chest',
   '左袖':'left_sleeve', '右袖':'right_sleeve',
   '襟下（背中）':'back_upper', '前裾':'front_hem', '後ろ裾':'back_hem',
+  // ★ 2026-08-22: 脇の縫い目をまたぐプリント（前身頃と後身頃に半分ずつ載る）
+  '右脇下':'right_side', '左脇下':'left_side', '右脇':'right_side', '左脇':'left_side',
   // 「その他」「未選択」は viewer 対応なし
 };
 // 小エリア（左右胸・左右袖）か判定
@@ -12799,7 +12803,7 @@ function _3d_getAreaKey(){
   const loc = (FORM_CONTEXT && FORM_CONTEXT.location) ? FORM_CONTEXT.location : '';
   if(!loc) return 'front_center';
   // 英語キー (back_center 等) ならそのまま通す
-  const VALID = ['front_center','back_center','left_chest','right_chest','left_sleeve','right_sleeve','back_upper','front_hem','back_hem'];
+  const VALID = ['front_center','back_center','left_chest','right_chest','left_sleeve','right_sleeve','back_upper','front_hem','back_hem','right_side','left_side'];
   if(VALID.indexOf(loc) >= 0) return loc;
   // 旧 日本語キー も維持
   if(_3D_AREA_MAP_LOC[loc]) return _3D_AREA_MAP_LOC[loc];
@@ -12848,7 +12852,7 @@ function _3d_launchViewer(cfg){
   try { sessionStorage.setItem('tshirt3dConfig', json); } catch(e){}
   const modelKey = _3d_getModelKey();
   // ★ 2026-05-08: viewer.html バージョン (unlit overlay) — キャッシュバスティング
-  let url = _3D_VIEWER_PATH + '?model=' + modelKey + '&cfgKey=' + encodeURIComponent(cfgKey) + '&v=83';
+  let url = _3D_VIEWER_PATH + '?model=' + modelKey + '&cfgKey=' + encodeURIComponent(cfgKey) + '&v=92';
   // ★ 2026-05-29: 戻り先 URL を渡す (viewer の「戻る」で確実に元ページへ戻すため。
   //   window.close() がブロックされるモバイル等でも back URL で現タブを置換して戻れる)
   try { url += '&back=' + encodeURIComponent(location.href); } catch(e){}
