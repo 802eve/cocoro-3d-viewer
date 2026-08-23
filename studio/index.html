@@ -4104,7 +4104,7 @@ async function _customerSendEdit(){
     const _sbi = fabCanvas.backgroundImage;
     fabCanvas.backgroundColor = ''; fabCanvas.backgroundImage = null;
     fabCanvas.renderAll();
-    const png = fabCanvas.toDataURL({ format: 'png', multiplier: 2 });
+    const png = _hqExportPng();
     const svg = fabCanvas.toSVG();
     // ★ G3 2026-05-14: PNG/SVG 書き出し直後に 背景色を 復元 (JSON には背景込みで保存)
     fabCanvas.backgroundColor = _sbg;
@@ -4535,8 +4535,8 @@ async function _platformSaveAndReturn(){
       fabCanvas.backgroundColor = '';
       fabCanvas.backgroundImage = null;
       fabCanvas.renderAll();
-      // 高解像度書き出し (×2)
-      try { png = fabCanvas.toDataURL({ format: 'png', multiplier: 2 }); }
+      // ★ 2026-08-22: 高解像度書き出し（キャッシュ無効化＋長辺4096px狙い）
+      try { png = _hqExportPng(); }
       catch(e){
         console.warn('hi-res failed, fallback', e);
         png = fabCanvas.toDataURL({ format: 'png' });
@@ -8961,6 +8961,38 @@ function _withHighResExport(fn){
     saved.forEach(s => s.o.set('objectCaching', s.c));
     fabCanvas.renderAll();
   }
+}
+
+
+// ★ 2026-08-22: お客様デザイン確認の画面で「デザインがギザついている」件の対策。
+//   真因は2つ。
+//   ① 書き出し時に objectCaching を切っていなかった → fabric は各パーツを1倍でキャッシュした
+//      ビットマップを持っており、multiplier で拡大しても「その1倍の絵を引き伸ばすだけ」。
+//      輪郭がギザギザのまま大きくなる（2026-04-25 に edSave 側だけ直した教訓と同じ）。
+//   ② 倍率が multiplier:2 固定だった（edSave は長辺4096px狙いで約×4）。
+//   対策: _withHighResExport でキャッシュを無効化してから、長辺4096pxを目標に書き出す。
+//   大きすぎるとアップロードで詰まるので、データ量を見ながら倍率を下げる（最低でも従来の×2）。
+function _hqExportPng(){
+  var maxDim = Math.max((typeof CANVAS_BASE_W !== 'undefined' && CANVAS_BASE_W) || 900,
+                        (typeof CANVAS_BASE_H !== 'undefined' && CANVAS_BASE_H) || 700);
+  var mult = Math.min(4, 4096 / maxDim);
+  if(!isFinite(mult) || mult < 2) mult = 2;      // 従来(×2)より下げない
+  var LIMIT = 3200000;                            // dataURL の文字数 ≒ 2.4MB
+  var png = '';
+  _withHighResExport(function(){
+    while(true){
+      try { png = fabCanvas.toDataURL({ format:'png', quality:1.0, multiplier: mult }); }
+      catch(e){ console.warn('[hqExport] mult=' + mult + ' 失敗', e); png = ''; }
+      if(png && png.length <= LIMIT) break;
+      if(mult <= 2){
+        if(!png){ try { png = fabCanvas.toDataURL({ format:'png' }); } catch(_){ png = ''; } }
+        break;
+      }
+      mult = Math.max(2, mult - 0.5);
+    }
+    console.log('[hqExport] multiplier=' + mult + ' / ' + Math.round((png.length||0)/1024) + 'KB');
+  });
+  return png;
 }
 
 // 現在編集中の保存済みデザインID（マイデザインから開いた場合のみ）
