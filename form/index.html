@@ -3721,6 +3721,11 @@ const CATEGORIES = [
         // ※ ロングT 標準カラー帯
         colors:['ホワイト','ブラック','ミックスグレー','チャコール','ナチュラル','ネイビー','アシッドブルー','サンドカーキ','バイオレットパープル','ライトオリーブ']
       },
+      { sku:'5709', maker:'UnitedAthle', name:'4.4oz ドライスムース リサイクルポリエステル ロングスリーブ Tシャツ ※OPEN PRICE換算', oz:'4.4oz', material:'ポリ100%', basePrice:1400,
+        sizes:['S','M','L','XL','XXL'],
+        sizeSurcharge:{'XXL':140},
+        colors:['ホワイト','ブラック','ネイビー','レッド','ロイヤルブルー']
+      },
       { sku:'5011', maker:'UnitedAthle', name:'5.6oz ロングスリーブ Tシャツ (1.6インチリブ)', oz:'5.6oz', material:'綿100%', basePrice:1980,
         sizes:['XS','S','M','L','XL','XXL'],
         sizeSurcharge:{'XXL':340},
@@ -3863,27 +3868,56 @@ const CATEGORIES = [
       { sku:'5203', maker:'UnitedAthle', name:'10.0oz ビッグシルエット スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿100%', basePrice:8680,
         sizes:['M','L','XL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':430,'L':430,'XL':430}},
         colors:['ブラック','アッシュ','ネイビー']
       },
-      { sku:'5204', maker:'UnitedAthle', name:'10.0oz ビッグシルエット スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿100%', basePrice:7600,
+      { sku:'5204', maker:'UnitedAthle', name:'10.0oz ビッグシルエット スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿100%', basePrice:7590,
         sizes:['M','L','XL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':370,'L':370,'XL':370}},
         colors:['ブラック','アッシュ','ネイビー']
       },
       { sku:'5767', maker:'UnitedAthle', name:'12.7oz ヘヴィーウェイト スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'12.7oz', material:'綿100%', basePrice:8110,
-        sizes:['S','M','L','XL'],
-        sizeSurcharge:{},
+        sizes:['S','M','L','XL','XXL'],
+        sizeSurcharge:{'XXL':790},
         colors:['ブラック','オフホワイト','ミックスグレー','ネイビー']
       },
       { sku:'5768', maker:'UnitedAthle', name:'12.7oz ヘヴィーウェイト スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'12.7oz', material:'綿100%', basePrice:7130,
-        sizes:['S','M','L','XL'],
-        sizeSurcharge:{},
+        sizes:['S','M','L','XL','XXL'],
+        sizeSurcharge:{'XXL':620},
         colors:['ブラック','オフホワイト','アッシュ','ミックスグレー','ナチュラル','ネイビー','フォレストグリーン']
       },
       { sku:'5621', maker:'UnitedAthle', name:'10.0oz T/C ボックスシルエット スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿/ポリエステル', basePrice:7800,
         sizes:['S','M','L','XL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'S':390,'M':390,'L':390,'XL':390}},
         colors:['ホワイト','ブラック','アッシュ','ネイビー','スミ']
+      },
+      { sku:'2291', maker:'UnitedAthle', name:'9.4oz T/R ダンボールニット フルジップ パーカ ※OPEN PRICE換算', oz:'9.4oz', material:'ポリ/レーヨン', basePrice:8150,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','ネイビー','チャコール']
+      },
+      { sku:'2292', maker:'UnitedAthle', name:'9.4oz T/R ダンボールニット プルオーバー パーカ ※OPEN PRICE換算', oz:'9.4oz', material:'ポリ/レーヨン', basePrice:6800,
+        sizes:['S','M','L','XL'],
+        sizeSurcharge:{},
+        colors:['ブラック','ネイビー','チャコール']
+      },
+      { sku:'5620', maker:'UnitedAthle', name:'10.0oz T/C スウェット フルジップ パーカ (裏起毛) ※OPEN PRICE換算', oz:'10.0oz', material:'綿/ポリ', basePrice:5500,
+        sizes:['S','M','L','XL','XXL','XXXL'],
+        sizeSurcharge:{'XXL':1080,'XXXL':1580},
+        colorUpcharge:{'アッシュ':{'S':480,'M':480,'L':480,'XL':480,'XXL':550}},
+        colors:['ホワイト','ブラック','アッシュ','ネイビー','スミ']
+      },
+      { sku:'5762', maker:'UnitedAthle', name:'12.0oz ヘヴィーウェイト スウェット フルジップ パーカ (裏起毛) ※OPEN PRICE換算', oz:'12.0oz', material:'綿100%', basePrice:8110,
+        sizes:['S','M','L','XL','XXL'],
+        sizeSurcharge:{'XXL':790},
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','ネイビー','ストーンブルー','サンドベージュ']
+      },
+      { sku:'5763', maker:'UnitedAthle', name:'12.0oz ヘヴィーウェイト スウェット プルオーバー パーカ (裏起毛) ※OPEN PRICE換算', oz:'12.0oz', material:'綿100%', basePrice:7130,
+        sizes:['S','M','L','XL','XXL'],
+        sizeSurcharge:{'XXL':620},
+        colors:['ホワイト','ブラック','アッシュ','ミックスグレー','ネイビー','ストーンブルー','サンドベージュ']
       },
       { sku:'5618', maker:'UnitedAthle', name:'10.0oz T/C スウェット プルオーバー パーカ', oz:'10.0oz', material:'綿/ポリエステル', basePrice:4950,
         sizes:['S','M','L','XL','XXL','XXXL'],
@@ -3894,16 +3928,19 @@ const CATEGORIES = [
       { sku:'5631', maker:'UnitedAthle', name:'10.0oz T/C ビッグシルエット スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'10.0oz', material:'綿/ポリエステル', basePrice:7590,
         sizes:['M','L','XL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':370,'L':370,'XL':370}},
         colors:['ホワイト','ブラック','アッシュ']
       },
       { sku:'5797', maker:'UnitedAthle', name:'15.0oz オープンエンド マグナムウェイト スウェット フルジップ パーカ ※OPEN PRICE推定', oz:'15.0oz', material:'綿100%', basePrice:9900,
         sizes:['M','L','XL','XXL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':600,'L':600,'XL':600,'XXL':600}},
         colors:['ブラック','アッシュ']
       },
       { sku:'5798', maker:'UnitedAthle', name:'15.0oz オープンエンド マグナムウェイト スウェット プルオーバー パーカ ※OPEN PRICE推定', oz:'15.0oz', material:'綿100%', basePrice:8500,
         sizes:['M','L','XL','XXL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':600,'L':600,'XL':600,'XXL':600}},
         colors:['ブラック','アッシュ']
       }
     ]
@@ -3954,6 +3991,7 @@ const CATEGORIES = [
       { sku:'5205', maker:'UnitedAthle', name:'10.0oz ビッグシルエット クルーネック スウェット ※OPEN PRICE推定', oz:'10.0oz', material:'綿100%', basePrice:5910,
         sizes:['M','L','XL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':370,'L':370,'XL':370}},
         colors:['ブラック','アッシュ','ネイビー']
       },
       { sku:'5242', maker:'UnitedAthle', name:'10.0oz ラグランスリーブ クルーネック スウェット (裏パイル)', oz:'10.0oz', material:'綿100%', basePrice:3900,
@@ -3962,23 +4000,25 @@ const CATEGORIES = [
         colors:['ブラック','ミックスグレー','ネイビー']
       },
       { sku:'5769', maker:'UnitedAthle', name:'12.7oz ヘヴィーウェイト クルーネック スウェット ※OPEN PRICE推定', oz:'12.7oz', material:'綿100%', basePrice:5840,
-        sizes:['S','M','L','XL'],
-        sizeSurcharge:{},
+        sizes:['S','M','L','XL','XXL'],
+        sizeSurcharge:{'XXL':490},
         colors:['ブラック','オフホワイト','アッシュ','ミックスグレー','ナチュラル','ネイビー','フォレストグリーン']
       },
       { sku:'5627', maker:'UnitedAthle', name:'10.0oz T/C ビッグシルエット クルーネック スウェット ※OPEN PRICE推定', oz:'10.0oz', material:'綿/ポリエステル', basePrice:5910,
         sizes:['M','L','XL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':370,'L':370,'XL':370}},
         colors:['ホワイト','ブラック','アッシュ']
       },
       { sku:'5764', maker:'UnitedAthle', name:'12.0oz ヘヴィーウェイト クルーネック スウェット ※OPEN PRICE推定', oz:'12.0oz', material:'綿100%', basePrice:5840,
-        sizes:['S','M','L','XL'],
-        sizeSurcharge:{},
+        sizes:['S','M','L','XL','XXL'],
+        sizeSurcharge:{'XXL':490},
         colors:['ホワイト','ブラック','アッシュ','ミックスグレー','ネイビー','ストーンブルー','サンドベージュ']
       },
       { sku:'5799', maker:'UnitedAthle', name:'15.0oz オープンエンド マグナムウェイト クルーネック スウェット ※OPEN PRICE推定', oz:'15.0oz', material:'綿100%', basePrice:7100,
         sizes:['M','L','XL','XXL'],
         sizeSurcharge:{},
+        colorUpcharge:{'アッシュ':{'M':500,'L':500,'XL':500,'XXL':500}},
         colors:['ブラック','アッシュ']
       }
     ]
