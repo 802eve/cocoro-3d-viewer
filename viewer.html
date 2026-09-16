@@ -2238,6 +2238,12 @@ function _shouldRecolor(fromHexes, toHexes){
   //   ＝「3Dでインク色が黒くなる」バグの真因。元色が分かっている「色違いライン」の
   //   正規の色替え (originalInkHexes 非空) のときだけ再着色する。
   if(!fromHexes || !fromHexes.length) return false;
+  // ★ 2026-09-16: 焼き込み色(from)と現在色(to)で色数が食い違う時は再着色しない。
+  //   🚫 from が1色 / to が2色 のような食い違いをそのまま通すと、
+  //      _recolorImageSync の対応付けが崩れて 多色デザインが丸ごと1色(黒)に
+  //      塗り潰される（2026-09-16 に実機で発生）。
+  //      対応が取れない時は、保存された PNG をそのまま出すのが安全。
+  if(toHexes && toHexes.length && fromHexes.length !== toHexes.length) return false;
   const a = (fromHexes || []).map(h => (h||'').toLowerCase()).join(',');
   const b = (toHexes || []).map(h => (h||'').toLowerCase()).join(',');
   return a !== b && (toHexes && toHexes.length);
