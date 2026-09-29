@@ -3166,6 +3166,14 @@ async function _platformPreloadDesign(){
         const ok = await _custReviewLoadJsonParts(PLATFORM_CONTEXT.designJsonDriveId);
         if(ok){
           console.log('[platformPreload] JSON 復元 OK');
+          // ★ 2026-09-29: JSON/SVG には保存時のボディ色(背景)が入っている。社内で白→ブラックに
+          //   変えてもスタジオが白のままだったので、いま注文に入っているボディ色で塗り直す。
+          try {
+            if(!PLATFORM_CONTEXT.customerReview){
+              const _nowBg = _getBodyBgColor();
+              if(_nowBg) fabCanvas.setBackgroundColor(_nowBg, fabCanvas.renderAll.bind(fabCanvas));
+            }
+          } catch(_){}
           try { _platformApplyRecolorToParts(); } catch(_){}
           try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
           try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
@@ -3180,6 +3188,14 @@ async function _platformPreloadDesign(){
         const ok = await _custReviewLoadSvgParts(PLATFORM_CONTEXT.designSvgDriveId);
         if(ok){
           console.log('[platformPreload] SVG 復元 OK');
+          // ★ 2026-09-29: JSON/SVG には保存時のボディ色(背景)が入っている。社内で白→ブラックに
+          //   変えてもスタジオが白のままだったので、いま注文に入っているボディ色で塗り直す。
+          try {
+            if(!PLATFORM_CONTEXT.customerReview){
+              const _nowBg = _getBodyBgColor();
+              if(_nowBg) fabCanvas.setBackgroundColor(_nowBg, fabCanvas.renderAll.bind(fabCanvas));
+            }
+          } catch(_){}
           try { _platformApplyRecolorToParts(); } catch(_){}
           try { if(typeof renderSideLists === 'function') renderSideLists(); } catch(_){}
           try { if(typeof m_renderActiveTabContent === 'function') m_renderActiveTabContent(); } catch(_){}
@@ -3487,7 +3503,7 @@ async function _initCustomerReviewMode(){
     let canvSize;
     try {
       const dims = (typeof _computeCanvasDims === 'function')
-        ? _computeCanvasDims(printSize, false)
+        ? _computeCanvasDims(printSize, !!(targetPrint && targetPrint.rotated))
         : null;
       canvSize = dims ? { w: dims.w, h: dims.h } : { w: 1020, h: 1020 };
     } catch(_){ canvSize = { w: 1020, h: 1020 }; }
@@ -3501,6 +3517,8 @@ async function _initCustomerReviewMode(){
     } catch(_){}
     // ★ 修正モードで使う target dims を保存 (let が他処理で上書きされても 大丈夫なように)
     window._customerReviewCanvSize = { w: canvSize.w, h: canvSize.h };
+    // ★ 2026-09-29: お客様が修正して保存する時も同じ向きで保存されるように
+    try { _printSizeKey = printSize; _printSizeRotated = !!(targetPrint && targetPrint.rotated); } catch(_){}
     // ボディ色 (背景プレビュー用)
     // ★ 2026-05-19: 古い注文で colorHex 欠落時は カラー名 → hex のマップでフォールバック
     const _COLOR_NAME_HEX_MAP = {
@@ -4217,6 +4235,22 @@ async function _custReviewLoadJsonParts(jsonDriveId){
       if(cs && cs.w > 0){ targetW = cs.w; targetH = cs.h; }
     }
     if(!targetW){ targetW = 1020; targetH = 1020; }
+    // ★ 2026-09-29: 読み込んだデザインの向きをスタジオの状態に反映（次の保存で向きが食い違わないように）
+    try {
+      if(wrap.printSize && !_printSizeKey) _printSizeKey = wrap.printSize;
+      const _wantRot = _printSizeRotated;   // URL（注文）で指定された向き
+      if(_printSizeKey && _sizeIsRotatable(_printSizeKey)){
+        const _base = SIZE_DIMS_CM[_printSizeKey];
+        _printSizeRotated = (targetW > targetH) !== (_base.w > _base.h);
+      } else if(typeof wrap.rotated === 'boolean'){
+        _printSizeRotated = wrap.rotated;
+      }
+      if(PLATFORM_CONTEXT.active && !PLATFORM_CONTEXT.customerReview && _wantRot !== _printSizeRotated
+         && typeof _edUploadNotice === 'function'){
+        _edUploadNotice('保存済みのデザインは' + (_printSizeRotated ? '横向き' : '縦向き') + 'で作られています。\n向きを変える場合は、上の「↕↔」ボタンで切り替えてください。');
+      }
+      if(typeof updateSizeIndicator === 'function') setTimeout(updateSizeIndicator, 0);
+    } catch(_){}
     // canvas を 保存時の size に厳密合わせ
     try {
       fabCanvas.setDimensions({ width: targetW, height: targetH });
@@ -4427,6 +4461,8 @@ function _customerLoadPngFullCanvas(designUrl, targetW, targetH, bgColor){
   try {
     window.CANVAS_BASE_W = targetW;
     window.CANVAS_BASE_H = targetH;
+    // ★ 2026-09-29: let の方も揃える（window 側だけだと保存時の canvasW/H が古い値になる）
+    CANVAS_BASE_W = targetW; CANVAS_BASE_H = targetH;
     fabCanvas.setDimensions({ width: targetW, height: targetH });
     // ★ 2026-05-19: ボディ色は 白でも 常に設定 (前回 「!== #ffffff」 条件で 抜け落ちてた)
     const _bg = (bgColor && bgColor.startsWith && bgColor.startsWith('#')) ? bgColor : '#ffffff';
@@ -4451,13 +4487,31 @@ function _customerLoadPngFullCanvas(designUrl, targetW, targetH, bgColor){
       console.warn('[custReview v10] image has no dimensions:', { iw, ih });
       return;
     }
+    // ★ 2026-09-29: 画像の向きとキャンバスの向きが逆なら、キャンバスのほうを画像に合わせる。
+    //   向きが保存されていない旧データ（横向きで作ったのに注文には縦のまま）でも正しく出す。
+    //   PNG はキャンバスと同じ縦横比で書き出されているので、画像の向きが正しい。
+    if(targetW !== targetH && ((iw > ih) !== (targetW > targetH))){
+      const _t = targetW; targetW = targetH; targetH = _t;
+      try {
+        fabCanvas.setDimensions({ width: targetW, height: targetH });
+        CANVAS_BASE_W = targetW; CANVAS_BASE_H = targetH;
+        window.CANVAS_BASE_W = targetW; window.CANVAS_BASE_H = targetH;
+        window._customerReviewCanvSize = { w: targetW, h: targetH };
+        // 反転ではなくキャンバスの形から決める（2回呼ばれても向きが戻らないように）
+        const _bd = (_printSizeKey && SIZE_DIMS_CM[_printSizeKey]) || null;
+        _printSizeRotated = _bd ? ((targetW > targetH) !== (_bd.w > _bd.h)) : (targetW > targetH);
+        if(typeof updateSizeIndicator === 'function') updateSizeIndicator();
+      } catch(_){}
+    }
+    // ★ 2026-09-29: 縦横同じ倍率で収める（別々だと絵が潰れる）
+    const _fit = Math.min(targetW / iw, targetH / ih);
     img.set({
       left: targetW / 2,
       top: targetH / 2,
       originX: 'center',
       originY: 'center',
-      scaleX: targetW / iw,
-      scaleY: targetH / ih,
+      scaleX: _fit,
+      scaleY: _fit,
       selectable: false,
       evented: false,
       hoverCursor: 'default',
@@ -4621,6 +4675,8 @@ async function _platformSaveAndReturn(){
         png: png,
         svg: svg,
         designJson: designJsonStr, // ★ 2026-05-14 v11: JSON 復元用
+        printSize: _printSizeKey || '',          // ★ 2026-09-29
+        rotated: !!_printSizeRotated,            // ★ 2026-09-29: 縦向き/横向きを注文に保存するため
         inkColors: inkColors,        // ★ 2026-05-17: 詳細欄カラー名/色数 更新用
         fileName: 'design-' + Date.now() + '.png',
       }, '*');
