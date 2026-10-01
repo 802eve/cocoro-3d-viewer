@@ -1739,7 +1739,14 @@ function _loadConfigFromUrl(cfgParam, isDemo){
       try { setModel(cfg.model); } catch(e){}
     }
     applyExternalConfig(cfg)
-      .then(() => { _removeInd(); if (isDemo) showDemoPanel(); })
+      .then(async () => {
+        // ★ 2026-10-01: シェアした時点で選んでいたボディ色で開く
+        if (typeof cfg.startColorIdx === 'number' && Array.isArray(cfg.allColors)
+            && cfg.startColorIdx !== ((typeof cfg.currentColorIdx === 'number') ? cfg.currentColorIdx : 0)) {
+          try { await _switchToColor(cfg.startColorIdx); } catch (e) { console.warn('[share] start color failed', e); }
+        }
+        _removeInd(); if (isDemo) showDemoPanel();
+      })
       .catch(err => {
         _removeInd();
         console.error('[loadConfig] applyExternalConfig failed:', err);
@@ -1909,6 +1916,13 @@ function _loadViaJsonp(orderId, applyFn, onFailCallback){
 }
 
 async function applyExternalConfig(cfg) {
+  // ★ 2026-10-01: シェア用に「元の設定」を覚えておく（プリントを含む設定のときだけ。
+  //   focusArea だけ等の部分的な指示で上書きしない）。
+  //   シェアボタンは表示中の画像からURLを作っていたが、色替えで加工した画像には
+  //   読み込み元が無く空のURLになり、開くとデザインもボディ色も出なかった。
+  if (Array.isArray(cfg.prints)) {
+    try { window._viewerSourceCfg = JSON.parse(JSON.stringify(cfg)); } catch(_) {}
+  }
   // ① 色切替 UI: cfg.allColors があれば 保存しておく
   if (Array.isArray(cfg.allColors) && cfg.allColors.length){
     window._viewerAllColors = cfg.allColors;
@@ -1930,7 +1944,10 @@ async function applyExternalConfig(cfg) {
     state.prints = [];
     for (let i = 0; i < cfg.prints.length; i++) {
       const p = cfg.prints[i];
-      let img = await loadImage(p.imageDataUrl || p.image || p.url);
+      // ★ 2026-10-01: 1枚読めなくても他のプリントとボディ色は出す（従来は例外で全体が止まっていた）
+      let img;
+      try { img = await loadImage(p.imageDataUrl || p.image || p.url); }
+      catch (e) { console.warn('[applyExternalConfig] print image failed, skip:', i, e); continue; }
       // ② 元色 → 新色 で 再着色 (originalInkHexes と targetInkHexes が異なれば)
       if(_shouldRecolor(p.originalInkHexes, p.targetInkHexes)){
         console.log('[recolor] print', i, p.area, 'from', p.originalInkHexes, 'to', p.targetInkHexes);
@@ -2032,18 +2049,52 @@ document.getElementById('shootBtn').addEventListener('click', () => {
 // ===== シェアボタン =====
 const shareBtn = document.getElementById('shareBtn');
 const shareLabel = document.getElementById('shareLabel');
+// ★ 2026-10-01: シェアURLは「元の設定」(Googleドライブの画像ID・全ボディ色・インク色・位置調整)から作る。
+//   旧: 表示中の画像の src を入れていたが、色替え後の画像は加工済みで src が無く空になり、
+//       受け取った人が開くとデザインもボディ色も出なかった。モデル(?model=)も落ちていた。
+function _encodeCfgB64Url(obj){
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function _buildShareUrl(){
+  const src = window._viewerSourceCfg;
+  if (!src || !Array.isArray(src.prints)) return { url: '', reason: 'nocfg' };
+  const cfg = JSON.parse(JSON.stringify(src));
+  // その場限りの指示は持ち越さない
+  ['adjustMode','adjustArea','focusArea','spinOnce','resetView'].forEach(k => { delete cfg[k]; });
+  // 表示中の位置調整・ボディ色を反映
+  (cfg.prints || []).forEach((p, i) => {
+    const s = state.prints[i];
+    if (s) { p.offsetX = s.offsetX || 0; p.offsetY = s.offsetY || 0; }
+    // driveId があれば画像URLは開いた側で作り直せるので省く（URLを短くする）
+    if (p.driveId && /^https:\/\/(lh3\.googleusercontent\.com|drive\.google\.com)\//.test(p.imageDataUrl || '')) delete p.imageDataUrl;
+  });
+  if (Array.isArray(cfg.allColors) && cfg.allColors.length) {
+    if (typeof window._viewerCurrentColorIdx === 'number') cfg.startColorIdx = window._viewerCurrentColorIdx;
+  } else if (state.bodyColor) {
+    cfg.bodyColor = state.bodyColor;
+  }
+  // 端末の中にしか無い画像（保存前のデザイン）は他の人の端末では開けない
+  const local = (cfg.prints || []).filter(p => !p.driveId && /^(data|blob):/.test(p.imageDataUrl || p.image || p.url || ''));
+  if (local.length) return { url: '', reason: 'local' };
+  const qs = new URLSearchParams(location.search);
+  let url = `${location.origin}${location.pathname}?cfg=${_encodeCfgB64Url(cfg)}`;
+  const model = qs.get('model') || cfg.model;
+  if (model) url += '&model=' + encodeURIComponent(model);
+  if (qs.get('v')) url += '&v=' + encodeURIComponent(qs.get('v'));
+  return { url, reason: '' };
+}
 shareBtn.addEventListener('click', async () => {
-  // 現在のstateを設定オブジェクトとしてエンコード
-  const cfg = {
-    bodyColor: state.bodyColor,
-    prints: state.prints.map(p => ({
-      area: p.area, method: p.method, size: p.size,
-      imageDataUrl: p.imageDataUrl || (p.image?.src || ''),
-    })),
-  };
-  const json = JSON.stringify(cfg);
-  const b64 = btoa(unescape(encodeURIComponent(json)));
-  const shareUrl = `${location.origin}${location.pathname}?config=${b64}`;
+  const built = _buildShareUrl();
+  if (!built.url) {
+    alert(built.reason === 'local'
+      ? 'このデザインはまだ保存されていないため、シェア用のURLを作れません。\n社内フォームでデザインを保存してから、注文の「3Dで確認」から開いてシェアしてください。'
+      : 'シェアできる3Dの設定がありません。注文の「3Dで確認」から開いてシェアしてください。');
+    return;
+  }
+  const shareUrl = built.url;
 
   // Web Share API が使えればそれを優先（モバイル等）
   if (navigator.share && shareUrl.length < 2000) {
