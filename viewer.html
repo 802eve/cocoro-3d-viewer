@@ -2411,7 +2411,11 @@ async function _switchToColor(newIdx){
     state.prints = [];
     for(let i = 0; i < lastCfg.prints.length; i++){
       const p = lastCfg.prints[i];
-      let img = await loadImage(p.imageDataUrl || p.image || p.url);
+      // ★ 2026-10-01: 1枚読めなくても止めない（従来はここで例外になり、色は選ばれたのに
+      //   シャツが前の色のまま・プリントも消えた状態で止まっていた）
+      let img;
+      try { img = await loadImage(p.imageDataUrl || p.image || p.url); }
+      catch(e){ console.warn('[switchColor] print image failed, skip:', i, e); continue; }
       // ★ 2026-05-27 P-fix: フォールバック順 修正
       //   旧: `p.originalInkHexes || p.targetInkHexes` だが 配列 [] は truthy のため originalInkHexes が ある限り 常にそれが返り、 親色 (targetInkHexes) に 戻れない バグ
       //   新: override > 親色 (targetInkHexes) > 元色 (originalInkHexes) の 優先順
