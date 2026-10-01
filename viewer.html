@@ -2086,6 +2086,24 @@ function _buildShareUrl(){
   if (qs.get('v')) url += '&v=' + encodeURIComponent(qs.get('v'));
   return { url, reason: '' };
 }
+// ★ 2026-10-01: 短縮URL（社内GASの「短縮URL」シートに保存 → https://802eve.github.io/cocoro-3d-viewer/s/?Ab3x9Z）
+//   失敗・時間切れのときは長いURLのまま返す（シェアできない、を起こさない）
+function _shortenUrl(longUrl){
+  return new Promise(resolve => {
+    const name = '__cocoroShortCb' + Date.now();
+    let done = false;
+    const finish = (u) => { if (done) return; done = true; try { delete window[name]; } catch(_){} sc.remove(); resolve(u); };
+    window[name] = (res) => {
+      const u = res && res.url;
+      finish((typeof u === 'string' && u.indexOf('https://802eve.github.io/cocoro-3d-viewer/s/?') === 0) ? u : longUrl);
+    };
+    const sc = document.createElement('script');
+    sc.src = _GAS_PLATFORM_URL + '?action=shortCreate&u=' + encodeURIComponent(longUrl) + '&callback=' + name;
+    sc.onerror = () => finish(longUrl);
+    setTimeout(() => finish(longUrl), 10000);
+    document.head.appendChild(sc);
+  });
+}
 shareBtn.addEventListener('click', async () => {
   const built = _buildShareUrl();
   if (!built.url) {
@@ -2094,7 +2112,9 @@ shareBtn.addEventListener('click', async () => {
       : 'シェアできる3Dの設定がありません。注文の「3Dで確認」から開いてシェアしてください。');
     return;
   }
-  const shareUrl = built.url;
+  shareLabel.textContent = '作成中…';
+  const shareUrl = await _shortenUrl(built.url);
+  shareLabel.textContent = 'シェア';
 
   // Web Share API が使えればそれを優先（モバイル等）
   if (navigator.share && shareUrl.length < 2000) {
